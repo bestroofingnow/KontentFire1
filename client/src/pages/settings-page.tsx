@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import type { CompanyProfile } from "@shared/schema";
 
 // Profile schema
 const profileSchema = z.object({
@@ -41,9 +43,29 @@ const notificationSchema = z.object({
   newFeatures: z.boolean(),
 });
 
+// Company profile schema
+const companyProfileSchema = z.object({
+  companyName: z.string().min(1, "Company name is required"),
+  industry: z.string().optional(),
+  description: z.string().optional(),
+  websiteUrl: z.string().url("Invalid website URL").optional().or(z.literal('')),
+  logoUrl: z.string().url("Invalid logo URL").optional().or(z.literal('')),
+  primaryColor: z.string().optional(),
+  secondaryColor: z.string().optional(),
+  facebookUrl: z.string().url("Invalid Facebook URL").optional().or(z.literal('')),
+  twitterUrl: z.string().url("Invalid Twitter URL").optional().or(z.literal('')),
+  instagramUrl: z.string().url("Invalid Instagram URL").optional().or(z.literal('')),
+  linkedinUrl: z.string().url("Invalid LinkedIn URL").optional().or(z.literal('')),
+  youtubeUrl: z.string().url("Invalid YouTube URL").optional().or(z.literal('')),
+  tiktokUrl: z.string().url("Invalid TikTok URL").optional().or(z.literal('')),
+  pinterestUrl: z.string().url("Invalid Pinterest URL").optional().or(z.literal('')),
+  additionalInfo: z.string().optional(),
+});
+
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 type NotificationFormValues = z.infer<typeof notificationSchema>;
+type CompanyProfileFormValues = z.infer<typeof companyProfileSchema>;
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -145,6 +167,87 @@ export default function SettingsPage() {
     },
   });
   
+  // Company profile query
+  const { data: companyProfile, isLoading: isLoadingProfile } = useQuery<CompanyProfile>({
+    queryKey: ['/api/company-profile'],
+    enabled: !!user,
+    // Avoid showing 404 errors to the user when they don't have a profile yet
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: false,
+  });
+  
+  // Company profile form
+  const companyProfileForm = useForm<CompanyProfileFormValues>({
+    resolver: zodResolver(companyProfileSchema),
+    defaultValues: {
+      companyName: "",
+      industry: "",
+      description: "",
+      websiteUrl: "",
+      logoUrl: "",
+      primaryColor: "",
+      secondaryColor: "",
+      facebookUrl: "",
+      twitterUrl: "",
+      instagramUrl: "",
+      linkedinUrl: "",
+      youtubeUrl: "",
+      tiktokUrl: "",
+      pinterestUrl: "",
+      additionalInfo: "",
+    },
+  });
+
+  // Update form values when company profile data is loaded
+  React.useEffect(() => {
+    if (companyProfile && !companyProfileForm.formState.isDirty) {
+      companyProfileForm.reset({
+        companyName: companyProfile.companyName || "",
+        industry: companyProfile.industry || "",
+        description: companyProfile.description || "",
+        websiteUrl: companyProfile.websiteUrl || "",
+        logoUrl: companyProfile.logoUrl || "",
+        primaryColor: companyProfile.primaryColor || "",
+        secondaryColor: companyProfile.secondaryColor || "",
+        facebookUrl: companyProfile.facebookUrl || "",
+        twitterUrl: companyProfile.twitterUrl || "",
+        instagramUrl: companyProfile.instagramUrl || "",
+        linkedinUrl: companyProfile.linkedinUrl || "",
+        youtubeUrl: companyProfile.youtubeUrl || "",
+        tiktokUrl: companyProfile.tiktokUrl || "",
+        pinterestUrl: companyProfile.pinterestUrl || "",
+        additionalInfo: companyProfile.additionalInfo || "",
+      });
+    }
+  }, [companyProfile, companyProfileForm]);
+
+  // Company profile mutation
+  const companyProfileMutation = useMutation({
+    mutationFn: async (data: CompanyProfileFormValues) => {
+      const endpoint = companyProfile 
+        ? `/api/company-profile/${companyProfile.id}`
+        : '/api/company-profile';
+      const method = companyProfile ? "PUT" : "POST";
+      
+      const res = await apiRequest(method, endpoint, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-profile'] });
+      toast({
+        title: "Company Profile Updated",
+        description: "Your company information has been saved successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle form submissions
   const onProfileSubmit = (data: ProfileFormValues) => {
     profileMutation.mutate(data);
@@ -156,6 +259,10 @@ export default function SettingsPage() {
   
   const onNotificationSubmit = (data: NotificationFormValues) => {
     notificationMutation.mutate(data);
+  };
+  
+  const onCompanyProfileSubmit = (data: CompanyProfileFormValues) => {
+    companyProfileMutation.mutate(data);
   };
 
   return (
@@ -175,10 +282,11 @@ export default function SettingsPage() {
             
             {/* Settings Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid grid-cols-3 gap-4 w-full md:w-auto">
+              <TabsList className="grid grid-cols-4 gap-2 w-full md:w-auto">
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="password">Password</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                <TabsTrigger value="company">Company</TabsTrigger>
               </TabsList>
               
               {/* Profile Tab */}
@@ -424,6 +532,308 @@ export default function SettingsPage() {
                         </Button>
                       </form>
                     </Form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              {/* Company Profile Tab */}
+              <TabsContent value="company">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Company Profile</CardTitle>
+                    <CardDescription>
+                      Set up your company profile to help AI create better content with your branding
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingProfile ? (
+                      <div className="flex justify-center py-6">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : (
+                      <Form {...companyProfileForm}>
+                        <form onSubmit={companyProfileForm.handleSubmit(onCompanyProfileSubmit)} className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Basic Information */}
+                            <div className="space-y-6 md:col-span-2">
+                              <h3 className="text-lg font-medium">Basic Information</h3>
+                              
+                              <FormField
+                                control={companyProfileForm.control}
+                                name="companyName"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Company Name*</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                      The name of your company or brand
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={companyProfileForm.control}
+                                name="industry"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Industry</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                      Your business industry or niche (e.g., Tech, Healthcare, Education)
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={companyProfileForm.control}
+                                name="description"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Company Description</FormLabel>
+                                    <FormControl>
+                                      <Textarea 
+                                        {...field} 
+                                        placeholder="Describe your business, mission, values, and target audience" 
+                                        className="min-h-32"
+                                      />
+                                    </FormControl>
+                                    <FormDescription>
+                                      This helps AI understand your company and create more relevant content
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            {/* Branding */}
+                            <div className="space-y-6 md:col-span-2">
+                              <h3 className="text-lg font-medium">Branding</h3>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="websiteUrl"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Website URL</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="https://yourwebsite.com" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="logoUrl"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Logo URL</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="https://yourwebsite.com/logo.png" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="primaryColor"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Primary Brand Color</FormLabel>
+                                      <FormControl>
+                                        <div className="flex gap-2">
+                                          <Input {...field} placeholder="#FF5500" />
+                                          {field.value && (
+                                            <div 
+                                              className="h-10 w-10 rounded-md border" 
+                                              style={{ backgroundColor: field.value }}
+                                            />
+                                          )}
+                                        </div>
+                                      </FormControl>
+                                      <FormDescription>
+                                        Hexadecimal color code (#RRGGBB)
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="secondaryColor"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Secondary Brand Color</FormLabel>
+                                      <FormControl>
+                                        <div className="flex gap-2">
+                                          <Input {...field} placeholder="#0055FF" />
+                                          {field.value && (
+                                            <div 
+                                              className="h-10 w-10 rounded-md border" 
+                                              style={{ backgroundColor: field.value }}
+                                            />
+                                          )}
+                                        </div>
+                                      </FormControl>
+                                      <FormDescription>
+                                        Hexadecimal color code (#RRGGBB)
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Social Media Links */}
+                            <div className="space-y-6 md:col-span-2">
+                              <h3 className="text-lg font-medium">Social Media</h3>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="facebookUrl"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Facebook</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="https://facebook.com/yourcompany" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="twitterUrl"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Twitter</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="https://twitter.com/yourcompany" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="instagramUrl"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Instagram</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="https://instagram.com/yourcompany" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="linkedinUrl"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>LinkedIn</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="https://linkedin.com/company/yourcompany" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="youtubeUrl"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>YouTube</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="https://youtube.com/@yourcompany" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={companyProfileForm.control}
+                                  name="tiktokUrl"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>TikTok</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="https://tiktok.com/@yourcompany" />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Additional Information */}
+                            <div className="space-y-6 md:col-span-2">
+                              <h3 className="text-lg font-medium">Additional Information</h3>
+                              
+                              <FormField
+                                control={companyProfileForm.control}
+                                name="additionalInfo"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Additional Information</FormLabel>
+                                    <FormControl>
+                                      <Textarea 
+                                        {...field} 
+                                        placeholder="Add any additional information about your company that might help with content creation" 
+                                        className="min-h-32"
+                                      />
+                                    </FormControl>
+                                    <FormDescription>
+                                      Product details, tone of voice preferences, specific CTAs, or important brand guidelines
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            type="submit" 
+                            className="bg-primary hover:bg-primary-dark"
+                            disabled={companyProfileMutation.isPending}
+                          >
+                            {companyProfileMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              'Save Company Profile'
+                            )}
+                          </Button>
+                        </form>
+                      </Form>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
