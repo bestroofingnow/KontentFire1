@@ -10,6 +10,7 @@ import IntegrationsPage from "@/pages/integrations-page";
 import SettingsPage from "@/pages/settings-page";
 import AdminPage from "@/pages/admin-page";
 import SubscriptionPage from "@/pages/subscription-page";
+import AutoContentPage from "@/pages/auto-content-page";
 import { Loader2 } from "lucide-react";
 
 // Protected route component
@@ -71,6 +72,9 @@ function App() {
       </Route>
       <Route path="/admin">
         <ProtectedRoute path="/admin" component={AdminPage} />
+      </Route>
+      <Route path="/auto-content">
+        <ProtectedRoute path="/auto-content" component={AutoContentPage} />
       </Route>
       <Route>
         <NotFound />
