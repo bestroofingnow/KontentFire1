@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react";
 function App() {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
 
   // Fetch user data when component mounts
   useEffect(() => {
