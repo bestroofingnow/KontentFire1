@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { useState, useEffect } from "react";
 import { 
   Home, 
   PenTool, 
@@ -14,7 +14,24 @@ import { cn } from "@/lib/utils";
 
 export default function Sidebar() {
   const [location] = useLocation();
-  const { user } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  
+  // Fetch user on component mount
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const response = await fetch('/api/user');
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+      }
+    }
+
+    fetchUser();
+  }, []);
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -37,17 +54,22 @@ export default function Sidebar() {
           <ul className="space-y-2">
             {navigation.map((item) => (
               <li key={item.name}>
-                <Link href={item.href}>
-                  <a className={cn(
-                    "flex items-center space-x-3 rounded-lg p-3 md:px-4",
+                <a 
+                  href={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 rounded-lg p-3 md:px-4 cursor-pointer",
                     location === item.href 
                       ? "text-white bg-primary" 
                       : "text-gray-300 hover:bg-dark-lighter"
-                  )}>
-                    <item.icon className="h-6 w-6" />
-                    <span className="hidden md:inline font-medium">{item.name}</span>
-                  </a>
-                </Link>
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = item.href;
+                  }}
+                >
+                  <item.icon className="h-6 w-6" />
+                  <span className="hidden md:inline font-medium">{item.name}</span>
+                </a>
               </li>
             ))}
           </ul>
@@ -61,11 +83,16 @@ export default function Sidebar() {
                   <span className="font-semibold text-sm">Upgrade to Inferno</span>
                 </div>
                 <p className="text-gray-400 text-xs mb-3">Get auto-scheduling, video content, and more.</p>
-                <Link href="/subscription">
-                  <a className="w-full block bg-primary text-white rounded py-2 text-sm font-medium hover:bg-primary-dark transition">
-                    Upgrade Now
-                  </a>
-                </Link>
+                <a 
+                  href="/subscription" 
+                  className="w-full block bg-primary text-white rounded py-2 text-sm font-medium hover:bg-primary-dark transition cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/subscription';
+                  }}
+                >
+                  Upgrade Now
+                </a>
               </>
             ) : (
               <>
