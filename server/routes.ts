@@ -5,7 +5,7 @@ import { setupAuth } from "./auth";
 import openai from "./openai";
 import Stripe from "stripe";
 import { handleWebhook } from "./webhooks";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import { 
   adminSettings, 

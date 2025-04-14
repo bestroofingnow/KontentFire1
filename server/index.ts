@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initAutoContentTasks } from "./auto-content-task";
 
 const app = express();
 app.use(express.json());
@@ -66,5 +67,12 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Initialize automatic content generation tasks
+    // Only run in production or when explicitly enabled
+    if (process.env.NODE_ENV === 'production' || process.env.ENABLE_AUTO_CONTENT === 'true') {
+      log('Initializing automatic content generation tasks');
+      initAutoContentTasks(30); // Run every 30 minutes
+    }
   });
 })();
