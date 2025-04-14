@@ -9,6 +9,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import { adminSettings, users, insertCompanyProfileSchema } from "@shared/schema";
 import { hashPassword } from "./auth";
+import { factCheck, getReferences, FactCheckRequest, ReferencesRequest } from "./perplexity";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.warn('Missing STRIPE_SECRET_KEY - payment features will not work properly');
@@ -871,6 +872,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error creating admin:', error);
       return res.status(500).json({ message: `Error creating admin: ${error.message}` });
+    }
+  });
+
+  // Fact-checking endpoint
+  app.post('/api/fact-check', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { text, context } = req.body as FactCheckRequest;
+      
+      if (!text) {
+        return res.status(400).json({ message: 'Missing required text parameter' });
+      }
+      
+      // Check user plan
+      const user = req.user;
+      if (user.plan !== 'inferno') {
+        return res.status(403).json({ 
+          message: 'This feature requires the Inferno plan',
+          upgradeRequired: true 
+        });
+      }
+      
+      const result = await factCheck({ text, context });
+      return res.json(result);
+    } catch (error: any) {
+      console.error('Fact-checking error:', error);
+      return res.status(500).json({ 
+        message: `Error during fact-checking: ${error.message}` 
+      });
+    }
+  });
+  
+  // References search endpoint
+  app.post('/api/references', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { query, count } = req.body as ReferencesRequest;
+      
+      if (!query) {
+        return res.status(400).json({ message: 'Missing required query parameter' });
+      }
+      
+      // Check user plan
+      const user = req.user;
+      if (user.plan !== 'inferno') {
+        return res.status(403).json({ 
+          message: 'This feature requires the Inferno plan',
+          upgradeRequired: true 
+        });
+      }
+      
+      const result = await getReferences({ query, count });
+      return res.json(result);
+    } catch (error: any) {
+      console.error('References search error:', error);
+      return res.status(500).json({ 
+        message: `Error during references search: ${error.message}` 
+      });
     }
   });
 
