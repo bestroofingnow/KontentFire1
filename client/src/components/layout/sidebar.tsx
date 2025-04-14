@@ -103,11 +103,16 @@ export default function Sidebar() {
                   </span>
                 </div>
                 <p className="text-gray-400 text-xs mb-3">You're enjoying our premium features.</p>
-                <Link href="/subscription">
-                  <a className="w-full block border border-gray-600 text-gray-300 rounded py-2 text-sm font-medium hover:bg-dark-lighter transition">
-                    Manage Subscription
-                  </a>
-                </Link>
+                <a 
+                  href="/subscription" 
+                  className="w-full block border border-gray-600 text-gray-300 rounded py-2 text-sm font-medium hover:bg-dark-lighter transition cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/subscription';
+                  }}
+                >
+                  Manage Subscription
+                </a>
               </>
             )}
           </div>

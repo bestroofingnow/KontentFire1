@@ -15,16 +15,22 @@ export default function MobileNav() {
   return (
     <div className="bg-dark fixed bottom-0 left-0 right-0 flex justify-around py-2 md:hidden z-10">
       {navItems.map((item) => (
-        <Link key={item.name} href={item.href}>
-          <a className={cn(
-            "p-2 rounded-full",
+        <a 
+          key={item.name}
+          href={item.href}
+          className={cn(
+            "p-2 rounded-full cursor-pointer",
             location === item.href 
               ? "text-white bg-primary" 
               : "text-gray-300 hover:text-white"
-          )}>
-            <item.icon className="h-6 w-6" />
-          </a>
-        </Link>
+          )}
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = item.href;
+          }}
+        >
+          <item.icon className="h-6 w-6" />
+        </a>
       ))}
     </div>
   );
