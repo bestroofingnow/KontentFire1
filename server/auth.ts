@@ -133,6 +133,27 @@ export function setupAuth(app: Express) {
       });
     })(req, res, next);
   });
+  
+  // Specific admin login endpoint with additional checks
+  app.post("/api/admin/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) return next(err);
+      if (!user) return res.status(401).json({ message: info?.message || "Invalid credentials" });
+      
+      // Check if the user is an admin
+      if (!user.isAdmin) {
+        return res.status(403).json({ message: "This account does not have administrative privileges" });
+      }
+      
+      req.login(user, (err) => {
+        if (err) return next(err);
+        
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
+        res.status(200).json(userWithoutPassword);
+      });
+    })(req, res, next);
+  });
 
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
