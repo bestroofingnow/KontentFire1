@@ -89,6 +89,37 @@ export const schedulesRelations = relations(schedules, ({ one }) => ({
   }),
 }));
 
+// Company Profiles table
+export const companyProfiles = pgTable('company_profiles', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  companyName: text('company_name').notNull(),
+  industry: text('industry'),
+  description: text('description'),
+  websiteUrl: text('website_url'),
+  logoUrl: text('logo_url'),
+  primaryColor: text('primary_color'),
+  secondaryColor: text('secondary_color'),
+  facebookUrl: text('facebook_url'),
+  twitterUrl: text('twitter_url'),
+  instagramUrl: text('instagram_url'),
+  linkedinUrl: text('linkedin_url'),
+  youtubeUrl: text('youtube_url'),
+  tiktokUrl: text('tiktok_url'),
+  pinterestUrl: text('pinterest_url'),
+  additionalInfo: text('additional_info'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at'),
+});
+
+// Company Profile relations
+export const companyProfilesRelations = relations(companyProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [companyProfiles.userId],
+    references: [users.id],
+  }),
+}));
+
 // Admin Settings table
 export const adminSettings = pgTable('admin_settings', {
   id: serial('id').primaryKey(),
@@ -131,6 +162,12 @@ export const insertAdminSettingsSchema = createInsertSchema(adminSettings).omit(
   id: true,
 });
 
+export const insertCompanyProfileSchema = createInsertSchema(companyProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -146,3 +183,6 @@ export type Schedule = typeof schedules.$inferSelect;
 
 export type InsertAdminSettings = z.infer<typeof insertAdminSettingsSchema>;
 export type AdminSettings = typeof adminSettings.$inferSelect;
+
+export type InsertCompanyProfile = z.infer<typeof insertCompanyProfileSchema>;
+export type CompanyProfile = typeof companyProfiles.$inferSelect;

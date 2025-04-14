@@ -1,4 +1,4 @@
-import { users, contents, schedules, socialAccounts, adminSettings, type User, type InsertUser, type Content, type InsertContent, type Schedule, type InsertSchedule, type SocialAccount, type InsertSocialAccount, type AdminSettings, type InsertAdminSettings } from "@shared/schema";
+import { users, contents, schedules, socialAccounts, adminSettings, companyProfiles, type User, type InsertUser, type Content, type InsertContent, type Schedule, type InsertSchedule, type SocialAccount, type InsertSocialAccount, type AdminSettings, type InsertAdminSettings, type CompanyProfile, type InsertCompanyProfile } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, desc, gte, sql } from "drizzle-orm";
 import session from "express-session";
@@ -36,6 +36,11 @@ export interface IStorage {
   getUserSocialAccounts(userId: number): Promise<SocialAccount[]>;
   updateSocialAccount(id: number, data: Partial<SocialAccount>): Promise<SocialAccount>;
   deleteSocialAccount(id: number): Promise<boolean>;
+  
+  // Company profile operations
+  getCompanyProfile(userId: number): Promise<CompanyProfile | undefined>;
+  createCompanyProfile(profile: InsertCompanyProfile): Promise<CompanyProfile>;
+  updateCompanyProfile(id: number, data: Partial<CompanyProfile>): Promise<CompanyProfile>;
   
   // Admin settings operations
   getAdminSettings(): Promise<AdminSettings | undefined>;
@@ -233,6 +238,35 @@ export class DatabaseStorage implements IStorage {
   async deleteSocialAccount(id: number): Promise<boolean> {
     await db.delete(socialAccounts).where(eq(socialAccounts.id, id));
     return true;
+  }
+  
+  // Company profile operations
+  async getCompanyProfile(userId: number): Promise<CompanyProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(companyProfiles)
+      .where(eq(companyProfiles.userId, userId));
+    return profile;
+  }
+  
+  async createCompanyProfile(profile: InsertCompanyProfile): Promise<CompanyProfile> {
+    const [createdProfile] = await db
+      .insert(companyProfiles)
+      .values(profile)
+      .returning();
+    return createdProfile;
+  }
+  
+  async updateCompanyProfile(id: number, data: Partial<CompanyProfile>): Promise<CompanyProfile> {
+    const [updatedProfile] = await db
+      .update(companyProfiles)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(companyProfiles.id, id))
+      .returning();
+    return updatedProfile;
   }
   
   // Admin settings operations
