@@ -10,6 +10,7 @@ import { db } from "./db";
 import { adminSettings, users, insertCompanyProfileSchema } from "@shared/schema";
 import { hashPassword } from "./auth";
 import { factCheck, getReferences, FactCheckRequest, ReferencesRequest } from "./perplexity";
+import { repurposeContent, RepurposeRequest } from "./content-repurpose";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.warn('Missing STRIPE_SECRET_KEY - payment features will not work properly');
@@ -872,6 +873,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error creating admin:', error);
       return res.status(500).json({ message: `Error creating admin: ${error.message}` });
+    }
+  });
+  
+  // Content repurposing endpoint
+  app.post('/api/content/repurpose', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { content, title, sourcePlatform, targetPlatform, tone, additionalInstructions } = req.body as RepurposeRequest;
+      
+      if (!content || !sourcePlatform || !targetPlatform) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+      
+      // Check user plan - make available to all plans
+      // This feature is available to all plans as it's a core content creation feature
+      
+      const result = await repurposeContent({
+        content, 
+        title, 
+        sourcePlatform, 
+        targetPlatform, 
+        tone, 
+        additionalInstructions
+      });
+      
+      return res.json(result);
+    } catch (error: any) {
+      console.error('Content repurposing error:', error);
+      return res.status(500).json({ 
+        message: `Error during content repurposing: ${error.message}` 
+      });
     }
   });
 

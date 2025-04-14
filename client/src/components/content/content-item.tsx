@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { FactCheckDialog, ReferencesDialog } from "@/components/fact-check";
+import { useState } from "react";
+import { RepurposeDialog } from "./repurpose-dialog";
 
 type ContentItemProps = {
   content: Content;
