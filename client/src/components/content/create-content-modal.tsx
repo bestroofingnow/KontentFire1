@@ -12,7 +12,8 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle, BookOpen } from "lucide-react";
+import { FactCheckDialog, ReferencesDialog } from "@/components/fact-check";
 
 type ContentType = 'text' | 'image' | 'both';
 type ToneType = 'professional' | 'casual' | 'friendly' | 'authoritative' | 'humorous';
@@ -321,7 +322,19 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
             
             {generatedContent.text && (
               <div className="mb-4">
-                <Label className="block text-gray-700 font-medium mb-2">Generated Text</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="block text-gray-700 font-medium mb-2">Generated Text</Label>
+                  <div className="flex items-center gap-2">
+                    <FactCheckDialog 
+                      initialText={generatedContent.text}
+                      triggerLabel="Fact Check"
+                    />
+                    <ReferencesDialog 
+                      initialQuery={form.getValues().prompt}
+                      triggerLabel="Find References"
+                    />
+                  </div>
+                </div>
                 <div className="p-4 border rounded-lg bg-gray-50 text-gray-800 whitespace-pre-wrap">
                   {generatedContent.text}
                 </div>
