@@ -2,6 +2,7 @@ import { Content } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { FactCheckDialog, ReferencesDialog } from "@/components/fact-check";
 
 type ContentItemProps = {
   content: Content;
@@ -65,7 +66,7 @@ export default function ContentItem({ content, onSchedule, onEdit }: ContentItem
           </p>
         )}
         
-        <div className="flex space-x-2 mt-auto">
+        <div className="flex flex-wrap gap-2 mt-auto">
           <Button 
             variant="default" 
             size="sm" 
@@ -82,6 +83,19 @@ export default function ContentItem({ content, onSchedule, onEdit }: ContentItem
           >
             Edit
           </Button>
+          
+          {content.textContent && (
+            <>
+              <FactCheckDialog 
+                initialText={content.textContent} 
+                triggerLabel="Fact Check" 
+              />
+              <ReferencesDialog 
+                initialQuery={content.title} 
+                triggerLabel="Find References" 
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
