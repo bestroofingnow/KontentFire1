@@ -1,0 +1,148 @@
+import { pgTable, text, serial, integer, boolean, timestamp, date, pgEnum } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+import { relations } from "drizzle-orm";
+
+// Enums
+export const planEnum = pgEnum('plan_type', ['blaze', 'inferno']);
+export const contentTypeEnum = pgEnum('content_type', ['text', 'image', 'both']);
+export const contentStatusEnum = pgEnum('content_status', ['draft', 'scheduled', 'published']);
+export const platformEnum = pgEnum('platform_type', ['blog', 'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'pinterest']);
+
+// Users table
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  username: text('username').notNull().unique(),
+  email: text('email').notNull().unique(),
+  password: text('password').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  plan: planEnum('plan').default('blaze').notNull(),
+  stripeCustomerId: text('stripe_customer_id'),
+  stripeSubscriptionId: text('stripe_subscription_id'),
+  isAdmin: boolean('is_admin').default(false).notNull(),
+});
+
+// User relations
+export const usersRelations = relations(users, ({ many }) => ({
+  contents: many(contents),
+  socialAccounts: many(socialAccounts),
+}));
+
+// Social Accounts table
+export const socialAccounts = pgTable('social_accounts', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  platform: platformEnum('platform').notNull(),
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token'),
+  tokenExpiry: timestamp('token_expiry'),
+  platformUserId: text('platform_user_id'),
+  platformUsername: text('platform_username'),
+});
+
+// Social Account relations
+export const socialAccountsRelations = relations(socialAccounts, ({ one }) => ({
+  user: one(users, {
+    fields: [socialAccounts.userId],
+    references: [users.id],
+  }),
+}));
+
+// Contents table
+export const contents = pgTable('contents', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  textContent: text('text_content'),
+  imageUrl: text('image_url'),
+  contentType: contentTypeEnum('content_type').notNull(),
+  status: contentStatusEnum('status').default('draft').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at'),
+});
+
+// Content relations
+export const contentsRelations = relations(contents, ({ one, many }) => ({
+  user: one(users, {
+    fields: [contents.userId],
+    references: [users.id],
+  }),
+  schedules: many(schedules),
+}));
+
+// Schedules table
+export const schedules = pgTable('schedules', {
+  id: serial('id').primaryKey(),
+  contentId: integer('content_id').notNull().references(() => contents.id, { onDelete: 'cascade' }),
+  platform: platformEnum('platform').notNull(),
+  scheduledDate: timestamp('scheduled_date').notNull(),
+  published: boolean('published').default(false).notNull(),
+  publishedDate: timestamp('published_date'),
+  engagementMetrics: text('engagement_metrics'),
+});
+
+// Schedule relations
+export const schedulesRelations = relations(schedules, ({ one }) => ({
+  content: one(contents, {
+    fields: [schedules.contentId],
+    references: [contents.id],
+  }),
+}));
+
+// Admin Settings table
+export const adminSettings = pgTable('admin_settings', {
+  id: serial('id').primaryKey(),
+  infernoPrice: integer('inferno_price').notNull(), // in cents
+  blazePrice: integer('blaze_price').default(9900).notNull(), // $99.00 in cents
+  stripeProductId: text('stripe_product_id'),
+  blazePriceId: text('blaze_price_id'),
+  infernoPriceId: text('inferno_price_id'),
+  selfPromoEnabled: boolean('self_promo_enabled').default(true).notNull(),
+  selfPromoInterval: integer('self_promo_interval').default(7).notNull(), // days
+});
+
+// Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+  isAdmin: true,
+});
+
+export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({
+  id: true,
+});
+
+export const insertContentSchema = createInsertSchema(contents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertScheduleSchema = createInsertSchema(schedules).omit({
+  id: true,
+  published: true,
+  publishedDate: true,
+  engagementMetrics: true,
+});
+
+export const insertAdminSettingsSchema = createInsertSchema(adminSettings).omit({
+  id: true,
+});
+
+// Types
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+
+export type InsertSocialAccount = z.infer<typeof insertSocialAccountSchema>;
+export type SocialAccount = typeof socialAccounts.$inferSelect;
+
+export type InsertContent = z.infer<typeof insertContentSchema>;
+export type Content = typeof contents.$inferSelect;
+
+export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
+export type Schedule = typeof schedules.$inferSelect;
+
+export type InsertAdminSettings = z.infer<typeof insertAdminSettingsSchema>;
+export type AdminSettings = typeof adminSettings.$inferSelect;

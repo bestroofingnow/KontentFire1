@@ -1,0 +1,810 @@
+import express, { type Express, Request, Response } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { setupAuth } from "./auth";
+import openai from "./openai";
+import Stripe from "stripe";
+import { handleWebhook } from "./webhooks";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
+import { adminSettings } from "@shared/schema";
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.warn('Missing STRIPE_SECRET_KEY - payment features will not work properly');
+}
+
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
+}) : undefined;
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Sets up auth routes: /api/register, /api/login, /api/logout, /api/user
+  setupAuth(app);
+  
+  // Stripe webhook handling (needs raw body)
+  app.post('/api/webhooks', express.raw({ type: 'application/json' }), handleWebhook);
+  
+  // Create or get subscription for blaze plan
+  app.post('/api/subscribe/blaze', async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(500).json({ message: 'Stripe not configured' });
+    }
+    
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      // Get admin settings
+      const adminSetting = await storage.getAdminSettings();
+      if (!adminSetting || !adminSetting.blazePriceId) {
+        return res.status(500).json({ message: 'Subscription pricing not configured' });
+      }
+      
+      // Check if user already has a customer ID
+      let user = req.user;
+      
+      // If user already has a subscription, return current subscription info
+      if (user.stripeSubscriptionId) {
+        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        
+        // Return the client secret from the latest invoice's payment intent
+        if (subscription.status === 'active') {
+          return res.json({
+            subscriptionStatus: subscription.status,
+            message: 'Subscription is already active',
+          });
+        }
+        
+        if (subscription.latest_invoice && typeof subscription.latest_invoice !== 'string') {
+          const paymentIntent = subscription.latest_invoice.payment_intent;
+          if (paymentIntent && typeof paymentIntent !== 'string') {
+            return res.json({
+              subscriptionId: subscription.id,
+              clientSecret: paymentIntent.client_secret,
+            });
+          }
+        }
+      }
+      
+      // Create a new customer if needed
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.username,
+          metadata: {
+            userId: user.id.toString()
+          }
+        });
+        customerId = customer.id;
+      }
+      
+      // Create the subscription
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{
+          price: adminSetting.blazePriceId,
+        }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: {
+          save_default_payment_method: 'on_subscription',
+        },
+        expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          userId: user.id.toString()
+        }
+      });
+      
+      // Update user with stripe info
+      await storage.updateStripeInfo(user.id, customerId, subscription.id);
+      
+      // Get the client secret
+      if (
+        subscription.latest_invoice &&
+        typeof subscription.latest_invoice !== 'string' &&
+        subscription.latest_invoice.payment_intent &&
+        typeof subscription.latest_invoice.payment_intent !== 'string'
+      ) {
+        return res.json({
+          subscriptionId: subscription.id,
+          clientSecret: subscription.latest_invoice.payment_intent.client_secret,
+        });
+      } else {
+        return res.status(500).json({ message: 'Failed to create subscription payment intent' });
+      }
+    } catch (error: any) {
+      console.error('Subscription error:', error);
+      return res.status(500).json({ message: `Subscription error: ${error.message}` });
+    }
+  });
+  
+  // Create or get subscription for inferno plan
+  app.post('/api/subscribe/inferno', async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(500).json({ message: 'Stripe not configured' });
+    }
+    
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      // Get admin settings
+      const adminSetting = await storage.getAdminSettings();
+      if (!adminSetting || !adminSetting.infernoPriceId) {
+        return res.status(500).json({ message: 'Subscription pricing not configured' });
+      }
+      
+      // Check if user already has a customer ID
+      let user = req.user;
+      
+      // If user already has a subscription, update it instead
+      if (user.stripeSubscriptionId) {
+        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        
+        // If already on inferno plan, return current subscription info
+        if (subscription.status === 'active') {
+          const items = subscription.items.data;
+          const priceId = items[0]?.price.id;
+          
+          if (priceId === adminSetting.infernoPriceId) {
+            return res.json({
+              subscriptionStatus: subscription.status,
+              message: 'Already subscribed to Inferno plan',
+            });
+          }
+          
+          // Otherwise upgrade plan
+          await stripe.subscriptions.update(subscription.id, {
+            items: [{
+              id: items[0]?.id,
+              price: adminSetting.infernoPriceId,
+            }],
+            proration_behavior: 'always_invoice',
+          });
+          
+          return res.json({
+            subscriptionStatus: 'updated',
+            message: 'Successfully upgraded to Inferno plan',
+          });
+        }
+      }
+      
+      // Create a new customer if needed
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.username,
+          metadata: {
+            userId: user.id.toString()
+          }
+        });
+        customerId = customer.id;
+      }
+      
+      // Create the subscription
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{
+          price: adminSetting.infernoPriceId,
+        }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: {
+          save_default_payment_method: 'on_subscription',
+        },
+        expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          userId: user.id.toString()
+        }
+      });
+      
+      // Update user with stripe info and plan
+      await storage.updateUser(user.id, {
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscription.id,
+        plan: 'inferno'
+      });
+      
+      // Get the client secret
+      if (
+        subscription.latest_invoice &&
+        typeof subscription.latest_invoice !== 'string' &&
+        subscription.latest_invoice.payment_intent &&
+        typeof subscription.latest_invoice.payment_intent !== 'string'
+      ) {
+        return res.json({
+          subscriptionId: subscription.id,
+          clientSecret: subscription.latest_invoice.payment_intent.client_secret,
+        });
+      } else {
+        return res.status(500).json({ message: 'Failed to create subscription payment intent' });
+      }
+    } catch (error: any) {
+      console.error('Subscription error:', error);
+      return res.status(500).json({ message: `Subscription error: ${error.message}` });
+    }
+  });
+  
+  // Get user subscription info
+  app.get('/api/subscription', async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(500).json({ message: 'Stripe not configured' });
+    }
+    
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const user = req.user;
+      
+      if (!user.stripeSubscriptionId) {
+        return res.json({ 
+          status: 'none',
+          plan: user.plan,
+        });
+      }
+      
+      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+      
+      return res.json({
+        status: subscription.status,
+        plan: user.plan,
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      });
+    } catch (error: any) {
+      console.error('Error fetching subscription:', error);
+      return res.status(500).json({ message: `Error fetching subscription: ${error.message}` });
+    }
+  });
+  
+  // Cancel subscription
+  app.post('/api/subscription/cancel', async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(500).json({ message: 'Stripe not configured' });
+    }
+    
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const user = req.user;
+      
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ message: 'No active subscription found' });
+      }
+      
+      // Cancel at period end
+      await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+      
+      return res.json({ message: 'Subscription will be canceled at the end of the billing period' });
+    } catch (error: any) {
+      console.error('Error canceling subscription:', error);
+      return res.status(500).json({ message: `Error canceling subscription: ${error.message}` });
+    }
+  });
+  
+  // Resume canceled subscription
+  app.post('/api/subscription/resume', async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(500).json({ message: 'Stripe not configured' });
+    }
+    
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const user = req.user;
+      
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ message: 'No subscription found' });
+      }
+      
+      // Cancel at period end
+      await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: false,
+      });
+      
+      return res.json({ message: 'Subscription has been resumed' });
+    } catch (error: any) {
+      console.error('Error resuming subscription:', error);
+      return res.status(500).json({ message: `Error resuming subscription: ${error.message}` });
+    }
+  });
+  
+  // Content generation endpoint
+  app.post('/api/content/generate', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { prompt, contentType, tone, length } = req.body;
+      
+      if (!prompt || !contentType) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+      
+      const generatedContent = await openai.generateContent({
+        prompt,
+        contentType,
+        tone,
+        length
+      });
+      
+      return res.json(generatedContent);
+    } catch (error: any) {
+      console.error('Content generation error:', error);
+      return res.status(500).json({ message: `Content generation error: ${error.message}` });
+    }
+  });
+  
+  // Save content endpoint
+  app.post('/api/content', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { title, textContent, imageUrl, contentType } = req.body;
+      
+      if (!title || !contentType) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+      
+      const content = await storage.createContent({
+        userId: req.user.id,
+        title,
+        textContent,
+        imageUrl,
+        contentType,
+        status: 'draft'
+      });
+      
+      return res.status(201).json(content);
+    } catch (error: any) {
+      console.error('Error saving content:', error);
+      return res.status(500).json({ message: `Error saving content: ${error.message}` });
+    }
+  });
+  
+  // Get content by ID
+  app.get('/api/content/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const contentId = parseInt(req.params.id);
+      if (isNaN(contentId)) {
+        return res.status(400).json({ message: 'Invalid content ID' });
+      }
+      
+      const content = await storage.getContent(contentId);
+      
+      if (!content) {
+        return res.status(404).json({ message: 'Content not found' });
+      }
+      
+      // Check ownership
+      if (content.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to access this content' });
+      }
+      
+      return res.json(content);
+    } catch (error: any) {
+      console.error('Error fetching content:', error);
+      return res.status(500).json({ message: `Error fetching content: ${error.message}` });
+    }
+  });
+  
+  // Get user contents
+  app.get('/api/contents', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const contents = await storage.getUserContents(req.user.id, limit);
+      
+      return res.json(contents);
+    } catch (error: any) {
+      console.error('Error fetching contents:', error);
+      return res.status(500).json({ message: `Error fetching contents: ${error.message}` });
+    }
+  });
+  
+  // Update content
+  app.put('/api/content/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const contentId = parseInt(req.params.id);
+      if (isNaN(contentId)) {
+        return res.status(400).json({ message: 'Invalid content ID' });
+      }
+      
+      // Get content
+      const content = await storage.getContent(contentId);
+      
+      if (!content) {
+        return res.status(404).json({ message: 'Content not found' });
+      }
+      
+      // Check ownership
+      if (content.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to update this content' });
+      }
+      
+      // Update content
+      const { title, textContent, imageUrl, status } = req.body;
+      const updatedContent = await storage.updateContent(contentId, {
+        title,
+        textContent,
+        imageUrl,
+        status
+      });
+      
+      return res.json(updatedContent);
+    } catch (error: any) {
+      console.error('Error updating content:', error);
+      return res.status(500).json({ message: `Error updating content: ${error.message}` });
+    }
+  });
+  
+  // Delete content
+  app.delete('/api/content/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const contentId = parseInt(req.params.id);
+      if (isNaN(contentId)) {
+        return res.status(400).json({ message: 'Invalid content ID' });
+      }
+      
+      // Get content
+      const content = await storage.getContent(contentId);
+      
+      if (!content) {
+        return res.status(404).json({ message: 'Content not found' });
+      }
+      
+      // Check ownership
+      if (content.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to delete this content' });
+      }
+      
+      // Delete content
+      await storage.deleteContent(contentId);
+      
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting content:', error);
+      return res.status(500).json({ message: `Error deleting content: ${error.message}` });
+    }
+  });
+  
+  // Schedule content
+  app.post('/api/schedule', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { contentId, platform, scheduledDate } = req.body;
+      
+      if (!contentId || !platform || !scheduledDate) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+      
+      // Check content exists and belongs to user
+      const content = await storage.getContent(contentId);
+      
+      if (!content) {
+        return res.status(404).json({ message: 'Content not found' });
+      }
+      
+      if (content.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to schedule this content' });
+      }
+      
+      // Create schedule
+      const schedule = await storage.createSchedule({
+        contentId,
+        platform,
+        scheduledDate: new Date(scheduledDate)
+      });
+      
+      // Update content status to scheduled
+      await storage.updateContent(contentId, { status: 'scheduled' });
+      
+      return res.status(201).json(schedule);
+    } catch (error: any) {
+      console.error('Error scheduling content:', error);
+      return res.status(500).json({ message: `Error scheduling content: ${error.message}` });
+    }
+  });
+  
+  // Get upcoming schedules
+  app.get('/api/schedules/upcoming', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const schedules = await storage.getUpcomingSchedules(req.user.id, limit);
+      
+      return res.json(schedules);
+    } catch (error: any) {
+      console.error('Error fetching schedules:', error);
+      return res.status(500).json({ message: `Error fetching schedules: ${error.message}` });
+    }
+  });
+  
+  // Get content stats
+  app.get('/api/stats', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const stats = await storage.getContentStats(req.user.id);
+      return res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching stats:', error);
+      return res.status(500).json({ message: `Error fetching stats: ${error.message}` });
+    }
+  });
+  
+  // Admin routes
+  app.get('/api/admin/settings', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated() || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    try {
+      let settings = await storage.getAdminSettings();
+      
+      // If no settings exist, create default settings
+      if (!settings) {
+        settings = await storage.createOrUpdateAdminSettings({
+          infernoPrice: 19900, // $199.00
+          blazePrice: 9900,    // $99.00
+          selfPromoEnabled: true,
+          selfPromoInterval: 7
+        });
+      }
+      
+      return res.json(settings);
+    } catch (error: any) {
+      console.error('Error fetching admin settings:', error);
+      return res.status(500).json({ message: `Error fetching admin settings: ${error.message}` });
+    }
+  });
+  
+  app.post('/api/admin/settings', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated() || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    try {
+      const { infernoPrice, blazePrice, selfPromoEnabled, selfPromoInterval, stripeProductId, blazePriceId, infernoPriceId } = req.body;
+      
+      const settings = await storage.createOrUpdateAdminSettings({
+        infernoPrice,
+        blazePrice,
+        selfPromoEnabled,
+        selfPromoInterval,
+        stripeProductId,
+        blazePriceId,
+        infernoPriceId
+      });
+      
+      return res.json(settings);
+    } catch (error: any) {
+      console.error('Error updating admin settings:', error);
+      return res.status(500).json({ message: `Error updating admin settings: ${error.message}` });
+    }
+  });
+  
+  // Create a Stripe product and price for subscriptions
+  app.post('/api/admin/setup-stripe', async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(500).json({ message: 'Stripe not configured' });
+    }
+    
+    if (!req.isAuthenticated() || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    try {
+      // Get current settings
+      let settings = await storage.getAdminSettings();
+      
+      // If no settings exist, create default settings
+      if (!settings) {
+        settings = await storage.createOrUpdateAdminSettings({
+          infernoPrice: 19900, // $199.00
+          blazePrice: 9900,    // $99.00
+          selfPromoEnabled: true,
+          selfPromoInterval: 7
+        });
+      }
+      
+      // Create or get product
+      let productId = settings.stripeProductId;
+      
+      if (!productId) {
+        const product = await stripe.products.create({
+          name: 'Kontent Fire Subscription',
+          description: 'AI-powered content generation platform subscription'
+        });
+        productId = product.id;
+      }
+      
+      // Create or update Blaze price
+      let blazePriceId = settings.blazePriceId;
+      
+      if (!blazePriceId) {
+        const blazePrice = await stripe.prices.create({
+          product: productId,
+          unit_amount: settings.blazePrice,
+          currency: 'usd',
+          recurring: {
+            interval: 'month'
+          },
+          nickname: 'Blaze Plan'
+        });
+        blazePriceId = blazePrice.id;
+      }
+      
+      // Create or update Inferno price
+      let infernoPriceId = settings.infernoPriceId;
+      
+      if (!infernoPriceId) {
+        const infernoPrice = await stripe.prices.create({
+          product: productId,
+          unit_amount: settings.infernoPrice,
+          currency: 'usd',
+          recurring: {
+            interval: 'month'
+          },
+          nickname: 'Inferno Plan'
+        });
+        infernoPriceId = infernoPrice.id;
+      }
+      
+      // Update settings with IDs
+      const updatedSettings = await storage.createOrUpdateAdminSettings({
+        ...settings,
+        stripeProductId: productId,
+        blazePriceId,
+        infernoPriceId
+      });
+      
+      return res.json({
+        message: 'Stripe products and prices created successfully',
+        settings: updatedSettings
+      });
+    } catch (error: any) {
+      console.error('Error setting up Stripe:', error);
+      return res.status(500).json({ message: `Error setting up Stripe: ${error.message}` });
+    }
+  });
+  
+  // Get all users (admin only)
+  app.get('/api/admin/users', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated() || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    try {
+      const allUsers = await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        createdAt: users.createdAt,
+        plan: users.plan,
+        stripeCustomerId: users.stripeCustomerId,
+        stripeSubscriptionId: users.stripeSubscriptionId,
+        isAdmin: users.isAdmin
+      }).from(users);
+      
+      return res.json(allUsers);
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      return res.status(500).json({ message: `Error fetching users: ${error.message}` });
+    }
+  });
+  
+  // Update user plan (admin only)
+  app.put('/api/admin/users/:id/plan', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated() || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    try {
+      const userId = parseInt(req.params.id);
+      const { plan } = req.body;
+      
+      if (!userId || !plan) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+      
+      const user = await storage.updateUser(userId, { plan });
+      
+      return res.json({
+        message: `User plan updated to ${plan}`,
+        user
+      });
+    } catch (error: any) {
+      console.error('Error updating user plan:', error);
+      return res.status(500).json({ message: `Error updating user plan: ${error.message}` });
+    }
+  });
+  
+  // Create admin user
+  app.post('/api/admin/create-admin', async (req, res) => {
+    // Only allow this endpoint if no admin exists yet
+    const adminCount = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.isAdmin, true));
+      
+    if (adminCount[0].count > 0) {
+      return res.status(403).json({ message: 'Admin already exists' });
+    }
+    
+    const { username, email, password } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    
+    try {
+      // Create admin user
+      const hashedPassword = await hashPassword(password);
+      
+      const user = await db.insert(users)
+        .values({
+          username,
+          email,
+          password: hashedPassword,
+          isAdmin: true,
+          plan: 'inferno'
+        })
+        .returning();
+      
+      // Create default admin settings
+      await db.insert(adminSettings)
+        .values({
+          infernoPrice: 19900, // $199.00
+          blazePrice: 9900,    // $99.00
+          selfPromoEnabled: true,
+          selfPromoInterval: 7
+        })
+        .onConflictDoNothing();
+      
+      return res.json({ message: 'Admin created successfully' });
+    } catch (error: any) {
+      console.error('Error creating admin:', error);
+      return res.status(500).json({ message: `Error creating admin: ${error.message}` });
+    }
+  });
+
+  const httpServer = createServer(app);
+
+  return httpServer;
+}
