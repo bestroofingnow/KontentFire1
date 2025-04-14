@@ -14,6 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, BookOpen } from "lucide-react";
 import { FactCheckDialog, ReferencesDialog } from "@/components/fact-check";
+import { RepurposeDialog } from "./repurpose-dialog";
 
 type ContentType = 'text' | 'image' | 'both';
 type ToneType = 'professional' | 'casual' | 'friendly' | 'authoritative' | 'humorous';
@@ -42,6 +43,7 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
   const [title, setTitle] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [repurposeOpen, setRepurposeOpen] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -325,6 +327,14 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
                 <div className="flex items-center justify-between">
                   <Label className="block text-gray-700 font-medium mb-2">Generated Text</Label>
                   <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs px-3 py-1 rounded text-emerald-600 border-emerald-600 hover:bg-emerald-50"
+                      onClick={() => setRepurposeOpen(true)}
+                    >
+                      Repurpose
+                    </Button>
                     <FactCheckDialog 
                       initialText={generatedContent.text}
                       triggerLabel="Fact Check"
@@ -361,6 +371,19 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
         <DialogFooter>
           <Button variant="outline" onClick={handleReset}>Cancel</Button>
         </DialogFooter>
+
+        {/* Repurpose Dialog */}
+        {generatedContent.text && (
+          <RepurposeDialog
+            open={repurposeOpen}
+            onOpenChange={setRepurposeOpen}
+            content={{
+              title: title,
+              textContent: generatedContent.text
+            }}
+            sourcePlatform={form.getValues().platform}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

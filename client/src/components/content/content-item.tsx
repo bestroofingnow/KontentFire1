@@ -13,6 +13,8 @@ type ContentItemProps = {
 };
 
 export default function ContentItem({ content, onSchedule, onEdit }: ContentItemProps) {
+  const [repurposeOpen, setRepurposeOpen] = useState(false);
+
   const getPlatformClass = (platform: string) => {
     const classes = {
       'blog': 'bg-primary',
@@ -88,6 +90,15 @@ export default function ContentItem({ content, onSchedule, onEdit }: ContentItem
           
           {content.textContent && (
             <>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs px-3 py-1 rounded text-emerald-600 border-emerald-600 hover:bg-emerald-50"
+                onClick={() => setRepurposeOpen(true)}
+              >
+                Repurpose
+              </Button>
+
               <FactCheckDialog 
                 initialText={content.textContent} 
                 triggerLabel="Fact Check" 
@@ -95,6 +106,16 @@ export default function ContentItem({ content, onSchedule, onEdit }: ContentItem
               <ReferencesDialog 
                 initialQuery={content.title} 
                 triggerLabel="Find References" 
+              />
+              
+              <RepurposeDialog 
+                open={repurposeOpen}
+                onOpenChange={setRepurposeOpen}
+                content={{
+                  title: content.title,
+                  textContent: content.textContent
+                }}
+                sourcePlatform="blog"
               />
             </>
           )}
