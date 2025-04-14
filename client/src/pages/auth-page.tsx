@@ -69,6 +69,7 @@ export default function AuthPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(values),
+        credentials: 'include', // Important to include cookies
       });
       
       if (!response.ok) {
@@ -82,7 +83,8 @@ export default function AuthPage() {
         description: `Welcome back, ${userData.username}!`,
       });
       
-      navigate('/');
+      // Force reload the page instead of using navigate
+      window.location.href = '/';
     } catch (error) {
       toast({
         title: "Login Failed",
@@ -104,6 +106,7 @@ export default function AuthPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(values),
+        credentials: 'include', // Important to include cookies
       });
       
       if (!response.ok) {
@@ -117,7 +120,8 @@ export default function AuthPage() {
         description: `Welcome to Kontent Fire, ${userData.username}!`,
       });
       
-      navigate('/');
+      // Force reload the page instead of using navigate
+      window.location.href = '/';
     } catch (error) {
       toast({
         title: "Registration Failed",
