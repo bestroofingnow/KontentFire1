@@ -5,9 +5,10 @@ import { setupAuth } from "./auth";
 import openai from "./openai";
 import Stripe from "stripe";
 import { handleWebhook } from "./webhooks";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
-import { adminSettings } from "@shared/schema";
+import { adminSettings, users, insertCompanyProfileSchema } from "@shared/schema";
+import { hashPassword } from "./auth";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.warn('Missing STRIPE_SECRET_KEY - payment features will not work properly');
@@ -566,6 +567,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error fetching stats:', error);
       return res.status(500).json({ message: `Error fetching stats: ${error.message}` });
+    }
+  });
+  
+  // Company profile endpoints
+  app.get('/api/company-profile', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const profile = await storage.getCompanyProfile(req.user.id);
+      if (!profile) {
+        return res.status(404).json({ message: 'No company profile found' });
+      }
+      res.json(profile);
+    } catch (error: any) {
+      console.error('Error fetching company profile:', error);
+      return res.status(500).json({ message: `Error fetching company profile: ${error.message}` });
+    }
+  });
+  
+  app.post('/api/company-profile', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const profileData = insertCompanyProfileSchema.parse(req.body);
+      
+      // Check if profile already exists
+      const existingProfile = await storage.getCompanyProfile(req.user.id);
+      
+      let profile;
+      if (existingProfile) {
+        profile = await storage.updateCompanyProfile(existingProfile.id, profileData);
+      } else {
+        profile = await storage.createCompanyProfile({
+          ...profileData,
+          userId: req.user.id
+        });
+      }
+      
+      res.status(201).json(profile);
+    } catch (error: any) {
+      console.error('Error creating/updating company profile:', error);
+      return res.status(400).json({ message: `Error creating/updating company profile: ${error.message}` });
+    }
+  });
+  
+  app.put('/api/company-profile/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const profileData = req.body;
+      
+      // Get profile to verify ownership
+      const profile = await storage.getCompanyProfile(req.user.id);
+      if (!profile || profile.id !== id) {
+        return res.status(404).json({ message: 'Profile not found or unauthorized' });
+      }
+      
+      const updatedProfile = await storage.updateCompanyProfile(id, profileData);
+      res.json(updatedProfile);
+    } catch (error: any) {
+      console.error('Error updating company profile:', error);
+      return res.status(400).json({ message: `Error updating company profile: ${error.message}` });
     }
   });
   
