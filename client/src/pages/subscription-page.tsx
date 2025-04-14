@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, CheckCircle2, Flame, Zap, Calendar, ImageIcon, Video, Shield, Check, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Flame, Zap, Calendar, ImageIcon, Video, Shield, Check, Loader2, PenTool } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
