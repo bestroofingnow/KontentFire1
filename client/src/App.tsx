@@ -1,5 +1,6 @@
-import { Switch, Route, Redirect, useLocation } from "wouter";
 import { useState, useEffect } from "react";
+import { Switch, Route, Redirect } from "wouter";
+import { AuthProvider } from "@/hooks/use-auth";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
@@ -12,21 +13,19 @@ import AdminPage from "@/pages/admin-page";
 import SubscriptionPage from "@/pages/subscription-page";
 import { Loader2 } from "lucide-react";
 
-function App() {
+// Protected route component
+function ProtectedRoute({ path, component: Component }: { path: string; component: React.ComponentType }) {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [location] = useLocation();
-
-  // Fetch user data when component mounts
+  
   useEffect(() => {
-    async function fetchUser() {
+    async function checkAuth() {
       try {
         const response = await fetch('/api/user');
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
         } else {
-          // Not logged in - that's okay
           setUser(null);
         }
       } catch (error) {
@@ -36,11 +35,10 @@ function App() {
         setIsLoading(false);
       }
     }
-
-    fetchUser();
+    
+    checkAuth();
   }, []);
-
-  // Handle loading state
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -49,34 +47,73 @@ function App() {
     );
   }
 
-  // Function to check if user is authenticated
-  const isAuthenticated = () => {
-    return !!user;
-  };
+  if (!user) {
+    return <Redirect to="/auth" />;
+  }
+  
+  return (
+    <AuthProvider>
+      <Component />
+    </AuthProvider>
+  );
+}
 
-  // Protected route component
-  function ProtectedRoute({ path, component: Component }: { path: string; component: React.ComponentType }) {
-    if (!isAuthenticated()) {
-      // Redirect to auth page if not logged in
-      return <Route path={path}><Redirect to="/auth" /></Route>;
+function AuthPageWrapper() {
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/user');
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
     }
     
-    return <Route path={path} component={Component} />;
+    checkAuth();
+  }, []);
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
   }
+  
+  if (user) {
+    return <Redirect to="/" />;
+  }
+  
+  return (
+    <AuthProvider>
+      <AuthPage />
+    </AuthProvider>
+  );
+}
 
+function App() {
   return (
     <Switch>
-      <Route path="/auth">
-        {isAuthenticated() ? <Redirect to="/" /> : <AuthPage />}
-      </Route>
-      <ProtectedRoute path="/" component={HomePage} />
-      <ProtectedRoute path="/content" component={ContentPage} />
-      <ProtectedRoute path="/schedule" component={SchedulePage} />
-      <ProtectedRoute path="/analytics" component={AnalyticsPage} />
-      <ProtectedRoute path="/integrations" component={IntegrationsPage} />
-      <ProtectedRoute path="/settings" component={SettingsPage} />
-      <ProtectedRoute path="/subscription" component={SubscriptionPage} />
-      <ProtectedRoute path="/admin" component={AdminPage} />
+      <Route path="/auth" component={AuthPageWrapper} />
+      <Route path="/"><ProtectedRoute path="/" component={HomePage} /></Route>
+      <Route path="/content"><ProtectedRoute path="/content" component={ContentPage} /></Route>
+      <Route path="/schedule"><ProtectedRoute path="/schedule" component={SchedulePage} /></Route>
+      <Route path="/analytics"><ProtectedRoute path="/analytics" component={AnalyticsPage} /></Route>
+      <Route path="/integrations"><ProtectedRoute path="/integrations" component={IntegrationsPage} /></Route>
+      <Route path="/settings"><ProtectedRoute path="/settings" component={SettingsPage} /></Route>
+      <Route path="/subscription"><ProtectedRoute path="/subscription" component={SubscriptionPage} /></Route>
+      <Route path="/admin"><ProtectedRoute path="/admin" component={AdminPage} /></Route>
       <Route component={NotFound} />
     </Switch>
   );

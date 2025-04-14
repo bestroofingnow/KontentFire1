@@ -20,9 +20,7 @@ import SubscriptionPage from "@/pages/subscription-page";
 // Directly render the application components with proper context hierarchy
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <App />
-      <Toaster />
-    </AuthProvider>
+    <Toaster />
+    <App />
   </QueryClientProvider>
 );
