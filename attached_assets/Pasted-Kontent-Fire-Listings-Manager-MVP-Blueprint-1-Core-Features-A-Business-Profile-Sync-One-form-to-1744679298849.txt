@@ -1,0 +1,99 @@
+Kontent Fire Listings Manager" – MVP Blueprint
+1. Core Features
+A. Business Profile Sync
+One form to manage:
+
+Business Name
+
+Address
+
+Phone Number
+
+Website
+
+Business Hours
+
+Photos / Logos
+
+Services / Description
+
+Social links
+
+B. Direct API Integrations
+These platforms have APIs you can tap into for listings:
+
+Platform	Action Type	API Access
+Google Business Profile	Add/Edit Listing, Reviews	Yes
+Facebook Pages	Edit Business Info	Yes
+Instagram (Meta)	Business Profile Info	Yes
+LinkedIn Page	Company Info Updates	Yes
+Foursquare	Limited Listing Edits	Yes
+YouTube	Channel Info (not NAP)	Yes (for branding info)
+C. Semi-Automated / Manual Platforms
+These will need guided user steps or verification:
+
+Apple Maps
+
+Yelp
+
+Bing Places
+
+Angi
+
+YellowPages
+
+BBB
+
+Chamber of Commerce
+
+We'll create "claim and verify" guides with step-by-step instructions and optionally allow task tracking.
+
+D. Review Aggregation
+Pull in Google and Facebook reviews (API)
+
+Optional notifications + respond directly from dashboard (where allowed)
+
+2. User Dashboard
+Business Overview – See all connected listings and their sync status
+
+Directory Sync Panel – One-click sync to all supported platforms
+
+Review Center – Read/respond to reviews
+
+Listing Health Report – Show consistency across platforms
+
+Alerts & Tasks – Highlight duplicates, pending verification, reviews needing response
+
+3. Admin Controls
+Toggle which directories are offered
+
+Allow or disallow auto-sync
+
+White-label branding support
+
+Client-by-client usage tracking
+
+4. Monetization Ideas
+Plan Level	Description	Price Suggestion
+Blaze	Manual Listings with Sync Wizard	$99/mo
+Inferno	Automated Sync + Review Management + Reporting	$199/mo
+5. Development Plan
+Phase 1 – MVP
+Google & Facebook listing sync + review integration
+
+Unified Business Info form
+
+Task manager for manual platforms
+
+Review dashboard
+
+Admin portal to control feature access
+
+Phase 2 – Expansion
+Add more APIs (LinkedIn, Foursquare, Yelp via scraping or partner)
+
+Add verification management
+
+Add directory performance analytics
+
+Integrate Data Axle or Neustar if budget allows
