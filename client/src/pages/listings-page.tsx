@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pencil, Plus, Trash2, CheckCircle2, AlertCircle, XCircle, Clock, Zap } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
-import MainLayout from "@/components/layouts/main-layout";
+// We'll use a simple div for layout
 
 // Define platform options
 const PLATFORM_OPTIONS = [
@@ -298,7 +298,7 @@ function ListingsManager() {
   }, [isNewListingDialogOpen, isNewTaskDialogOpen, newListingForm, newTaskForm]);
 
   return (
-    <MainLayout>
+    <div>
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Listings Manager</h1>
@@ -828,7 +828,7 @@ function ListingsManager() {
           </Tabs>
         )}
       </div>
-    </MainLayout>
+    </div>
   );
 }
 

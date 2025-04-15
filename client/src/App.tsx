@@ -77,6 +77,9 @@ function App() {
       <Route path="/auto-content">
         <ProtectedRoute path="/auto-content" component={AutoContentPage} />
       </Route>
+      <Route path="/listings">
+        <ProtectedRoute path="/listings" component={ListingsPage} />
+      </Route>
       <Route>
         <NotFound />
       </Route>

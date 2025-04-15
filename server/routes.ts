@@ -1664,6 +1664,350 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company profile endpoints
+  app.get('/api/company-profile', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const profile = await storage.getCompanyProfile(req.user.id);
+      return res.json(profile || null);
+    } catch (error: any) {
+      console.error('Error fetching company profile:', error);
+      return res.status(500).json({ message: `Error fetching company profile: ${error.message}` });
+    }
+  });
+
+  app.post('/api/company-profile', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const validatedData = insertCompanyProfileSchema.parse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      const profile = await storage.createCompanyProfile(validatedData);
+      return res.status(201).json(profile);
+    } catch (error: any) {
+      console.error('Error creating company profile:', error);
+      return res.status(500).json({ message: `Error creating company profile: ${error.message}` });
+    }
+  });
+
+  app.put('/api/company-profile/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const profileId = parseInt(req.params.id);
+      if (isNaN(profileId)) {
+        return res.status(400).json({ message: 'Invalid profile ID' });
+      }
+      
+      // Update profile
+      const profile = await storage.updateCompanyProfile(profileId, req.body);
+      return res.json(profile);
+    } catch (error: any) {
+      console.error('Error updating company profile:', error);
+      return res.status(500).json({ message: `Error updating company profile: ${error.message}` });
+    }
+  });
+
+  // Business listings endpoints
+  app.get('/api/business-listings', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const listings = await storage.getUserBusinessListings(req.user.id);
+      return res.json(listings);
+    } catch (error: any) {
+      console.error('Error fetching business listings:', error);
+      return res.status(500).json({ message: `Error fetching business listings: ${error.message}` });
+    }
+  });
+
+  app.post('/api/business-listings', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      // Get company profile
+      const profile = await storage.getCompanyProfile(req.user.id);
+      if (!profile) {
+        return res.status(400).json({ message: 'Company profile must be created first' });
+      }
+      
+      // Validate and create listing
+      const validatedData = insertBusinessListingSchema.parse({
+        ...req.body,
+        userId: req.user.id,
+        companyProfileId: profile.id
+      });
+      
+      const listing = await storage.createBusinessListing(validatedData);
+      
+      // Create initial verification task if needed
+      if (req.body.platform && !req.body.verificationStatus) {
+        await storage.createListingSyncTask({
+          userId: req.user.id,
+          listingId: listing.id,
+          platform: req.body.platform,
+          taskType: 'Verification',
+          taskDescription: `Verify your business listing on ${req.body.platform}`,
+          status: 'pending',
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+        });
+      }
+      
+      return res.status(201).json(listing);
+    } catch (error: any) {
+      console.error('Error creating business listing:', error);
+      return res.status(500).json({ message: `Error creating business listing: ${error.message}` });
+    }
+  });
+
+  app.get('/api/business-listings/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const listingId = parseInt(req.params.id);
+      if (isNaN(listingId)) {
+        return res.status(400).json({ message: 'Invalid listing ID' });
+      }
+      
+      const listing = await storage.getBusinessListing(listingId);
+      
+      if (!listing) {
+        return res.status(404).json({ message: 'Listing not found' });
+      }
+      
+      // Check ownership
+      if (listing.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to access this listing' });
+      }
+      
+      return res.json(listing);
+    } catch (error: any) {
+      console.error('Error fetching business listing:', error);
+      return res.status(500).json({ message: `Error fetching business listing: ${error.message}` });
+    }
+  });
+
+  app.put('/api/business-listings/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const listingId = parseInt(req.params.id);
+      if (isNaN(listingId)) {
+        return res.status(400).json({ message: 'Invalid listing ID' });
+      }
+      
+      // Get listing to check ownership
+      const listing = await storage.getBusinessListing(listingId);
+      
+      if (!listing) {
+        return res.status(404).json({ message: 'Listing not found' });
+      }
+      
+      if (listing.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to update this listing' });
+      }
+      
+      // Update listing
+      const updatedListing = await storage.updateBusinessListing(listingId, req.body);
+      return res.json(updatedListing);
+    } catch (error: any) {
+      console.error('Error updating business listing:', error);
+      return res.status(500).json({ message: `Error updating business listing: ${error.message}` });
+    }
+  });
+
+  app.delete('/api/business-listings/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const listingId = parseInt(req.params.id);
+      if (isNaN(listingId)) {
+        return res.status(400).json({ message: 'Invalid listing ID' });
+      }
+      
+      // Get listing to check ownership
+      const listing = await storage.getBusinessListing(listingId);
+      
+      if (!listing) {
+        return res.status(404).json({ message: 'Listing not found' });
+      }
+      
+      if (listing.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to delete this listing' });
+      }
+      
+      // Delete listing
+      await storage.deleteBusinessListing(listingId);
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting business listing:', error);
+      return res.status(500).json({ message: `Error deleting business listing: ${error.message}` });
+    }
+  });
+
+  // Listing tasks endpoints
+  app.get('/api/listing-tasks', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const status = req.query.status as string;
+      const tasks = await storage.getUserListingSyncTasks(req.user.id, status);
+      return res.json(tasks);
+    } catch (error: any) {
+      console.error('Error fetching listing tasks:', error);
+      return res.status(500).json({ message: `Error fetching listing tasks: ${error.message}` });
+    }
+  });
+
+  app.post('/api/listing-tasks', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      // Validate and create task
+      const validatedData = insertListingSyncTaskSchema.parse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      const task = await storage.createListingSyncTask(validatedData);
+      return res.status(201).json(task);
+    } catch (error: any) {
+      console.error('Error creating listing task:', error);
+      return res.status(500).json({ message: `Error creating listing task: ${error.message}` });
+    }
+  });
+
+  app.post('/api/listing-tasks/:id/complete', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const taskId = parseInt(req.params.id);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: 'Invalid task ID' });
+      }
+      
+      // Get task to check ownership
+      const task = await storage.getListingSyncTask(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ message: 'Task not found' });
+      }
+      
+      if (task.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to complete this task' });
+      }
+      
+      // Complete task
+      const completedTask = await storage.markTaskCompleted(taskId);
+      
+      // If task was for a listing verification, update the listing as well
+      if (task.listingId && task.taskType === 'Verification') {
+        await storage.updateBusinessListing(task.listingId, {
+          verificationStatus: true,
+          syncStatus: 'synced'
+        });
+      }
+      
+      return res.json(completedTask);
+    } catch (error: any) {
+      console.error('Error completing task:', error);
+      return res.status(500).json({ message: `Error completing task: ${error.message}` });
+    }
+  });
+
+  // Business reviews endpoints
+  app.get('/api/business-reviews', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const platform = req.query.platform as string;
+      const reviews = await storage.getUserBusinessReviews(req.user.id, platform);
+      return res.json(reviews);
+    } catch (error: any) {
+      console.error('Error fetching business reviews:', error);
+      return res.status(500).json({ message: `Error fetching business reviews: ${error.message}` });
+    }
+  });
+
+  app.post('/api/business-reviews/:id/respond', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const reviewId = parseInt(req.params.id);
+      if (isNaN(reviewId)) {
+        return res.status(400).json({ message: 'Invalid review ID' });
+      }
+      
+      const { responseText } = req.body;
+      if (!responseText) {
+        return res.status(400).json({ message: 'Response text is required' });
+      }
+      
+      // Get review to check ownership
+      const review = await storage.getBusinessReview(reviewId);
+      
+      if (!review) {
+        return res.status(404).json({ message: 'Review not found' });
+      }
+      
+      if (review.userId !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to respond to this review' });
+      }
+      
+      // Add response
+      const updatedReview = await storage.respondToReview(reviewId, responseText);
+      return res.json(updatedReview);
+    } catch (error: any) {
+      console.error('Error responding to review:', error);
+      return res.status(500).json({ message: `Error responding to review: ${error.message}` });
+    }
+  });
+
+  // Listings analytics
+  app.get('/api/analytics/listings', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const stats = await storage.getListingsStats(req.user.id);
+      return res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching listings stats:', error);
+      return res.status(500).json({ message: `Error fetching listings stats: ${error.message}` });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
