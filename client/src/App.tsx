@@ -8,30 +8,19 @@ import SchedulePage from "@/pages/schedule-page";
 import AnalyticsPage from "@/pages/analytics-page";
 import IntegrationsPage from "@/pages/integrations-page";
 import SettingsPage from "@/pages/settings-page";
-import AdminPage from "@/pages/admin-page";
 import SubscriptionPage from "@/pages/subscription-page";
 import AutoContentPage from "@/pages/auto-content-page";
 import ListingsPage from "@/pages/listings-page";
 import { Loader2 } from "lucide-react";
 
-// Protected route component
-function ProtectedRoute({ path, component: Component }: { path: string; component: React.ComponentType }) {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
+// Admin pages
+import AdminDashboard from "@/pages/admin/dashboard";
+import AdminAuthPage from "@/pages/admin/admin-auth-page";
 
-  if (!user) {
-    return <Redirect to="/auth" />;
-  }
-  
-  return <Component />;
-}
+// Regular protected route component
+import { ProtectedRoute } from "@/lib/protected-route";
+// Admin-specific protected route
+import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 
 function App() {
   const { user, isLoading } = useAuth();
@@ -47,9 +36,20 @@ function App() {
   
   return (
     <Switch>
+      {/* Regular user authentication */}
       <Route path="/auth">
         {user ? <Redirect to="/" /> : <AuthPage />}
       </Route>
+      
+      {/* Admin authentication - separate from regular user auth */}
+      <Route path="/admin/login">
+        {user && user.isAdmin ? <Redirect to="/admin" /> : <AdminAuthPage />}
+      </Route>
+      
+      {/* Admin protected routes */}
+      <AdminProtectedRoute path="/admin" component={AdminDashboard} />
+      
+      {/* Regular user routes */}
       <Route path="/">
         <ProtectedRoute path="/" component={HomePage} />
       </Route>
@@ -70,9 +70,6 @@ function App() {
       </Route>
       <Route path="/subscription">
         <ProtectedRoute path="/subscription" component={SubscriptionPage} />
-      </Route>
-      <Route path="/admin">
-        <ProtectedRoute path="/admin" component={AdminPage} />
       </Route>
       <Route path="/auto-content">
         <ProtectedRoute path="/auto-content" component={AutoContentPage} />
