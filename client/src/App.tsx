@@ -11,6 +11,7 @@ import SettingsPage from "@/pages/settings-page";
 import AdminPage from "@/pages/admin-page";
 import SubscriptionPage from "@/pages/subscription-page";
 import AutoContentPage from "@/pages/auto-content-page";
+import ListingsPage from "@/pages/listings-page";
 import { Loader2 } from "lucide-react";
 
 // Protected route component

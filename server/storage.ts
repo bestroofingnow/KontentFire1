@@ -332,11 +332,175 @@ export class DatabaseStorage implements IStorage {
   
   // Company profile operations
   async getCompanyProfile(userId: number): Promise<CompanyProfile | undefined> {
-    const [profile] = await db
-      .select()
-      .from(companyProfiles)
-      .where(eq(companyProfiles.userId, userId));
-    return profile;
+    try {
+      const [profile] = await db
+        .select()
+        .from(companyProfiles)
+        .where(eq(companyProfiles.userId, userId));
+      return profile;
+    } catch (error: any) {
+      // Handle case where the table doesn't exist
+      if (error.code === '42P01') { // PostgreSQL error code for relation not found
+        console.error('Company profiles table not found - initializing database schema');
+        await this.initializeListingsSchema();
+        // Try again after creating tables
+        const [profile] = await db
+          .select()
+          .from(companyProfiles)
+          .where(eq(companyProfiles.userId, userId));
+        return profile;
+      }
+      throw error;
+    }
+  }
+  
+  // Initialize database schema for the Listings Manager feature
+  async initializeListingsSchema(): Promise<void> {
+    try {
+      // Create company_profiles table if it doesn't exist
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS company_profiles (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          company_name TEXT NOT NULL,
+          industry TEXT,
+          description TEXT,
+          website_url TEXT,
+          logo_url TEXT,
+          primary_color TEXT,
+          secondary_color TEXT,
+          facebook_url TEXT,
+          twitter_url TEXT,
+          instagram_url TEXT,
+          linkedin_url TEXT,
+          youtube_url TEXT,
+          tiktok_url TEXT,
+          pinterest_url TEXT,
+          additional_info TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP
+        )
+      `);
+      
+      // Create the platform enum type if it doesn't exist
+      await db.execute(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'listing_platform_type') THEN
+            CREATE TYPE listing_platform_type AS ENUM (
+              'google', 'facebook', 'instagram', 'linkedin', 'foursquare', 'youtube',
+              'apple_maps', 'yelp', 'bing', 'angi', 'yellowpages', 'bbb', 'chamber'
+            );
+          END IF;
+        END$$;
+      `);
+      
+      // Create the sync status enum type if it doesn't exist
+      await db.execute(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'listing_sync_status') THEN
+            CREATE TYPE listing_sync_status AS ENUM (
+              'synced', 'pending', 'failed', 'manual_required'
+            );
+          END IF;
+        END$$;
+      `);
+      
+      // Create the task status enum type if it doesn't exist
+      await db.execute(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_status') THEN
+            CREATE TYPE task_status AS ENUM (
+              'pending', 'in_progress', 'completed', 'failed'
+            );
+          END IF;
+        END$$;
+      `);
+      
+      // Create business_hours table
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS business_hours (
+          id SERIAL PRIMARY KEY,
+          company_profile_id INTEGER NOT NULL REFERENCES company_profiles(id) ON DELETE CASCADE,
+          monday TEXT,
+          tuesday TEXT,
+          wednesday TEXT,
+          thursday TEXT,
+          friday TEXT,
+          saturday TEXT,
+          sunday TEXT,
+          holidays TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP
+        )
+      `);
+      
+      // Create business_listings table
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS business_listings (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          company_profile_id INTEGER NOT NULL REFERENCES company_profiles(id) ON DELETE CASCADE,
+          platform listing_platform_type NOT NULL,
+          listing_id TEXT,
+          listing_url TEXT,
+          sync_status listing_sync_status NOT NULL DEFAULT 'pending',
+          last_synced TIMESTAMP,
+          platform_data JSONB,
+          platform_credentials JSONB,
+          verification_status BOOLEAN NOT NULL DEFAULT false,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP
+        )
+      `);
+      
+      // Create listing_sync_tasks table
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS listing_sync_tasks (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          listing_id INTEGER REFERENCES business_listings(id) ON DELETE CASCADE,
+          platform listing_platform_type NOT NULL,
+          task_type TEXT NOT NULL,
+          task_description TEXT NOT NULL,
+          status task_status NOT NULL DEFAULT 'pending',
+          completion_steps JSONB,
+          completed_steps JSONB,
+          notes TEXT,
+          due_date TIMESTAMP,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP,
+          completed_at TIMESTAMP
+        )
+      `);
+      
+      // Create business_reviews table
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS business_reviews (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          listing_id INTEGER REFERENCES business_listings(id) ON DELETE CASCADE,
+          platform listing_platform_type NOT NULL,
+          platform_review_id TEXT,
+          author_name TEXT,
+          author_avatar TEXT,
+          rating INTEGER,
+          review_text TEXT,
+          review_date TIMESTAMP,
+          response_text TEXT,
+          response_date TIMESTAMP,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP
+        )
+      `);
+      
+      console.log('Successfully initialized Listings Manager database schema');
+    } catch (error) {
+      console.error('Error initializing database schema:', error);
+      throw error;
+    }
   }
   
   async createCompanyProfile(profile: InsertCompanyProfile): Promise<CompanyProfile> {
