@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pencil, Plus, Trash2, CheckCircle2, AlertCircle, XCircle, Clock, Zap } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
-// We'll use a simple div for layout
+// Using basic layout for listings manager
 
 // Define platform options
 const PLATFORM_OPTIONS = [
@@ -525,7 +525,7 @@ function ListingsManager() {
                       </CardContent>
                     </Card>
                   ))
-                ) : !listings || listings.length === 0 ? (
+                ) : !listings || !Array.isArray(listings) || listings.length === 0 ? (
                   <Card className="col-span-3">
                     <CardHeader>
                       <CardTitle>No Business Listings Found</CardTitle>
@@ -585,7 +585,7 @@ function ListingsManager() {
                   <div className="p-8 flex justify-center">
                     <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
                   </div>
-                ) : !tasks || tasks.length === 0 ? (
+                ) : !tasks || !Array.isArray(tasks) || tasks.length === 0 ? (
                   <div className="p-8 text-center">
                     <h3 className="text-lg font-semibold mb-2">No Tasks Found</h3>
                     <p className="text-muted-foreground mb-4">
@@ -648,7 +648,7 @@ function ListingsManager() {
                 <div className="flex justify-center p-8">
                   <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
                 </div>
-              ) : !reviews || reviews.length === 0 ? (
+              ) : !reviews || !Array.isArray(reviews) || reviews.length === 0 ? (
                 <Card>
                   <CardHeader>
                     <CardTitle>No Reviews Found</CardTitle>
@@ -738,7 +738,7 @@ function ListingsManager() {
                       {isLoadingStats ? (
                         <div className="h-8 w-16 bg-gray-200 dark:bg-gray-800 rounded-md animate-pulse" />
                       ) : (
-                        stats?.totalListings || 0
+                        stats && typeof stats === 'object' && 'totalListings' in stats ? stats.totalListings : 0
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -755,14 +755,14 @@ function ListingsManager() {
                       {isLoadingStats ? (
                         <div className="h-8 w-16 bg-gray-200 dark:bg-gray-800 rounded-md animate-pulse" />
                       ) : (
-                        stats?.verifiedListings || 0
+                        stats && typeof stats === 'object' && 'verifiedListings' in stats ? stats.verifiedListings : 0
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {isLoadingStats
                         ? ""
-                        : stats && stats.totalListings
-                        ? `${Math.round((stats.verifiedListings / stats.totalListings) * 100)}% of total listings`
+                        : stats && typeof stats === 'object' && 'totalListings' in stats && stats.totalListings > 0
+                        ? `${Math.round(((typeof stats === 'object' && 'verifiedListings' in stats ? stats.verifiedListings : 0) / stats.totalListings) * 100)}% of total listings`
                         : "No listings to verify"}
                     </p>
                   </CardContent>
@@ -776,7 +776,7 @@ function ListingsManager() {
                       {isLoadingStats ? (
                         <div className="h-8 w-16 bg-gray-200 dark:bg-gray-800 rounded-md animate-pulse" />
                       ) : (
-                        stats?.totalReviews || 0
+                        stats && typeof stats === 'object' && 'totalReviews' in stats ? stats.totalReviews : 0
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -793,7 +793,7 @@ function ListingsManager() {
                       {isLoadingStats ? (
                         <div className="h-8 w-16 bg-gray-200 dark:bg-gray-800 rounded-md animate-pulse" />
                       ) : (
-                        stats?.averageRating || "N/A"
+                        stats && typeof stats === 'object' && 'averageRating' in stats ? stats.averageRating : "N/A"
                       )}
                     </div>
                     <div className="flex items-center text-xs text-muted-foreground">
@@ -803,7 +803,7 @@ function ListingsManager() {
                             <div
                               key={i}
                               className={`w-3 h-3 ${
-                                i < (stats?.averageRating || 0)
+                                i < (stats && typeof stats === 'object' && 'averageRating' in stats ? stats.averageRating : 0)
                                   ? "text-yellow-400"
                                   : "text-gray-300 dark:text-gray-600"
                               }`}
