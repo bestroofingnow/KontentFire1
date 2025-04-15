@@ -8,7 +8,8 @@ import {
   Zap, 
   Settings,
   Flame,
-  Shield
+  Shield,
+  SearchCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,7 @@ export default function Sidebar() {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Content', href: '/content', icon: PenTool },
     { name: 'Schedule', href: '/schedule', icon: Calendar },
+    { name: 'Fact Check', href: '/fact-check', icon: SearchCheck },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Integrations', href: '/integrations', icon: Zap },
     { name: 'Settings', href: '/settings', icon: Settings },

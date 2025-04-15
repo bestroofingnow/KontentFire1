@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Home, PenTool, Calendar, Menu, ShieldCheck } from "lucide-react";
+import { Home, PenTool, Calendar, Menu, ShieldCheck, SearchCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function MobileNav() {
@@ -27,7 +27,7 @@ export default function MobileNav() {
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Content', href: '/content', icon: PenTool },
-    { name: 'Schedule', href: '/schedule', icon: Calendar },
+    { name: 'Fact Check', href: '/fact-check', icon: SearchCheck },
     { name: 'Menu', href: '/menu', icon: Menu, isMobileOnly: true },
   ];
 

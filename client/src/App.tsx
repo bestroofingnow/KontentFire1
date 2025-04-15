@@ -78,6 +78,9 @@ function App() {
       <Route path="/listings">
         <ProtectedRoute path="/listings" component={ListingsPage} />
       </Route>
+      <Route path="/fact-check">
+        <ProtectedRoute path="/fact-check" component={FactCheckPage} />
+      </Route>
       <Route>
         <NotFound />
       </Route>
