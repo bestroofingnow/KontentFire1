@@ -14,9 +14,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Flame, ShieldCheck } from "lucide-react";
+import { Flame } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { AdminLoginForm } from "@/components/auth/admin-login-form";
 
 // Login form schema
 const loginSchema = z.object({
@@ -148,10 +147,9 @@ export default function AuthPage() {
           </div>
 
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid grid-cols-3 w-full">
+            <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
-              <TabsTrigger value="admin">Admin</TabsTrigger>
             </TabsList>
 
             {/* Login Form */}
@@ -284,34 +282,7 @@ export default function AuthPage() {
               </p>
             </TabsContent>
 
-            {/* Admin Login */}
-            <TabsContent value="admin" className="space-y-4">
-              <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold">Master Administrator</h1>
-                <p className="text-gray-500 text-sm">Access restricted administration panel</p>
-              </div>
-              
-              <div className="p-4 bg-gray-50 border border-gray-200 rounded-md mb-4">
-                <div className="flex items-center space-x-3 text-amber-600 mb-2">
-                  <ShieldCheck className="h-5 w-5" />
-                  <h3 className="font-medium">Administrative Access Only</h3>
-                </div>
-                <p className="text-sm text-gray-600">
-                  This section is exclusively for master administrators. Regular users should use the standard login options.
-                </p>
-              </div>
 
-              <AdminLoginForm />
-              
-              <div className="text-center mt-4">
-                <button 
-                  className="text-sm text-gray-600 hover:text-primary"
-                  onClick={() => setActiveTab("login")}
-                >
-                  Return to regular login
-                </button>
-              </div>
-            </TabsContent>
           </Tabs>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import UserTable from "@/components/admin/user-table";
 import PricingSettings from "@/components/admin/pricing-settings";
+import { AdminBadge } from "@/components/admin/admin-badge";
 import { useAuth } from "@/hooks/use-auth";
 import { AlertCircle, Users, DollarSign, Settings, Zap, Flame } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -56,13 +57,16 @@ export default function AdminPage() {
           <div className="max-w-7xl mx-auto">
             {/* Page Header */}
             <div className="mb-8">
-              <h1 className="text-2xl md:text-3xl font-bold font-display text-dark mb-2">Admin Portal</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl md:text-3xl font-bold font-display text-dark">Admin Portal</h1>
+                <AdminBadge />
+              </div>
               <p className="text-gray-600">Manage users, subscriptions, and platform settings</p>
             </div>
             
             {/* Admin Alert */}
-            <Alert className="mb-6 border-primary bg-primary/10">
-              <AlertCircle className="h-4 w-4 text-primary" />
+            <Alert className="mb-6 border-amber-500 bg-amber-50">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertTitle>Admin Mode Active</AlertTitle>
               <AlertDescription>
                 You are currently in admin mode. Changes made here will affect the entire platform.
