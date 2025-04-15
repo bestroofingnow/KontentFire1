@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MoreHorizontal, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ export type ScheduleWithContent = {
 export default function UpcomingContent({ limit = 3 }) {
   const { toast } = useToast();
   const [upcomingSchedules, setUpcomingSchedules] = useState<ScheduleWithContent[]>([]);
+  const errorShown = useRef(false);
   
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/schedules/upcoming'],
@@ -48,13 +49,17 @@ export default function UpcomingContent({ limit = 3 }) {
     }
   }, [data]);
   
-  if (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load upcoming content",
-      variant: "destructive",
-    });
-  }
+  // Handle error in separate useEffect to avoid infinite loops
+  useEffect(() => {
+    if (error && !errorShown.current) {
+      errorShown.current = true;
+      toast({
+        title: "Error",
+        description: "Failed to load upcoming content",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
   
   const handleEdit = (scheduleId: number) => {
     // Implement edit functionality
