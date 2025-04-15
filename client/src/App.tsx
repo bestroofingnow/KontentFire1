@@ -11,6 +11,7 @@ import SettingsPage from "@/pages/settings-page";
 import SubscriptionPage from "@/pages/subscription-page";
 import AutoContentPage from "@/pages/auto-content-page";
 import ListingsPage from "@/pages/listings-page";
+import FactCheckPage from "@/pages/fact-check-page";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
