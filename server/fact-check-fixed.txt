@@ -1,0 +1,25 @@
+  // Fact-checking endpoint
+  app.post('/api/fact-check', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { text, context } = req.body as FactCheckRequest;
+      
+      if (!text) {
+        return res.status(400).json({ message: 'Missing required text parameter' });
+      }
+      
+      // With the simplified membership model, all users have access to all features
+      const user = req.user;
+      
+      const result = await factCheck({ text, context });
+      return res.json(result);
+    } catch (error: any) {
+      console.error('Fact-checking error:', error);
+      return res.status(500).json({ 
+        message: `Error during fact-checking: ${error.message}` 
+      });
+    }
+  });

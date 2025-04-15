@@ -1,0 +1,27 @@
+  // Get auto content configuration
+  app.get('/api/auto-content/config', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const user = req.user;
+      
+      // With the simplified membership model, all users have access to all features
+      // No plan check required
+      
+      // Check if configuration exists for user
+      const [config] = await db.select()
+        .from(autoContentConfigs)
+        .where(eq(autoContentConfigs.userId, user.id));
+      
+      if (!config) {
+        return res.status(404).json({ message: 'Configuration not found' });
+      }
+      
+      return res.json(config);
+    } catch (error: any) {
+      console.error('Error fetching auto content config:', error);
+      return res.status(500).json({ message: `Error fetching configuration: ${error.message}` });
+    }
+  });

@@ -1,0 +1,25 @@
+  // References search endpoint
+  app.post('/api/references', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { query, count } = req.body as ReferencesRequest;
+      
+      if (!query) {
+        return res.status(400).json({ message: 'Missing required query parameter' });
+      }
+      
+      // With the simplified membership model, all users have access to all features
+      const user = req.user;
+      
+      const result = await getReferences({ query, count });
+      return res.json(result);
+    } catch (error: any) {
+      console.error('References search error:', error);
+      return res.status(500).json({ 
+        message: `Error during references search: ${error.message}` 
+      });
+    }
+  });
