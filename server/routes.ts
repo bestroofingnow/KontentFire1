@@ -1231,6 +1231,66 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  // Content refinement endpoint (Claude enhancement)
+  app.post('/api/content/refine', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { content, tone, personality, platform } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ message: 'Missing content parameter' });
+      }
+      
+      // With the simplified membership model, all users have access to all features
+      const user = req.user;
+      
+      // Get relevant sources using Perplexity for enrichment
+      let sources: Array<{title: string, url: string, snippet: string}> = [];
+      try {
+        // Extract main keywords from content for better source searching
+        const keywordsPrompt = `Extract 3-5 main keywords or phrases from this content:\n${content.substring(0, 500)}`;
+        
+        // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+        const keywordsResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: "Extract the main keywords or phrases from the provided content. Return only the keywords separated by commas, without any explanations or additional text." },
+            { role: "user", content: keywordsPrompt }
+          ],
+          max_tokens: 50,
+        });
+        
+        const keywords = keywordsResponse.choices[0].message.content?.trim() || "";
+        console.log("Extracted keywords for source search:", keywords);
+        
+        sources = await openai.getRelevantSources(keywords, 3);
+        console.log(`Found ${sources.length} sources using Perplexity`);
+      } catch (error) {
+        console.warn("Failed to get sources from Perplexity:", error);
+      }
+      
+      // Use Claude to enhance and refine the content
+      const refinedContent = await enhanceContent(
+        content,
+        sources,
+        tone || 'professional',
+        personality || 'thoughtful',
+        platform || ''
+      );
+      
+      return res.json({ 
+        refinedContent,
+        sources
+      });
+    } catch (error: any) {
+      console.error('Content refinement error:', error);
+      return res.status(500).json({ message: `Error refining content: ${error.message}` });
+    }
+  });
+  
   // Auto-content configuration endpoints
   app.get('/api/auto-content/config', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {

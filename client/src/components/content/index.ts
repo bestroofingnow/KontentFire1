@@ -2,3 +2,4 @@
 export { default as ContentItem } from './content-item';
 export { default as CreateContentModal } from './create-content-modal';
 export { RepurposeDialog } from './repurpose-dialog';
+export { RefineDialog } from './refine-dialog';

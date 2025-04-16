@@ -5,6 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { FactCheckDialog, ReferencesDialog } from "@/components/fact-check";
 import { useState } from "react";
 import { RepurposeDialog } from "./repurpose-dialog";
+import { RefineDialog } from "./refine-dialog";
 
 type ContentItemProps = {
   content: Content;
@@ -14,6 +15,7 @@ type ContentItemProps = {
 
 export default function ContentItem({ content, onSchedule, onEdit }: ContentItemProps) {
   const [repurposeOpen, setRepurposeOpen] = useState(false);
+  const [refineOpen, setRefineOpen] = useState(false);
 
   const getPlatformClass = (platform: string) => {
     const classes = {
@@ -106,6 +108,16 @@ export default function ContentItem({ content, onSchedule, onEdit }: ContentItem
               <ReferencesDialog 
                 initialQuery={content.title} 
                 triggerLabel="Find References" 
+              />
+              
+              <RefineDialog
+                open={refineOpen}
+                onOpenChange={setRefineOpen}
+                content={{
+                  title: content.title,
+                  textContent: content.textContent
+                }}
+                triggerLabel="Refine with Claude"
               />
               
               <RepurposeDialog 
