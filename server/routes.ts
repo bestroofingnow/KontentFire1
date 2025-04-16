@@ -1247,6 +1247,14 @@ export function registerRoutes(app: Express): Server {
       // With the simplified membership model, all users have access to all features
       const user = req.user;
       
+      // Check for required API keys
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(500).json({ 
+          message: 'Anthropic API key is missing. Content refinement requires a valid ANTHROPIC_API_KEY.',
+          missingKey: 'ANTHROPIC_API_KEY'
+        });
+      }
+      
       // Get relevant sources using Perplexity for enrichment
       let sources: Array<{title: string, url: string, snippet: string}> = [];
       try {
@@ -1270,21 +1278,38 @@ export function registerRoutes(app: Express): Server {
         console.log(`Found ${sources.length} sources using Perplexity`);
       } catch (error) {
         console.warn("Failed to get sources from Perplexity:", error);
+        // Continue even if we can't get sources
       }
       
-      // Use Claude to enhance and refine the content
-      const refinedContent = await enhanceContent(
-        content,
-        sources,
-        tone || 'professional',
-        personality || 'thoughtful',
-        platform || ''
-      );
-      
-      return res.json({ 
-        refinedContent,
-        sources
-      });
+      try {
+        // Use Claude to enhance and refine the content
+        const refinedContent = await enhanceContent(
+          content,
+          sources,
+          tone || 'professional',
+          personality || 'thoughtful',
+          platform || ''
+        );
+        
+        // If the refinedContent contains error message, return as error
+        if (refinedContent.includes("Content enhancement failed:")) {
+          return res.status(500).json({ 
+            message: refinedContent,
+            apiError: true
+          });
+        }
+        
+        return res.json({ 
+          refinedContent,
+          sources
+        });
+      } catch (claudeError: any) {
+        console.error('Claude enhancement error:', claudeError);
+        return res.status(500).json({ 
+          message: `Error from Claude API: ${claudeError.message}`,
+          apiError: true
+        });
+      }
     } catch (error: any) {
       console.error('Content refinement error:', error);
       return res.status(500).json({ message: `Error refining content: ${error.message}` });

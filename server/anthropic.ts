@@ -1,8 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+// Check for Anthropic API key
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error("Error: ANTHROPIC_API_KEY environment variable is not set");
+}
+
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY || "",
 });
 
 /**
@@ -90,26 +95,41 @@ Write as a real human would:
   try {
     console.log("Enhancing content with Claude...");
     
-    const message = await anthropic.messages.create({
-      model: "claude-3-7-sonnet-20250219",
-      max_tokens: 4000,
-      temperature: 0.7,
-      system: systemPrompt,
-      messages: [
-        { 
-          role: 'user', 
-          content: `Here is the content to rewrite and enhance:\n\n${content}${sourcesText}\n\nPlease rewrite this content to make it more human-like, engaging, and informative while properly integrating the sources provided.` 
-        }
-      ],
-    });
-
-    if (message.content && message.content.length > 0) {
-      const content = message.content[0];
-      if ('text' in content) {
-        return content.text;
-      }
+    // Check API key again before making the API call
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error("ANTHROPIC_API_KEY is not set or is empty");
+      return "Content enhancement failed: Anthropic API key is missing. Please check your environment variables.";
     }
-    return "Unable to enhance content.";
+
+    try {
+      const message = await anthropic.messages.create({
+        model: "claude-3-7-sonnet-20250219",
+        max_tokens: 4000,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: [
+          { 
+            role: 'user', 
+            content: `Here is the content to rewrite and enhance:\n\n${content}${sourcesText}\n\nPlease rewrite this content to make it more human-like, engaging, and informative while properly integrating the sources provided.` 
+          }
+        ],
+      });
+
+      if (message.content && message.content.length > 0) {
+        const responseContent = message.content[0];
+        if ('text' in responseContent) {
+          return responseContent.text;
+        }
+      }
+      return "Unable to enhance content. The API response was not in the expected format.";
+    } catch (apiError: any) {
+      console.error("Anthropic API call failed:", apiError);
+      if (apiError.message && apiError.message.includes("authentication")) {
+        console.error("This appears to be an authentication issue with the Anthropic API key");
+        return "Content enhancement failed: There was an authentication issue with the Anthropic API. Please check your API key.";
+      }
+      throw apiError;
+    }
   } catch (error: any) {
     console.error("Error enhancing content with Claude:", error.message);
     throw new Error(`Failed to enhance content: ${error.message}`);

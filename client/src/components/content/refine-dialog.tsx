@@ -67,7 +67,24 @@ export function RefineDialog({
       });
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+        const errorData = await response.json().catch(() => null);
+        
+        if (errorData?.missingKey === 'ANTHROPIC_API_KEY') {
+          toast({
+            title: "API Key Missing",
+            description: "The Claude API key is missing. Please contact your administrator to set up the ANTHROPIC_API_KEY.",
+            variant: "destructive",
+          });
+        } else if (errorData?.apiError) {
+          toast({
+            title: "API Error",
+            description: errorData.message || "There was an error communicating with the Claude API.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(errorData?.message || `Error: ${response.status}`);
+        }
+        return;
       }
 
       const data = await response.json();
