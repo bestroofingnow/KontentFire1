@@ -294,7 +294,7 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
-      const { prompt, contentType, tone, length } = req.body as ContentPrompt;
+      const { prompt, contentType, tone, length, personality } = req.body as ContentPrompt;
       
       if (!prompt) {
         return res.status(400).json({ message: 'Missing prompt parameter' });
@@ -303,7 +303,13 @@ export function registerRoutes(app: Express): Server {
       // With the simplified membership model, all users have access to all features
       const user = req.user;
       
-      const result: GeneratedContent = await generateContent({ prompt, contentType, tone, length });
+      const result: GeneratedContent = await generateContent({ 
+        prompt, 
+        contentType, 
+        tone, 
+        length, 
+        personality: personality || 'thoughtful' // Default to thoughtful if not specified
+      });
       
       return res.json(result);
     } catch (error: any) {
