@@ -1,5 +1,16 @@
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import MainLayout from "../components/layout/main-layout";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { 
+  Select,
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { 
   Card, 
   CardContent, 
@@ -8,186 +19,219 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader2, CalendarIcon, Share } from "lucide-react";
-import MainLayout from "@/components/layout/main-layout";
+import { Loader2, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function PRKreationPage() {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [generatedPR, setGeneratedPR] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    prompt: "",
+    companyName: "",
+    announcement: "",
+    industry: "",
     tone: "professional",
-    length: "medium",
-    personality: "thoughtful"
+    personality: "thoughtful",
   });
 
-  // Fetch user on component mount
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const response = await fetch('/api/user');
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
+  // Fetch user's company profile if available
+  const { data: companyProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ['/api/company-profile'],
+    queryFn: async () => {
+      const response = await fetch('/api/company-profile', {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        if (response.status !== 404) {
+          throw new Error('Failed to fetch company profile');
         }
-      } catch (error) {
-        console.error('Failed to fetch user:', error);
+        return null;
       }
-    }
+      
+      return response.json();
+    },
+    retry: false
+  });
 
-    fetchUser();
-  }, []);
+  // Pre-fill company name and industry if profile exists
+  useEffect(() => {
+    if (companyProfile) {
+      setFormData(prev => ({
+        ...prev,
+        companyName: companyProfile.companyName || "",
+        industry: companyProfile.industry || ""
+      }));
+    }
+  }, [companyProfile]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.prompt) {
+    if (!formData.companyName || !formData.announcement) {
       toast({
-        title: "Input required",
-        description: "Please enter a press release topic",
-        variant: "destructive",
+        title: "Missing information",
+        description: "Please provide both company name and announcement details.",
+        variant: "destructive"
       });
       return;
     }
     
-    setIsLoading(true);
+    setLoading(true);
+    setGeneratedPR(null);
     
     try {
-      const response = await apiRequest("POST", "/api/content/generate", {
-        ...formData,
-        contentType: "text",
-        platform: "press-release"
-      });
+      const response = await apiRequest(
+        "POST", 
+        "/api/content/generate", 
+        {
+          prompt: formData.announcement,
+          contentType: "text",
+          tone: formData.tone,
+          personality: formData.personality,
+          platform: "press-release",
+          companyName: formData.companyName,
+          industry: formData.industry
+        }
+      );
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to generate press release");
+        throw new Error("Failed to generate press release");
       }
       
       const data = await response.json();
-      setGeneratedContent(data);
       
+      if (data.text) {
+        setGeneratedPR(data.text);
+        
+        toast({
+          title: "Press Release Generated",
+          description: "Your press release has been created successfully.",
+        });
+      } else {
+        throw new Error("No content was generated");
+      }
+    } catch (error) {
+      console.error("Error generating press release:", error);
       toast({
-        title: "Press release generated",
-        description: "Your press release has been successfully created",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Generation failed",
-        description: error.message,
-        variant: "destructive",
+        title: "Generation Failed",
+        description: "There was an error generating your press release. Please try again.",
+        variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!generatedContent) return;
+    if (!generatedPR) return;
     
     try {
-      const response = await apiRequest("POST", "/api/content", {
-        title: formData.prompt,
-        content: generatedContent.text,
-        platform: "press-release",
-        contentType: "text",
-        metadata: {
-          tone: formData.tone,
-          personality: formData.personality,
-          length: formData.length,
-          sources: generatedContent.sources || []
+      const response = await apiRequest(
+        "POST",
+        "/api/content",
+        {
+          title: `Press Release: ${formData.companyName} - ${formData.announcement.substring(0, 50)}${formData.announcement.length > 50 ? '...' : ''}`,
+          textContent: generatedPR,
+          contentType: "text",
+          status: "draft",
+          platform: "press-release"
         }
-      });
+      );
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save press release");
+        throw new Error("Failed to save press release");
       }
       
       toast({
-        title: "Press release saved",
-        description: "Your press release has been saved to your content library",
+        title: "Press Release Saved",
+        description: "Your press release has been saved to your content library.",
       });
-      
-      // Reset form and generated content
-      setFormData({
-        prompt: "",
-        tone: "professional",
-        length: "medium",
-        personality: "thoughtful"
-      });
-      setGeneratedContent(null);
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Error saving press release:", error);
       toast({
-        title: "Save failed",
-        description: error.message,
-        variant: "destructive",
+        title: "Save Failed",
+        description: "There was an error saving your press release. Please try again.",
+        variant: "destructive"
       });
     }
   };
 
-  const handleSchedule = () => {
-    // TODO: Implement scheduling functionality
-    toast({
-      title: "Coming soon",
-      description: "Scheduling for press releases will be available in a future update",
-    });
-  };
-
   return (
     <MainLayout>
-      <div className="container mx-auto py-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">PR Kreation</h1>
-          <p className="text-gray-500">Create professional press releases with AI assistance</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold font-display text-dark mb-2">PR Kreation</h1>
+        <p className="text-gray-600">Generate professional press releases for your company announcements.</p>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Create a Press Release</CardTitle>
+              <CardTitle className="flex items-center">
+                <FileText className="mr-2 h-5 w-5" />
+                Create Press Release
+              </CardTitle>
               <CardDescription>
-                Enter information about your announcement to generate a press release
+                Enter your announcement details to generate a professional press release.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit}>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="prompt">Press Release Topic</Label>
-                  <Textarea
-                    id="prompt"
-                    name="prompt"
-                    placeholder="Describe your announcement (e.g., product launch, company milestone, partnership)"
-                    value={formData.prompt}
+                  <Label htmlFor="companyName">Company Name</Label>
+                  <Input
+                    id="companyName"
+                    name="companyName"
+                    value={formData.companyName}
                     onChange={handleInputChange}
-                    className="min-h-[100px]"
+                    placeholder="Your company name"
+                    required
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="industry">Industry</Label>
+                  <Input
+                    id="industry"
+                    name="industry"
+                    value={formData.industry}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Technology, Healthcare, Finance"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="announcement">Announcement Details</Label>
+                  <Textarea
+                    id="announcement"
+                    name="announcement"
+                    value={formData.announcement}
+                    onChange={handleInputChange}
+                    placeholder="Describe your announcement, product launch, milestone, etc."
+                    rows={6}
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="tone">Tone</Label>
                     <Select
@@ -199,9 +243,10 @@ export default function PRKreationPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="professional">Professional</SelectItem>
-                        <SelectItem value="authoritative">Authoritative</SelectItem>
-                        <SelectItem value="friendly">Friendly</SelectItem>
                         <SelectItem value="casual">Casual</SelectItem>
+                        <SelectItem value="friendly">Friendly</SelectItem>
+                        <SelectItem value="authoritative">Authoritative</SelectItem>
+                        <SelectItem value="humorous">Humorous</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -224,31 +269,15 @@ export default function PRKreationPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="length">Length</Label>
-                    <Select
-                      value={formData.length}
-                      onValueChange={(value) => handleSelectChange("length", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select length" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="short">Short</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="long">Long</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
-                
+              </CardContent>
+              <CardFooter>
                 <Button 
                   type="submit" 
-                  className="w-full" 
-                  disabled={isLoading || !user || user.plan !== 'inferno'}
+                  className="w-full"
+                  disabled={loading || !formData.companyName || !formData.announcement}
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Generating...
@@ -257,90 +286,65 @@ export default function PRKreationPage() {
                     "Generate Press Release"
                   )}
                 </Button>
-                
-                {user && user.plan !== 'inferno' && (
-                  <p className="text-red-500 text-sm text-center">
-                    Press release generation requires Inferno plan subscription
-                  </p>
-                )}
-              </form>
-            </CardContent>
+              </CardFooter>
+            </form>
           </Card>
-          
-          <Card>
+        </div>
+        
+        <div className="lg:col-span-2">
+          <Card className="h-full flex flex-col">
             <CardHeader>
               <CardTitle>Generated Press Release</CardTitle>
               <CardDescription>
-                Preview your press release before saving or publishing
+                Your press release will appear here after generation.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center h-[300px]">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                  <p>Generating your press release...</p>
-                  <p className="text-sm text-gray-500 mt-2">This may take a moment</p>
+            <CardContent className="flex-grow">
+              {loading ? (
+                <div className="h-full flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : generatedContent ? (
-                <div className="prose max-w-none dark:prose-invert">
-                  <div dangerouslySetInnerHTML={{ __html: generatedContent.text }} />
-                  
-                  {generatedContent.sources && generatedContent.sources.length > 0 && (
-                    <div className="mt-6">
-                      <h3 className="text-lg font-semibold">Sources</h3>
-                      <ul className="mt-2">
-                        {generatedContent.sources.map((source: any, index: number) => (
-                          <li key={index} className="text-sm text-gray-600 dark:text-gray-400">
-                            <a href={source.url} target="_blank" rel="noopener noreferrer">
-                              {source.title}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+              ) : generatedPR ? (
+                <div className="prose max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: generatedPR }} />
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-[300px] text-gray-500">
-                  <p className="text-center">
-                    Your generated press release will appear here.<br />
-                    Complete the form and click "Generate Press Release" to begin.
-                  </p>
+                <div className="h-full flex flex-col items-center justify-center text-center text-gray-500 p-8">
+                  <FileText className="h-16 w-16 mb-4 text-gray-300" />
+                  <h3 className="text-lg font-medium mb-2">No Press Release Generated Yet</h3>
+                  <p>Fill out the form and click "Generate Press Release" to create your professional press release.</p>
                 </div>
               )}
             </CardContent>
-            
-            {generatedContent && (
-              <CardFooter className="flex flex-col sm:flex-row gap-2">
-                <Button 
-                  variant="default" 
-                  className="w-full sm:w-auto"
-                  onClick={handleSave}
-                >
-                  Save to Library
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full sm:w-auto"
-                  onClick={handleSchedule}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  Schedule
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    navigator.clipboard.writeText(generatedContent.text.replace(/<[^>]*>/g, ''));
-                    toast({
-                      title: "Copied!",
-                      description: "Press release copied to clipboard",
-                    });
-                  }}
-                >
-                  <Share className="mr-2 h-4 w-4" />
-                  Copy to Clipboard
-                </Button>
+            {generatedPR && (
+              <CardFooter className="border-t pt-4">
+                <div className="flex flex-col sm:flex-row w-full gap-3">
+                  <Button 
+                    onClick={handleSave}
+                    className="flex-1"
+                    variant="outline"
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Save to Library
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (navigator.clipboard) {
+                        // Remove HTML tags for clipboard
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = generatedPR;
+                        navigator.clipboard.writeText(tempDiv.textContent || tempDiv.innerText);
+                        toast({
+                          title: "Copied to Clipboard",
+                          description: "Press release has been copied to clipboard.",
+                        });
+                      }
+                    }}
+                    className="flex-1"
+                  >
+                    Copy Text
+                  </Button>
+                </div>
               </CardFooter>
             )}
           </Card>

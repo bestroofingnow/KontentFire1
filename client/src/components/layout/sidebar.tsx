@@ -38,6 +38,7 @@ export default function Sidebar() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Content', href: '/content', icon: PenTool },
+    { name: 'PR Kreation', href: '/pr-kreation', icon: FileText },
     { name: 'Schedule', href: '/schedule', icon: Calendar },
     { name: 'Fact Check', href: '/fact-check', icon: SearchCheck },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
