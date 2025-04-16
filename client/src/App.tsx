@@ -12,6 +12,7 @@ import SubscriptionPage from "@/pages/subscription-page";
 import AutoContentPage from "@/pages/auto-content-page";
 import ListingsPage from "@/pages/listings-page";
 import FactCheckPage from "@/pages/fact-check-page";
+import PRKreationPage from "@/pages/pr-kreation-page";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -80,6 +81,9 @@ function App() {
       </Route>
       <Route path="/fact-check">
         <ProtectedRoute path="/fact-check" component={FactCheckPage} />
+      </Route>
+      <Route path="/pr-kreation">
+        <ProtectedRoute path="/pr-kreation" component={PRKreationPage} />
       </Route>
       <Route>
         <NotFound />
