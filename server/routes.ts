@@ -27,6 +27,7 @@ import {
 } from "@shared/schema";
 import { eq, and, or, gte, lte, desc, asc, sql, not, isNull } from "drizzle-orm";
 import { factCheck, type FactCheckRequest, getReferences, type ReferencesRequest } from "./perplexity";
+import OpenAI from "openai";
 import { generateContent, type ContentPrompt, type GeneratedContent, getRelevantSources } from "./openai";
 import { enhanceContent } from "./anthropic";
 import { repurposeContent, type RepurposeRequest, type RepurposeResponse } from "./content-repurpose";
@@ -1262,10 +1263,10 @@ export function registerRoutes(app: Express): Server {
         // Extract main keywords from content for better source searching
         const keywordsPrompt = `Extract 3-5 main keywords or phrases from this content:\n${content.substring(0, 500)}`;
         
+        // Import OpenAI and getRelevantSources at the top level, not here
         // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
         // Use OpenAI API to extract keywords
-        const openai = new OpenAI();
-        const keywordsResponse = await openai.chat.completions.create({
+        const keywordsResponse = await new OpenAI().chat.completions.create({
           model: "gpt-4o",
           messages: [
             { role: "system", content: "Extract the main keywords or phrases from the provided content. Return only the keywords separated by commas, without any explanations or additional text." },
@@ -1277,7 +1278,7 @@ export function registerRoutes(app: Express): Server {
         const keywords = keywordsResponse.choices[0].message.content?.trim() || "";
         console.log("Extracted keywords for source search:", keywords);
         
-        sources = await openaiModule.getRelevantSources(keywords, 3);
+        sources = await getRelevantSources(keywords, 3);
         console.log(`Found ${sources.length} sources using Perplexity`);
       } catch (error) {
         console.warn("Failed to get sources from Perplexity:", error);
