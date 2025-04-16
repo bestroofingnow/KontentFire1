@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 import { storage } from "./storage";
+import { getReferences } from "./perplexity";
+import { enhanceContent } from './anthropic';
 
 // Initialize OpenAI SDK with error handling for missing API key
 let openai: OpenAI;
@@ -43,8 +45,6 @@ export type ContentPrompt = {
   personality?: 'thoughtful' | 'enthusiastic' | 'skeptical' | 'inspirational' | 'analytical';
   platform?: 'blog' | 'facebook' | 'instagram' | 'gmb' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest';
 };
-
-import { getReferences } from "./perplexity";
 
 // Generate text content based on prompt
 export async function generateText(
@@ -167,6 +167,7 @@ export async function generateImage(prompt: string): Promise<string> {
 }
 
 // Generate both text and image with sources
+
 export async function generateContent(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
   const { prompt, contentType, tone, length, personality, platform } = contentPrompt;
   const result: GeneratedContent = {};
@@ -177,24 +178,39 @@ export async function generateContent(contentPrompt: ContentPrompt): Promise<Gen
     try {
       sources = await getRelevantSources(prompt);
       result.sources = sources;
+      console.log(`Found ${sources.length} sources using Perplexity`);
     } catch (error) {
       console.warn("Failed to get sources from Perplexity, continuing without sources:", error);
     }
 
     // Generate text if requested
     if (contentType === 'text' || contentType === 'both') {
-      // Enhance the prompt with source information if available
-      let enhancedPrompt = prompt;
+      // Step 1: Generate base outline with OpenAI
+      // For the outline, we'll use a more structured approach
+      const outlinePrompt = `Create a detailed outline for content about: ${prompt}
       
-      if (sources && sources.length > 0) {
-        enhancedPrompt += "\n\nHere are some relevant sources you can reference in your content:";
-        sources.forEach((source, index) => {
-          enhancedPrompt += `\n${index + 1}. ${source.title} - ${source.snippet}`;
-        });
-        enhancedPrompt += "\n\nPlease incorporate insights from these sources naturally in your content without explicitly mentioning them.";
-      }
+      The outline should include:
+      - Main topics and subtopics to cover
+      - Key points for each section
+      - Logical structure and flow
+      - Questions that should be addressed
       
-      result.text = await generateText(enhancedPrompt, tone, length, personality, platform);
+      This is just an outline that will be expanded and enhanced later.`;
+      
+      console.log("Generating base outline with OpenAI...");
+      const baseOutline = await generateText(outlinePrompt, 'professional', 'medium', 'analytical', platform);
+      
+      // Step 2: Use Claude to enhance and rewrite the content with sources
+      console.log("Using Claude to enhance and rewrite content with sources...");
+      const enhancedContent = await enhanceContent(
+        baseOutline,
+        sources,
+        tone || 'professional',
+        personality || 'thoughtful',
+        platform || ''
+      );
+      
+      result.text = enhancedContent;
     }
 
     // Generate image if requested
