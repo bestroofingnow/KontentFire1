@@ -7,7 +7,7 @@ import { relations } from "drizzle-orm";
 export const planEnum = pgEnum('plan_type', ['premium']);
 export const contentTypeEnum = pgEnum('content_type', ['text', 'image', 'both']);
 export const contentStatusEnum = pgEnum('content_status', ['draft', 'scheduled', 'published']);
-export const platformEnum = pgEnum('platform_type', ['blog', 'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'pinterest']);
+export const platformEnum = pgEnum('platform_type', ['blog', 'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'pinterest', 'press-release']);
 export const frequencyEnum = pgEnum('frequency_type', ['daily', 'weekly', 'bi-weekly', 'monthly']);
 export const toneEnum = pgEnum('tone_type', ['professional', 'casual', 'friendly', 'authoritative', 'humorous']);
 export const autoContentStatusEnum = pgEnum('auto_content_status', ['pending', 'published', 'failed']);

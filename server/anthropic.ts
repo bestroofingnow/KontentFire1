@@ -47,6 +47,22 @@ export async function enhanceContent(
       - Break up text with subheadings every 2-3 paragraphs for readability
       - IMPORTANT: When citing sources, use <a href="source-url">anchor text</a> format to properly link to them
     `,
+    "press-release": `
+      Format your content as a professional press release:
+      - Include a clear, attention-grabbing headline
+      - Add a dateline at the beginning with city, state, and date
+      - Start with a concise summary paragraph that answers who, what, when, where, why
+      - Organize body paragraphs in inverted pyramid style (most important information first)
+      - Include at least one quote from a company representative
+      - Maintain a formal, journalistic tone throughout
+      - Include a boilerplate paragraph about the company at the end
+      - Add contact information for media inquiries
+      - Keep paragraphs short and focused
+      - Use third-person perspective consistently
+      - Avoid hyperbole or marketing language
+      - Format with clean paragraphs, no HTML tags
+      - IMPORTANT: When citing sources, include them naturally in the body text and add a "Source: [Source Name]" at relevant points
+    `,
     facebook: "Format for Facebook with short paragraphs and occasional emojis. Include a question or call to action at the end to encourage engagement.",
     instagram: "Format for Instagram with concise, engaging caption text. Use emojis and paragraph breaks strategically. Include relevant hashtags at the end.",
     gmb: "Format for Google My Business with concise, local-focused content. Highlight business information, services, or special offers clearly and directly.",

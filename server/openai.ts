@@ -43,7 +43,7 @@ export type ContentPrompt = {
   tone?: 'professional' | 'casual' | 'friendly' | 'authoritative' | 'humorous';
   length?: 'short' | 'medium' | 'long';
   personality?: 'thoughtful' | 'enthusiastic' | 'skeptical' | 'inspirational' | 'analytical';
-  platform?: 'blog' | 'facebook' | 'instagram' | 'gmb' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest';
+  platform?: 'blog' | 'facebook' | 'instagram' | 'gmb' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest' | 'press-release';
 };
 
 // Generate text content based on prompt
@@ -83,6 +83,21 @@ export async function generateText(
       - Add a call to action at the end
       - Make the content SEO-friendly with relevant keywords naturally integrated
       - Break up text with subheadings every 2-3 paragraphs for readability
+    `,
+    "press-release": `
+      Format your content as a professional press release:
+      - Include a clear, attention-grabbing headline
+      - Add a dateline at the beginning with city, state, and date
+      - Start with a concise summary paragraph that answers who, what, when, where, why
+      - Organize body paragraphs in inverted pyramid style (most important information first)
+      - Include at least one quote from a company representative
+      - Maintain a formal, journalistic tone throughout
+      - Include a boilerplate paragraph about the company at the end
+      - Add contact information for media inquiries
+      - Keep paragraphs short and focused
+      - Use third-person perspective consistently
+      - Avoid hyperbole or marketing language
+      - Format with clean paragraphs, no HTML tags
     `,
     facebook: "Format for Facebook with short paragraphs and occasional emojis. Include a question or call to action at the end to encourage engagement.",
     instagram: "Format for Instagram with concise, engaging caption text. Use emojis and paragraph breaks strategically. Include relevant hashtags at the end.",
