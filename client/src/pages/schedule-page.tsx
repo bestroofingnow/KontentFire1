@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
@@ -56,13 +56,16 @@ export default function SchedulePage() {
     }
   });
 
-  if (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load scheduled content",
-      variant: "destructive",
-    });
-  }
+  // Show error toast when there's an error, but only once
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load scheduled content",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   // Get schedules for the selected date
   const getDaySchedules = (day: Date) => {
