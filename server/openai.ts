@@ -41,6 +41,7 @@ export type ContentPrompt = {
   tone?: 'professional' | 'casual' | 'friendly' | 'authoritative' | 'humorous';
   length?: 'short' | 'medium' | 'long';
   personality?: 'thoughtful' | 'enthusiastic' | 'skeptical' | 'inspirational' | 'analytical';
+  platform?: 'blog' | 'facebook' | 'instagram' | 'gmb' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest';
 };
 
 import { getReferences } from "./perplexity";
@@ -50,7 +51,8 @@ export async function generateText(
   prompt: string, 
   tone: string = 'professional', 
   length: string = 'medium',
-  personality: string = 'thoughtful'
+  personality: string = 'thoughtful',
+  platform: string = ''
 ): Promise<string> {
   // Adjust token count based on length
   const maxTokens = 
@@ -67,7 +69,31 @@ export async function generateText(
     analytical: "You break down complex topics systematically. You use logical reasoning, present evidence, and analyze causes and effects. Your writing is clear, structured, and data-informed where possible."
   };
   
-  // Include tone and personality in system message
+  // Platform-specific formatting instructions
+  const platformFormatting: Record<string, string> = {
+    blog: `
+      Format your content with semantic HTML for a blog post:
+      - Use <h2> and <h3> tags for headings (never <h1> which is reserved for the blog title)
+      - Use <p> tags for paragraphs
+      - Use <ul> and <li> tags for unordered lists
+      - Use <ol> and <li> tags for ordered lists
+      - Use <blockquote> tags for quotes
+      - Use <strong> for important text and <em> for emphasized text
+      - Include a proper structure with introduction, body (with subheadings), and conclusion
+      - Add a call to action at the end
+      - Make the content SEO-friendly with relevant keywords naturally integrated
+      - Break up text with subheadings every 2-3 paragraphs for readability
+    `,
+    facebook: "Format for Facebook with short paragraphs and occasional emojis. Include a question or call to action at the end to encourage engagement.",
+    instagram: "Format for Instagram with concise, engaging caption text. Use emojis and paragraph breaks strategically. Include relevant hashtags at the end.",
+    gmb: "Format for Google My Business with concise, local-focused content. Highlight business information, services, or special offers clearly and directly.",
+    linkedin: "Format for LinkedIn with professional, business-focused content structured in short paragraphs. Include industry insights and a professional call to action.",
+    youtube: "Format as a video script with clear [INTRO], [BODY], and [CONCLUSION] sections. Include talking points, engagement prompts, and calls to action.",
+    tiktok: "Format as a very brief, engaging script for TikTok with hooks, trends, and quick points that can be delivered in a fast-paced vertical video.",
+    pinterest: "Create descriptive, inspirational text suitable for Pinterest pins. Focus on the visual aspects and include a clear, actionable headline."
+  };
+  
+  // Include tone, personality, and platform-specific formatting in system message
   const systemPrompt = `You are an expert content creator who writes in a ${tone} tone and has a ${personality} personality. 
     ${personalityTraits[personality] || ""}
     
@@ -80,7 +106,9 @@ export async function generateText(
     - Include specific details rather than generic statements
     - Express opinions when appropriate for the topic
     
-    Create content that is engaging, well-structured, and optimized for social media or blog posts.
+    ${platform && platformFormatting[platform.toLowerCase()] ? platformFormatting[platform.toLowerCase()] : ''}
+    
+    Create content that is engaging, well-structured, and optimized for the appropriate platform.
     If the content mentions Kontent Fire, highlight its AI-powered content generation capabilities.`;
   
   try {
@@ -137,7 +165,7 @@ export async function generateImage(prompt: string): Promise<string> {
 
 // Generate both text and image with sources
 export async function generateContent(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
-  const { prompt, contentType, tone, length, personality } = contentPrompt;
+  const { prompt, contentType, tone, length, personality, platform } = contentPrompt;
   const result: GeneratedContent = {};
 
   try {
@@ -163,7 +191,7 @@ export async function generateContent(contentPrompt: ContentPrompt): Promise<Gen
         enhancedPrompt += "\n\nPlease incorporate insights from these sources naturally in your content without explicitly mentioning them.";
       }
       
-      result.text = await generateText(enhancedPrompt, tone, length, personality);
+      result.text = await generateText(enhancedPrompt, tone, length, personality, platform);
     }
 
     // Generate image if requested

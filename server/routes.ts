@@ -294,7 +294,7 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
-      const { prompt, contentType, tone, length, personality } = req.body as ContentPrompt;
+      const { prompt, contentType, tone, length, personality, platform } = req.body as ContentPrompt;
       
       if (!prompt) {
         return res.status(400).json({ message: 'Missing prompt parameter' });
@@ -308,7 +308,8 @@ export function registerRoutes(app: Express): Server {
         contentType, 
         tone, 
         length, 
-        personality: personality || 'thoughtful' // Default to thoughtful if not specified
+        personality: personality || 'thoughtful', // Default to thoughtful if not specified
+        platform: platform || null // Pass platform for proper formatting
       });
       
       return res.json(result);
