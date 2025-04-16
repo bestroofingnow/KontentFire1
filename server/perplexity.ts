@@ -67,8 +67,8 @@ export async function factCheck(request: FactCheckRequest): Promise<FactCheckRes
         ],
         temperature: 0.2,
         max_tokens: 1000,
-        top_p: 0.9,
-        response_format: { type: "json_object" }
+        top_p: 0.9
+        // Removed response_format parameter since it's causing issues
       })
     });
 
@@ -82,7 +82,32 @@ export async function factCheck(request: FactCheckRequest): Promise<FactCheckRes
     const data = await response.json();
     console.log("Perplexity fact check response:", JSON.stringify(data, null, 2));
     
-    const resultContent = JSON.parse(data.choices[0].message.content);
+    let resultContent;
+    try {
+      // Try to parse JSON from the content
+      const contentText = data.choices[0].message.content;
+      // Try to find JSON in the response, which might be wrapped in markdown code blocks
+      const jsonMatch = contentText.match(/```(?:json)?\s*({[\s\S]*?})\s*```/) || 
+                        contentText.match(/{[\s\S]*?}/);
+      
+      if (jsonMatch) {
+        resultContent = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      } else {
+        // If no JSON found, create a basic structure
+        resultContent = {
+          result: 'unverifiable',
+          explanation: contentText,
+          confidence: 0.5
+        };
+      }
+    } catch (parseError) {
+      console.warn("Failed to parse JSON from response:", parseError);
+      resultContent = {
+        result: 'unverifiable',
+        explanation: data.choices[0].message.content,
+        confidence: 0.5
+      };
+    }
     
     // Extract citations from the response
     const citations = data.citations || [];
@@ -130,8 +155,8 @@ export async function getReferences(request: ReferencesRequest): Promise<Referen
         ],
         temperature: 0.3,
         max_tokens: 1000,
-        top_p: 0.9,
-        response_format: { type: "json_object" }
+        top_p: 0.9
+        // Removed response_format parameter since it's causing issues
       })
     });
 
@@ -145,10 +170,42 @@ export async function getReferences(request: ReferencesRequest): Promise<Referen
     const data = await response.json();
     console.log("Perplexity references response:", JSON.stringify(data, null, 2));
     
-    const resultContent = JSON.parse(data.choices[0].message.content);
+    let resultContent;
+    try {
+      // Try to parse JSON from the content
+      const contentText = data.choices[0].message.content;
+      // Try to find JSON in the response, which might be wrapped in markdown code blocks
+      const jsonMatch = contentText.match(/```(?:json)?\s*({[\s\S]*?})\s*```/) || 
+                        contentText.match(/{[\s\S]*?}/);
+      
+      if (jsonMatch) {
+        resultContent = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      } else {
+        // If no JSON found, create a basic structure with references
+        resultContent = {
+          references: []
+        };
+      }
+    } catch (parseError) {
+      console.warn("Failed to parse JSON from response:", parseError);
+      resultContent = {
+        references: []
+      };
+    }
     
     // Extract references from the response
     const references = resultContent.references || [];
+
+    // If references is empty, try to extract references from citations
+    if (references.length === 0 && data.citations && data.citations.length > 0) {
+      data.citations.forEach((citation: string, index: number) => {
+        references.push({
+          title: `Reference ${index + 1}`,
+          url: citation,
+          snippet: "Citation from Perplexity"
+        });
+      });
+    }
 
     return {
       references: references.map((ref: any) => ({
