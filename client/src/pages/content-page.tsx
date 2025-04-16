@@ -57,9 +57,9 @@ export default function ContentPage() {
   
   // Apply filters and sorting
   useEffect(() => {
-    if (!contents) return;
+    if (!contents || !contents.contents) return;
     
-    let filtered = [...contents];
+    let filtered = [...contents.contents];
     
     // Filter by search query
     if (searchQuery) {
@@ -337,7 +337,7 @@ export default function ContentPage() {
                   <SelectItem value="blog">Blog</SelectItem>
                   <SelectItem value="facebook">Facebook</SelectItem>
                   <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="twitter">Twitter</SelectItem>
+                  <SelectItem value="gmb">Google My Business</SelectItem>
                   <SelectItem value="linkedin">LinkedIn</SelectItem>
                   <SelectItem value="youtube">YouTube</SelectItem>
                   <SelectItem value="tiktok">TikTok</SelectItem>

@@ -22,11 +22,11 @@ export interface RepurposeResponse {
   suggestedImagePrompt?: string;
 }
 
-type PlatformType = 'blog' | 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest';
+type PlatformType = 'blog' | 'facebook' | 'instagram' | 'gmb' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest';
 type ToneType = 'professional' | 'casual' | 'friendly' | 'authoritative' | 'humorous';
 
 // Platform format guidelines used in the prompt
-const platformGuidelines = {
+const platformGuidelines: Record<PlatformType, { format: string; characteristics: string }> = {
   blog: {
     format: "Longer-form content with paragraphs, headings, and possibly lists",
     characteristics: "Detailed, informative, SEO-friendly, includes introduction and conclusion"
@@ -39,9 +39,9 @@ const platformGuidelines = {
     format: "Short to medium caption that complements visual content",
     characteristics: "Visually descriptive, uses emojis, includes relevant hashtags"
   },
-  twitter: {
-    format: "Very concise posts (up to 280 characters)",
-    characteristics: "Punchy, direct, often with hashtags and mentions"
+  gmb: {
+    format: "Business profile posts and updates for Google My Business",
+    characteristics: "Informative, local-focused, includes business info, service details, or special offers"
   },
   linkedin: {
     format: "Professional post with a business focus, can be medium to long",
