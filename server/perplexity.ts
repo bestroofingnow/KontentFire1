@@ -46,6 +46,7 @@ export async function factCheck(request: FactCheckRequest): Promise<FactCheckRes
     : `Please fact check the following statement:\n\n${text}`;
 
   try {
+    console.log("Making Perplexity API call for fact-checking...");
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -57,7 +58,7 @@ export async function factCheck(request: FactCheckRequest): Promise<FactCheckRes
         messages: [
           {
             role: "system",
-            content: "You are a fact-checking expert. Analyze the statement for factual accuracy. Return your response in the following format: result (accurate/inaccurate/unverifiable), explanation, list of corrections if any, and supporting citations. Include a confidence score between 0 and 1."
+            content: "You are a fact-checking expert. Analyze the statement for factual accuracy. Return your response in the following JSON format with fields: result (accurate/inaccurate/unverifiable), explanation, corrections (if any), and a confidence score between 0 and 1."
           },
           {
             role: "user",
@@ -65,26 +66,33 @@ export async function factCheck(request: FactCheckRequest): Promise<FactCheckRes
           }
         ],
         temperature: 0.2,
+        max_tokens: 1000,
+        top_p: 0.9,
         response_format: { type: "json_object" }
       })
     });
 
     if (!response.ok) {
+      console.error(`Perplexity API error response: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`Error response body: ${errorText}`);
       throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log("Perplexity fact check response:", JSON.stringify(data, null, 2));
+    
     const resultContent = JSON.parse(data.choices[0].message.content);
     
     // Extract citations from the response
     const citations = data.citations || [];
 
     return {
-      result: resultContent.result,
-      explanation: resultContent.explanation,
-      corrections: resultContent.corrections,
+      result: resultContent.result || 'unverifiable',
+      explanation: resultContent.explanation || 'Unable to verify this statement',
+      corrections: resultContent.corrections || [],
       citations: citations,
-      confidence: resultContent.confidence
+      confidence: resultContent.confidence || 0.5
     };
   } catch (error) {
     console.error("Error during fact-checking:", error);
@@ -101,6 +109,7 @@ export async function getReferences(request: ReferencesRequest): Promise<Referen
   const { query, count = 5 } = request;
 
   try {
+    console.log("Making Perplexity API call for references...");
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -112,7 +121,7 @@ export async function getReferences(request: ReferencesRequest): Promise<Referen
         messages: [
           {
             role: "system",
-            content: `You are a reference search assistant. Find ${count} reliable sources related to the query and return them in JSON format with title, url, and a short snippet for each reference.`
+            content: `You are a reference search assistant. Find ${count} reliable sources related to the query and return them in JSON format with an array called "references" containing objects with title, url, and a short snippet for each reference.`
           },
           {
             role: "user",
@@ -120,25 +129,32 @@ export async function getReferences(request: ReferencesRequest): Promise<Referen
           }
         ],
         temperature: 0.3,
+        max_tokens: 1000,
+        top_p: 0.9,
         response_format: { type: "json_object" }
       })
     });
 
     if (!response.ok) {
+      console.error(`Perplexity API error response: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`Error response body: ${errorText}`);
       throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log("Perplexity references response:", JSON.stringify(data, null, 2));
+    
     const resultContent = JSON.parse(data.choices[0].message.content);
     
-    // Extract citations from the response
+    // Extract references from the response
     const references = resultContent.references || [];
 
     return {
       references: references.map((ref: any) => ({
-        title: ref.title,
-        url: ref.url,
-        snippet: ref.snippet
+        title: ref.title || "Untitled Reference",
+        url: ref.url || "#",
+        snippet: ref.snippet || "No snippet available"
       }))
     };
   } catch (error) {
