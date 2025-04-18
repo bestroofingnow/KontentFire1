@@ -206,8 +206,13 @@ export function measure() {
         
         performanceMonitor.endMetric(metricName);
         return result;
-      } catch (error) {
-        performanceMonitor.endMetric(metricName, { error: error.message });
+      } catch (error: any) {
+        // Type assertion with any to safely access message property
+        const errorMessage = error && typeof error === 'object' && 'message' in error 
+          ? error.message 
+          : String(error);
+          
+        performanceMonitor.endMetric(metricName, { error: errorMessage });
         throw error;
       }
     };

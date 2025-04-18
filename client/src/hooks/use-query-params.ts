@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useLocation, useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 
 /**
  * Custom hook to work with query parameters
@@ -16,17 +16,18 @@ import { useLocation, useNavigate } from 'wouter';
  * const nextPage = () => setQueryParam('page', String(page + 1));
  */
 export function useQueryParams() {
-  const [location, setLocation] = useNavigate();
-  const currentLocation = useLocation();
+  const [location, navigate] = useLocation();
+  const currentLocation = location;
 
   // Parse the query parameters from the current location
   const queryParams = useMemo(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const params: Record<string, string> = {};
     
-    for (const [key, value] of searchParams.entries()) {
+    // Use Array.from instead of direct iteration for better compatibility
+    Array.from(searchParams.entries()).forEach(([key, value]) => {
       params[key] = value;
-    }
+    });
     
     return params;
   }, [currentLocation]);
@@ -45,9 +46,9 @@ export function useQueryParams() {
       );
       
       // Update the location for Wouter
-      setLocation(`${window.location.pathname}?${searchParams.toString()}`);
+      navigate(`${window.location.pathname}?${searchParams.toString()}`);
     },
-    [setLocation]
+    [navigate]
   );
 
   // Remove a query parameter
@@ -65,9 +66,9 @@ export function useQueryParams() {
       window.history.replaceState(null, '', newUrl);
       
       // Update the location for Wouter
-      setLocation(newUrl);
+      navigate(newUrl);
     },
-    [setLocation]
+    [navigate]
   );
 
   // Clear all query parameters
@@ -76,8 +77,8 @@ export function useQueryParams() {
     window.history.replaceState(null, '', window.location.pathname);
     
     // Update the location for Wouter
-    setLocation(window.location.pathname);
-  }, [setLocation]);
+    navigate(window.location.pathname);
+  }, [navigate]);
 
   return { queryParams, setQueryParam, removeQueryParam, clearQueryParams };
 }

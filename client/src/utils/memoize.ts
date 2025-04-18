@@ -85,8 +85,11 @@ export function limitMemoize<T extends (...args: any[]) => any>(
     // Enforce the size limit
     if (cache.size > maxSize) {
       // Remove the oldest entry
-      const oldestKey = cache.keys().next().value;
-      cache.delete(oldestKey);
+      const keys = cache.keys();
+      const firstKey = keys.next();
+      if (firstKey && !firstKey.done && firstKey.value) {
+        cache.delete(firstKey.value);
+      }
     }
     
     return result;
