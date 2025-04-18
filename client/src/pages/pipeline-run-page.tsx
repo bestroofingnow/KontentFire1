@@ -61,7 +61,7 @@ interface PipelineStage {
   id: number;
   pipelineRunId: number;
   name: string;
-  status: 'running' | 'success' | 'failed' | 'cancelled';
+  status: 'pending' | 'running' | 'success' | 'completed' | 'failed' | 'cancelled' | 'skipped';
   errorMessage: string | null;
   startTime: string;
   endTime: string | null;
