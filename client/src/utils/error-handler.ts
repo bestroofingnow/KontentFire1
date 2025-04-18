@@ -1,115 +1,233 @@
+import { toast } from "@/hooks/use-toast";
+
 /**
- * Enhanced error handling utility
+ * Error types enum for categorizing different kinds of errors
  */
-
-// Custom error types
-export class NetworkError extends Error {
-  status?: number;
-  
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = "NetworkError";
-    this.status = status;
-  }
-}
-
-export class ValidationError extends Error {
-  errors?: Record<string, string[]>;
-  
-  constructor(message: string, errors?: Record<string, string[]>) {
-    super(message);
-    this.name = "ValidationError";
-    this.errors = errors;
-  }
-}
-
-export class AuthenticationError extends Error {
-  constructor(message: string = "You must be logged in to perform this action") {
-    super(message);
-    this.name = "AuthenticationError";
-  }
-}
-
-export class PermissionError extends Error {
-  constructor(message: string = "You don't have permission to perform this action") {
-    super(message);
-    this.name = "PermissionError";
-  }
+export enum ErrorType {
+  NETWORK = 'network',
+  AUTHENTICATION = 'authentication',
+  AUTHORIZATION = 'authorization',
+  VALIDATION = 'validation',
+  NOT_FOUND = 'not_found',
+  SERVER = 'server',
+  UNKNOWN = 'unknown',
 }
 
 /**
- * Parses an error response from the API
+ * Structure for standardized API errors
  */
-export const parseApiError = async (response: Response): Promise<Error> => {
-  try {
-    const contentType = response.headers.get("content-type");
-    
-    if (contentType && contentType.includes("application/json")) {
-      const errorData = await response.json();
+export interface ApiError {
+  type: ErrorType;
+  message: string;
+  code?: string;
+  details?: Record<string, any>;
+  originalError?: any;
+}
+
+/**
+ * Global error handler utility for consistent error handling across the application
+ */
+export class ErrorHandler {
+  private static instance: ErrorHandler;
+  private errorListeners: ((error: ApiError) => void)[] = [];
+  
+  /**
+   * Get the singleton instance
+   */
+  public static getInstance(): ErrorHandler {
+    if (!ErrorHandler.instance) {
+      ErrorHandler.instance = new ErrorHandler();
+    }
+    return ErrorHandler.instance;
+  }
+  
+  /**
+   * Parse and standardize errors from various sources
+   */
+  public parseError(error: any): ApiError {
+    // Handle Axios errors
+    if (error.isAxiosError) {
+      const status = error.response?.status || 0;
       
-      // Handle validation errors
-      if (response.status === 400 && errorData.errors) {
-        return new ValidationError(errorData.message || "Validation error", errorData.errors);
+      if (status === 401) {
+        return {
+          type: ErrorType.AUTHENTICATION,
+          message: 'Your session has expired. Please log in again.',
+          originalError: error,
+        };
       }
       
-      // Handle authentication errors
-      if (response.status === 401) {
-        return new AuthenticationError(errorData.message || "Authentication required");
+      if (status === 403) {
+        return {
+          type: ErrorType.AUTHORIZATION,
+          message: 'You do not have permission to perform this action.',
+          originalError: error,
+        };
       }
       
-      // Handle permission errors
-      if (response.status === 403) {
-        return new PermissionError(errorData.message || "Permission denied");
+      if (status === 404) {
+        return {
+          type: ErrorType.NOT_FOUND,
+          message: 'The requested resource was not found.',
+          originalError: error,
+        };
       }
       
-      // Generic error with message from server
-      return new NetworkError(
-        errorData.message || `Request failed with status ${response.status}`, 
-        response.status
-      );
+      if (status >= 500) {
+        return {
+          type: ErrorType.SERVER,
+          message: 'An unexpected server error occurred. Please try again later.',
+          originalError: error,
+        };
+      }
+      
+      if (!navigator.onLine) {
+        return {
+          type: ErrorType.NETWORK,
+          message: 'No internet connection. Please check your network and try again.',
+          originalError: error,
+        };
+      }
+      
+      return {
+        type: ErrorType.UNKNOWN,
+        message: error.response?.data?.message || 'An unexpected error occurred.',
+        details: error.response?.data,
+        originalError: error,
+      };
     }
     
-    // Default case for non-JSON responses
-    return new NetworkError(`Request failed with status ${response.status}`, response.status);
-  } catch (err) {
-    return new NetworkError(`Failed to parse error response: ${err}`, response.status);
+    // Handle API errors that are already in our format
+    if (error.type && Object.values(ErrorType).includes(error.type)) {
+      return error as ApiError;
+    }
+    
+    // Handle network errors
+    if (error.name === 'NetworkError' || !navigator.onLine) {
+      return {
+        type: ErrorType.NETWORK,
+        message: 'No internet connection. Please check your network and try again.',
+        originalError: error,
+      };
+    }
+    
+    // Default to unknown error
+    return {
+      type: ErrorType.UNKNOWN,
+      message: error.message || 'An unexpected error occurred.',
+      originalError: error,
+    };
   }
-};
+  
+  /**
+   * Handle an error uniformly across the application
+   */
+  public handleError(error: any): ApiError {
+    const parsedError = this.parseError(error);
+    
+    // Log the error for debugging
+    console.error('[ErrorHandler]', parsedError);
+    
+    // Show a toast notification for user feedback
+    toast({
+      title: this.getErrorTitle(parsedError.type),
+      description: parsedError.message,
+      variant: 'destructive',
+    });
+    
+    // Notify all error listeners
+    this.notifyErrorListeners(parsedError);
+    
+    // Special handling for authentication errors
+    if (parsedError.type === ErrorType.AUTHENTICATION) {
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 2000);
+    }
+    
+    return parsedError;
+  }
+  
+  /**
+   * Get an appropriate title based on error type
+   */
+  private getErrorTitle(type: ErrorType): string {
+    switch (type) {
+      case ErrorType.NETWORK:
+        return 'Network Error';
+      case ErrorType.AUTHENTICATION:
+        return 'Authentication Error';
+      case ErrorType.AUTHORIZATION:
+        return 'Access Denied';
+      case ErrorType.VALIDATION:
+        return 'Validation Error';
+      case ErrorType.NOT_FOUND:
+        return 'Not Found';
+      case ErrorType.SERVER:
+        return 'Server Error';
+      case ErrorType.UNKNOWN:
+      default:
+        return 'Error';
+    }
+  }
+  
+  /**
+   * Add an error listener to be notified when errors occur
+   */
+  public addErrorListener(listener: (error: ApiError) => void): () => void {
+    this.errorListeners.push(listener);
+    
+    // Return a function to remove the listener
+    return () => {
+      this.errorListeners = this.errorListeners.filter((l) => l !== listener);
+    };
+  }
+  
+  /**
+   * Notify all registered error listeners
+   */
+  private notifyErrorListeners(error: ApiError): void {
+    this.errorListeners.forEach((listener) => {
+      try {
+        listener(error);
+      } catch (e) {
+        console.error('Error in error listener:', e);
+      }
+    });
+  }
+}
+
+// Export a singleton instance
+export const errorHandler = ErrorHandler.getInstance();
 
 /**
- * Handles errors in a consistent way with specific error handling by type
+ * Utility function for easy error handling in async functions
+ * 
+ * @example
+ * const fetchData = async () => {
+ *   const result = await safeAsync(async () => {
+ *     const response = await fetch('/api/data');
+ *     return response.json();
+ *   });
+ *   
+ *   if (result.error) {
+ *     // Handle error case
+ *     return;
+ *   }
+ *   
+ *   // Use result.data
+ * };
  */
-export const handleError = (error: unknown, callbacks?: {
-  onNetworkError?: (error: NetworkError) => void,
-  onValidationError?: (error: ValidationError) => void,
-  onAuthError?: (error: AuthenticationError) => void,
-  onPermissionError?: (error: PermissionError) => void,
-  onUnexpectedError?: (error: Error) => void
-}): string => {
-  // Default error message
-  let errorMessage = "An unexpected error occurred";
-  
-  if (error instanceof NetworkError) {
-    errorMessage = error.message;
-    callbacks?.onNetworkError?.(error);
-  } else if (error instanceof ValidationError) {
-    errorMessage = error.message;
-    callbacks?.onValidationError?.(error);
-  } else if (error instanceof AuthenticationError) {
-    errorMessage = error.message;
-    callbacks?.onAuthError?.(error);
-  } else if (error instanceof PermissionError) {
-    errorMessage = error.message;
-    callbacks?.onPermissionError?.(error);
-  } else if (error instanceof Error) {
-    errorMessage = error.message;
-    callbacks?.onUnexpectedError?.(error);
+export async function safeAsync<T>(
+  asyncFn: () => Promise<T>,
+  errorHandler = ErrorHandler.getInstance()
+): Promise<{ data?: T; error?: ApiError }> {
+  try {
+    const data = await asyncFn();
+    return { data };
+  } catch (error) {
+    const parsedError = errorHandler.handleError(error);
+    return { error: parsedError };
   }
-  
-  // Log the error for debugging in development
-  if (process.env.NODE_ENV !== 'production') {
-    console.error('Error details:', error);
-  }
-  
-  return errorMessage;
-};
+}
