@@ -326,6 +326,12 @@ export function registerRoutes(app: Express): Server {
       console.log("PERPLEXITY_API_KEY exists:", !!process.env.PERPLEXITY_API_KEY);
       console.log("ANTHROPIC_API_KEY exists:", !!process.env.ANTHROPIC_API_KEY);
       
+      // Log template and template data for debugging
+      console.log("Using template:", template || 'standard');
+      if (template !== 'standard' && templateData) {
+        console.log("Template data:", JSON.stringify(templateData, null, 2));
+      }
+      
       console.log("Parsed content values:", { 
         promptLength: prompt ? prompt.length : 0, 
         contentType, 

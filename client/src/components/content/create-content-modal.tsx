@@ -144,7 +144,10 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
     }
     
     if (selectedTemplate === 'battle-royale') {
-      if (!templateData.option1 || !templateData.option2 || !templateData.comparisonFocus) {
+      // Log the template data for debugging
+      console.log("Battle Royale template data:", JSON.stringify(templateData, null, 2));
+      
+      if (!templateData || !templateData.option1 || !templateData.option2 || !templateData.comparisonFocus) {
         toast({
           title: "Missing Required Fields",
           description: "Both options and comparison focus are required for Battle Royale template",
@@ -158,9 +161,9 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
     const finalValues = {
       ...values,
       template: selectedTemplate,
-      // Only include prompt for standard template
-      prompt: selectedTemplate === 'standard' ? values.prompt : undefined,
-      templateData: selectedTemplate !== 'standard' ? templateData : undefined
+      // Include relevant data based on template type
+      ...(selectedTemplate === 'standard' ? { prompt: values.prompt } : {}),
+      ...(selectedTemplate !== 'standard' ? { templateData } : {})
     };
     
     console.log("Sending data to API:", finalValues);
