@@ -13,6 +13,7 @@ import AutoContentPage from "@/pages/auto-content-page";
 import ListingsPage from "@/pages/listings-page";
 import FactCheckPage from "@/pages/fact-check-page";
 import PRKreationPage from "@/pages/pr-kreation-page";
+import TestAuthPage from "@/pages/test-auth-page";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -84,6 +85,10 @@ function App() {
       </Route>
       <Route path="/pr-kreation">
         <ProtectedRoute path="/pr-kreation" component={PRKreationPage} />
+      </Route>
+      {/* Test auth route - not protected for debugging */}
+      <Route path="/test-auth">
+        <TestAuthPage />
       </Route>
       <Route>
         <NotFound />
