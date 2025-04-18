@@ -539,7 +539,7 @@ export function registerRoutes(app: Express): Server {
       }
       
       if (platform) {
-        query = query.where(eq(contents.platform, platform as any));
+        query = query.where(eq(contents.contentType, platform as any));
       }
       
       const contentsList = await query;
@@ -604,11 +604,9 @@ export function registerRoutes(app: Express): Server {
       const [updatedContent] = await db.update(contents)
         .set({
           title: title ?? existingContent.title,
-          content: content ?? existingContent.content,
+          textContent: content ?? existingContent.textContent,
           contentType: contentType ?? existingContent.contentType,
           status: status ?? existingContent.status,
-          platform: platform ?? existingContent.platform,
-          scheduledDate: scheduledDate ? new Date(scheduledDate) : existingContent.scheduledDate,
           imageUrl: imageUrl ?? existingContent.imageUrl,
           updatedAt: new Date(),
         })
@@ -730,8 +728,6 @@ export function registerRoutes(app: Express): Server {
       await db.update(contents)
         .set({
           status: 'scheduled',
-          scheduledDate: new Date(scheduledDate),
-          platform: platform || existingContent.platform,
           updatedAt: new Date(),
         })
         .where(eq(contents.id, contentId));

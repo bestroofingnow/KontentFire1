@@ -31,13 +31,15 @@ export default function RecentlyCreated({ limit = 2 }) {
     }
   }, [data]);
   
-  if (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load recent content",
-      variant: "destructive",
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load recent content",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
   
   const handleSchedule = (content: Content) => {
     // Implement schedule functionality

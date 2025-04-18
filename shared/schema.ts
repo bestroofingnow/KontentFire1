@@ -101,18 +101,12 @@ export const contents = pgTable('contents', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id).notNull(),
   title: text('title').notNull(),
-  description: text('description'),
-  content: text('content'),
+  textContent: text('text_content'),
+  imageUrl: text('image_url'),
   status: contentStatusEnum('status').default('draft').notNull(),
-  type: contentTypeEnum('type').default('article').notNull(),
-  template: contentTemplateEnum('template').default('standard').notNull(),
-  personality: contentPersonalityEnum('personality').default('thoughtful').notNull(),
-  featuredImage: text('featured_image'),
+  contentType: contentTypeEnum('content_type').default('article').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  publishedAt: timestamp('published_at'),
-  scheduledAt: timestamp('scheduled_at'),
-  metadata: json('metadata'),
 });
 
 export const contentsRelations = relations(contents, ({ one, many }) => ({
