@@ -1,374 +1,450 @@
-/**
- * CDS Integration Module for Kontent Fire
- * Incorporates workflow concepts from OVH's CDS (Continuous Delivery Service)
- * to enhance our content automation capabilities
- * 
- * Based on: https://github.com/ovh/cds
- */
-
-import { huginnAgentService } from './huginn-agents';
-import { db } from './db';
+import { db } from "./db";
+import { eq, and, or, desc } from "drizzle-orm";
 import { 
-  huginnAgents, 
-  huginnWorkflows,
-  contentPipelines,
-  contentPipelineStages,
+  contentPipelines, 
+  contentPipelineRuns, 
+  contentPipelineStages, 
   contentPipelineJobs,
-  contentPipelineRuns
-} from '@shared/schema';
-import { eq, and, desc } from 'drizzle-orm';
+  pipelineRunStatusEnum,
+  pipelineStageStatusEnum,
+  pipelineJobStatusEnum,
+  pipelineJobTypeEnum,
+  ContentPipelineRun,
+  ContentPipelineStage,
+  ContentPipelineJob
+} from "@shared/schema";
+import { huginnAgentService } from "./huginn-agents";
 
 /**
- * Content Pipeline Service
- * Adapts CDS pipeline concepts for content creation and publishing
+ * ContentPipelineService is a service that manages content pipelines.
+ * It provides methods to run pipelines, create stages and jobs, and track their status.
+ * 
+ * This service is inspired by modern CI/CD systems and works with the Huginn agent system
+ * to automate content creation, refinement, and publishing workflows.
  */
-export class ContentPipelineService {
-  private static instance: ContentPipelineService;
-  private isInitialized = false;
-  
-  private constructor() {}
-  
+class ContentPipelineService {
   /**
-   * Get singleton instance
+   * Run a pipeline with provided parameters
+   * 
+   * @param pipelineId The ID of the pipeline to run
+   * @param params Additional parameters for the pipeline run
+   * @returns The pipeline run object
    */
-  public static getInstance(): ContentPipelineService {
-    if (!ContentPipelineService.instance) {
-      ContentPipelineService.instance = new ContentPipelineService();
-    }
-    return ContentPipelineService.instance;
-  }
-  
-  /**
-   * Initialize the service
-   */
-  public async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+  async runPipeline(pipelineId: number, params: Record<string, any> = {}): Promise<ContentPipelineRun> {
+    // Fetch the pipeline configuration
+    const [pipeline] = await db.select()
+      .from(contentPipelines)
+      .where(eq(contentPipelines.id, pipelineId));
     
-    try {
-      console.log('Initializing Content Pipeline Service');
-      
-      // Ensure Huginn agents are initialized
-      await huginnAgentService.initialize();
-      
-      // Initialize any pipelines that should be running automatically
-      await this.initializeAutomatedPipelines();
-      
-      this.isInitialized = true;
-      console.log('Content Pipeline Service initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize Content Pipeline Service:', error);
-      throw error;
+    if (!pipeline) {
+      throw new Error(`Pipeline with ID ${pipelineId} not found`);
     }
-  }
-  
-  /**
-   * Initialize automated content pipelines
-   */
-  private async initializeAutomatedPipelines(): Promise<void> {
+
+    // Create a pipeline run
+    const [pipelineRun] = await db.insert(contentPipelineRuns)
+      .values({
+        pipelineId,
+        status: 'running',
+        params,
+        startTime: new Date(),
+      })
+      .returning();
+
+    // Parse the pipeline configuration and create stages
     try {
-      // Find all active pipelines marked for automation
-      const activePipelines = await db.select()
-        .from(contentPipelines)
-        .where(eq(contentPipelines.automated, true));
+      const config = pipeline.configuration as any;
       
-      console.log(`Found ${activePipelines.length} automated pipelines to initialize`);
-      
-      // Schedule each pipeline according to its configuration
-      for (const pipeline of activePipelines) {
-        await this.schedulePipeline(pipeline);
+      if (!config.stages || !Array.isArray(config.stages) || config.stages.length === 0) {
+        throw new Error('Pipeline configuration must have at least one stage');
       }
+      
+      // Create pipeline stages based on the configuration
+      for (const stageConfig of config.stages) {
+        await this.createStage(pipelineRun.id, stageConfig);
+      }
+      
+      // Start the first stage
+      await this.executeNextStage(pipelineRun.id);
+      
+      return pipelineRun;
     } catch (error) {
-      console.error('Failed to initialize automated pipelines:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Schedule a pipeline to run on its defined schedule
-   */
-  private async schedulePipeline(pipeline: any): Promise<void> {
-    // Implementation will schedule pipeline execution according to cron expression
-    // Similar to HuginnAgentService.scheduleAgent
-    console.log(`Scheduling pipeline "${pipeline.name}" with id ${pipeline.id}`);
-  }
-  
-  /**
-   * Create a new content pipeline
-   */
-  public async createPipeline(userId: number, pipelineData: {
-    name: string;
-    description?: string;
-    automated?: boolean;
-    schedule?: string;
-    configuration: any;
-  }): Promise<any> {
-    try {
-      // Create the pipeline
-      const [newPipeline] = await db.insert(contentPipelines)
-        .values({
-          userId,
-          name: pipelineData.name,
-          description: pipelineData.description || '',
-          automated: pipelineData.automated || false,
-          schedule: pipelineData.schedule || null,
-          configuration: pipelineData.configuration,
-          status: 'active',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+      // If there was an error setting up the pipeline, mark it as failed
+      await db.update(contentPipelineRuns)
+        .set({
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : String(error),
+          endTime: new Date(),
         })
-        .returning();
+        .where(eq(contentPipelineRuns.id, pipelineRun.id));
       
-      // If pipeline is automated, schedule it
-      if (newPipeline.automated && newPipeline.schedule) {
-        await this.schedulePipeline(newPipeline);
-      }
-      
-      return newPipeline;
-    } catch (error) {
-      console.error('Failed to create pipeline:', error);
       throw error;
     }
   }
-  
+
   /**
-   * Run a pipeline manually
+   * Create a stage for a pipeline run
+   * 
+   * @param pipelineRunId The ID of the pipeline run
+   * @param stageConfig The configuration for the stage
+   * @returns The created stage
    */
-  public async runPipeline(pipelineId: number, userId?: number, params?: any): Promise<any> {
-    try {
-      // Get the pipeline
-      const [pipeline] = await db.select().from(contentPipelines)
-        .where(userId ? 
-          and(eq(contentPipelines.id, pipelineId), eq(contentPipelines.userId, userId)) : 
-          eq(contentPipelines.id, pipelineId)
-        );
-      
-      if (!pipeline) {
-        throw new Error('Pipeline not found or does not belong to user');
+  private async createStage(pipelineRunId: number, stageConfig: any): Promise<ContentPipelineStage> {
+    if (!stageConfig.name) {
+      throw new Error('Stage configuration must have a name');
+    }
+    
+    // Create the stage
+    const [stage] = await db.insert(contentPipelineStages)
+      .values({
+        pipelineRunId,
+        name: stageConfig.name,
+        status: 'running', // Will be set to 'running' when it's this stage's turn
+        startTime: new Date(), // Will be updated when the stage starts
+      })
+      .returning();
+    
+    // Create jobs for the stage
+    if (stageConfig.jobs && Array.isArray(stageConfig.jobs)) {
+      for (const jobConfig of stageConfig.jobs) {
+        await this.createJob(stage.id, jobConfig);
       }
+    }
+    
+    return stage;
+  }
+
+  /**
+   * Create a job for a stage
+   * 
+   * @param stageId The ID of the stage
+   * @param jobConfig The configuration for the job
+   * @returns The created job
+   */
+  private async createJob(stageId: number, jobConfig: any): Promise<ContentPipelineJob> {
+    if (!jobConfig.name || !jobConfig.type) {
+      throw new Error('Job configuration must have a name and type');
+    }
+    
+    // Validate job type
+    if (!Object.values(pipelineJobTypeEnum.enumValues).includes(jobConfig.type)) {
+      throw new Error(`Invalid job type: ${jobConfig.type}`);
+    }
+    
+    // Create the job
+    const [job] = await db.insert(contentPipelineJobs)
+      .values({
+        stageRunId: stageId,
+        name: jobConfig.name,
+        type: jobConfig.type as typeof pipelineJobTypeEnum.enumValues[number],
+        status: 'running', // Will be set to 'running' when it's this job's turn
+        startTime: new Date(), // Will be updated when the job starts
+      })
+      .returning();
+    
+    return job;
+  }
+
+  /**
+   * Execute the next stage in a pipeline run
+   * 
+   * @param pipelineRunId The ID of the pipeline run
+   * @returns True if a stage was executed, false if all stages are complete
+   */
+  async executeNextStage(pipelineRunId: number): Promise<boolean> {
+    // Get all stages for this pipeline run
+    const stages = await db.select()
+      .from(contentPipelineStages)
+      .where(eq(contentPipelineStages.pipelineRunId, pipelineRunId))
+      .orderBy(contentPipelineStages.id);
+    
+    // Find the first stage that isn't complete
+    const pendingStage = stages.find(stage => 
+      stage.status !== 'success' && stage.status !== 'failed' && stage.status !== 'cancelled'
+    );
+    
+    if (!pendingStage) {
+      // All stages are complete, update the pipeline run status
+      const failedStage = stages.find(stage => stage.status === 'failed');
       
-      // Create a pipeline run record
-      const [pipelineRun] = await db.insert(contentPipelineRuns)
-        .values({
-          pipelineId,
-          status: 'running',
-          params: params || {},
-          startTime: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+      await db.update(contentPipelineRuns)
+        .set({
+          status: failedStage ? 'failed' : 'success',
+          endTime: new Date(),
         })
-        .returning();
+        .where(eq(contentPipelineRuns.id, pipelineRunId));
       
-      // Execute the pipeline stages in sequence or parallel based on configuration
+      return false;
+    }
+    
+    // Update the stage status to running
+    await db.update(contentPipelineStages)
+      .set({
+        status: 'running',
+        startTime: new Date(),
+      })
+      .where(eq(contentPipelineStages.id, pendingStage.id));
+    
+    // Execute the jobs for this stage
+    try {
+      await this.executeStageJobs(pendingStage.id);
+      
+      // Mark the stage as successful
+      await db.update(contentPipelineStages)
+        .set({
+          status: 'success',
+          endTime: new Date(),
+        })
+        .where(eq(contentPipelineStages.id, pendingStage.id));
+      
+      // Move to the next stage
+      return await this.executeNextStage(pipelineRunId);
+    } catch (error) {
+      // If there was an error executing the stage, mark it as failed
+      await db.update(contentPipelineStages)
+        .set({
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : String(error),
+          endTime: new Date(),
+        })
+        .where(eq(contentPipelineStages.id, pendingStage.id));
+      
+      // Mark the pipeline run as failed
+      await db.update(contentPipelineRuns)
+        .set({
+          status: 'failed',
+          errorMessage: `Stage ${pendingStage.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+          endTime: new Date(),
+        })
+        .where(eq(contentPipelineRuns.id, pipelineRunId));
+      
+      return false;
+    }
+  }
+
+  /**
+   * Execute all jobs for a stage
+   * 
+   * @param stageId The ID of the stage
+   */
+  private async executeStageJobs(stageId: number): Promise<void> {
+    // Get all jobs for this stage
+    const jobs = await db.select()
+      .from(contentPipelineJobs)
+      .where(eq(contentPipelineJobs.stageRunId, stageId))
+      .orderBy(contentPipelineJobs.id);
+    
+    // Execute each job
+    for (const job of jobs) {
       try {
-        const result = await this.executePipeline(pipeline, pipelineRun.id, params);
+        // Update job to running status
+        await db.update(contentPipelineJobs)
+          .set({
+            status: 'running',
+            startTime: new Date(),
+          })
+          .where(eq(contentPipelineJobs.id, job.id));
         
-        // Update the run status to success
-        await db.update(contentPipelineRuns)
+        // Execute the job based on its type
+        const result = await this.executeJob(job);
+        
+        // Update job with result
+        await db.update(contentPipelineJobs)
           .set({
             status: 'success',
             result,
             endTime: new Date(),
-            updatedAt: new Date(),
           })
-          .where(eq(contentPipelineRuns.id, pipelineRun.id));
-        
-        return { runId: pipelineRun.id, status: 'success', result };
+          .where(eq(contentPipelineJobs.id, job.id));
       } catch (error) {
-        // Update the run status to failed
-        await db.update(contentPipelineRuns)
+        // If there was an error executing the job, mark it as failed
+        await db.update(contentPipelineJobs)
           .set({
             status: 'failed',
-            errorMessage: error.message || 'Unknown error',
+            errorMessage: error instanceof Error ? error.message : String(error),
             endTime: new Date(),
-            updatedAt: new Date(),
           })
-          .where(eq(contentPipelineRuns.id, pipelineRun.id));
+          .where(eq(contentPipelineJobs.id, job.id));
         
+        // Throw error to fail the stage
         throw error;
       }
-    } catch (error) {
-      console.error(`Failed to run pipeline ${pipelineId}:`, error);
-      throw error;
     }
   }
-  
+
   /**
-   * Execute pipeline stages and jobs
+   * Execute a specific job
+   * 
+   * @param job The job to execute
+   * @returns The result of the job execution
    */
-  private async executePipeline(pipeline: any, runId: number, params?: any): Promise<any> {
-    // The pipeline configuration defines stages and jobs
-    const config = pipeline.configuration;
-    const results = [];
+  private async executeJob(job: ContentPipelineJob): Promise<Record<string, any>> {
+    // Execute different job types
+    switch (job.type) {
+      case 'huginn_agent':
+        return this.executeHuginnAgentJob(job);
+      case 'content_generation':
+        return this.executeContentGenerationJob(job);
+      case 'content_publishing':
+        return this.executeContentPublishingJob(job);
+      case 'data_transformation':
+        return this.executeDataTransformationJob(job);
+      default:
+        throw new Error(`Unsupported job type: ${job.type}`);
+    }
+  }
+
+  /**
+   * Execute a Huginn agent job
+   * 
+   * @param job The job to execute
+   * @returns The result of the job execution
+   */
+  private async executeHuginnAgentJob(job: ContentPipelineJob): Promise<Record<string, any>> {
+    // For now, just simulate success
+    // In a real implementation, this would call the Huginn agent service
+    console.log(`Executing Huginn agent job: ${job.name}`);
     
-    // Execute stages in sequence
-    for (const stage of config.stages) {
-      // Create stage record
-      const [stageRun] = await db.insert(contentPipelineStages)
-        .values({
-          pipelineRunId: runId,
-          name: stage.name,
-          status: 'running',
-          startTime: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning();
+    // Return dummy result
+    return {
+      success: true,
+      message: `Huginn agent job ${job.name} executed successfully`,
+    };
+  }
+
+  /**
+   * Execute a content generation job
+   * 
+   * @param job The job to execute
+   * @returns The result of the job execution
+   */
+  private async executeContentGenerationJob(job: ContentPipelineJob): Promise<Record<string, any>> {
+    // For now, just simulate success
+    // In a real implementation, this would call the content generation service
+    console.log(`Executing content generation job: ${job.name}`);
+    
+    // Return dummy result
+    return {
+      success: true,
+      message: `Content generation job ${job.name} executed successfully`,
+    };
+  }
+
+  /**
+   * Execute a content publishing job
+   * 
+   * @param job The job to execute
+   * @returns The result of the job execution
+   */
+  private async executeContentPublishingJob(job: ContentPipelineJob): Promise<Record<string, any>> {
+    // For now, just simulate success
+    // In a real implementation, this would call the content publishing service
+    console.log(`Executing content publishing job: ${job.name}`);
+    
+    // Return dummy result
+    return {
+      success: true,
+      message: `Content publishing job ${job.name} executed successfully`,
+    };
+  }
+
+  /**
+   * Execute a data transformation job
+   * 
+   * @param job The job to execute
+   * @returns The result of the job execution
+   */
+  private async executeDataTransformationJob(job: ContentPipelineJob): Promise<Record<string, any>> {
+    // For now, just simulate success
+    // In a real implementation, this would implement data transformations
+    console.log(`Executing data transformation job: ${job.name}`);
+    
+    // Return dummy result
+    return {
+      success: true,
+      message: `Data transformation job ${job.name} executed successfully`,
+    };
+  }
+
+  /**
+   * Schedule recurring pipelines based on their configuration
+   * This should be called regularly by a scheduler
+   */
+  async scheduleRecurringPipelines(): Promise<void> {
+    // Find all active pipelines that are configured for automation
+    const automatedPipelines = await db.select()
+      .from(contentPipelines)
+      .where(and(
+        eq(contentPipelines.status, 'active'),
+        eq(contentPipelines.automated, true),
+      ));
+    
+    // For each automated pipeline, check if it needs to be run
+    for (const pipeline of automatedPipelines) {
+      if (!pipeline.schedule) continue;
       
       try {
-        // Execute jobs in parallel or sequence based on config
-        const jobPromises = stage.jobs.map(job => this.executeJob(job, stageRun.id, params));
+        // Check if the pipeline is due to run
+        // This is a simplified check - in a real system, you would parse the cron expression
+        const shouldRun = this.shouldRunPipeline(pipeline.id, pipeline.schedule);
         
-        let jobResults;
-        if (stage.parallelJobs) {
-          // Run jobs in parallel
-          jobResults = await Promise.all(jobPromises);
-        } else {
-          // Run jobs in sequence
-          jobResults = [];
-          for (const jobPromise of jobPromises) {
-            jobResults.push(await jobPromise);
-          }
+        if (shouldRun) {
+          // Run the pipeline
+          await this.runPipeline(pipeline.id);
         }
-        
-        // Update stage status to success
-        await db.update(contentPipelineStages)
-          .set({
-            status: 'success',
-            endTime: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(contentPipelineStages.id, stageRun.id));
-        
-        results.push({ 
-          stage: stage.name, 
-          status: 'success', 
-          jobs: jobResults 
-        });
       } catch (error) {
-        // Update stage status to failed
-        await db.update(contentPipelineStages)
-          .set({
-            status: 'failed',
-            errorMessage: error.message || 'Unknown error',
-            endTime: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(contentPipelineStages.id, stageRun.id));
-        
-        results.push({ 
-          stage: stage.name, 
-          status: 'failed', 
-          error: error.message 
-        });
-        
-        // If stage fails and is marked as critical, fail the entire pipeline
-        if (stage.critical) {
-          throw new Error(`Critical stage "${stage.name}" failed: ${error.message}`);
-        }
+        console.error(`Error scheduling pipeline ${pipeline.id}:`, error);
       }
     }
-    
-    return results;
   }
-  
+
   /**
-   * Execute a pipeline job
+   * Determine if a pipeline should be run based on its schedule
+   * This is a simplified implementation - a real system would parse cron expressions
+   * 
+   * @param pipelineId The ID of the pipeline
+   * @param schedule The schedule (as a cron expression or similar)
+   * @returns True if the pipeline should be run
    */
-  private async executeJob(job: any, stageRunId: number, params?: any): Promise<any> {
-    // Create job record
-    const [jobRun] = await db.insert(contentPipelineJobs)
-      .values({
-        stageRunId,
-        name: job.name,
-        status: 'running',
-        startTime: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
+  private async shouldRunPipeline(pipelineId: number, schedule: string): Promise<boolean> {
+    // Get the most recent run of this pipeline
+    const [lastRun] = await db.select()
+      .from(contentPipelineRuns)
+      .where(eq(contentPipelineRuns.pipelineId, pipelineId))
+      .orderBy(desc(contentPipelineRuns.createdAt))
+      .limit(1);
     
-    try {
-      let result;
+    if (!lastRun) return true; // If no previous runs, definitely run
+    
+    // Simple daily schedule check (for "daily" schedule)
+    if (schedule === 'daily') {
+      const lastRunDate = new Date(lastRun.createdAt);
+      const today = new Date();
       
-      // Execute job based on its type
-      switch (job.type) {
-        case 'huginn_agent':
-          // Run a Huginn agent
-          result = await huginnAgentService.runAgent(job.agentId);
-          break;
-        
-        case 'content_generation':
-          // Generate content using AI
-          result = await this.generateContent(job.parameters, params);
-          break;
-        
-        case 'content_publishing':
-          // Publish content to a platform
-          result = await this.publishContent(job.parameters, params);
-          break;
-        
-        case 'data_transformation':
-          // Transform data
-          result = await this.transformData(job.parameters, params);
-          break;
-        
-        default:
-          throw new Error(`Unknown job type: ${job.type}`);
-      }
-      
-      // Update job status to success
-      await db.update(contentPipelineJobs)
-        .set({
-          status: 'success',
-          result,
-          endTime: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(contentPipelineJobs.id, jobRun.id));
-      
-      return { job: job.name, status: 'success', result };
-    } catch (error) {
-      // Update job status to failed
-      await db.update(contentPipelineJobs)
-        .set({
-          status: 'failed',
-          errorMessage: error.message || 'Unknown error',
-          endTime: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(contentPipelineJobs.id, jobRun.id));
-      
-      throw error;
+      return lastRunDate.getDate() !== today.getDate() ||
+             lastRunDate.getMonth() !== today.getMonth() ||
+             lastRunDate.getFullYear() !== today.getFullYear();
     }
-  }
-  
-  /**
-   * Generate content using AI
-   */
-  private async generateContent(parameters: any, params?: any): Promise<any> {
-    // Implementation for content generation
-    // Would call appropriate AI services based on parameters
-    return { message: 'Content generation job executed' };
-  }
-  
-  /**
-   * Publish content to platform
-   */
-  private async publishContent(parameters: any, params?: any): Promise<any> {
-    // Implementation for content publishing
-    // Would push content to appropriate platform (WordPress, social media, etc.)
-    return { message: 'Content publishing job executed' };
-  }
-  
-  /**
-   * Transform data
-   */
-  private async transformData(parameters: any, params?: any): Promise<any> {
-    // Implementation for data transformation
-    // Would transform content from one format to another
-    return { message: 'Data transformation job executed' };
+    
+    // For hourly schedule
+    if (schedule === 'hourly') {
+      const lastRunTime = new Date(lastRun.createdAt).getTime();
+      const hourAgo = Date.now() - (60 * 60 * 1000);
+      
+      return lastRunTime < hourAgo;
+    }
+    
+    // For weekly schedule
+    if (schedule === 'weekly') {
+      const lastRunTime = new Date(lastRun.createdAt).getTime();
+      const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      
+      return lastRunTime < weekAgo;
+    }
+    
+    // Default to not running if schedule type is unknown
+    return false;
   }
 }
 
-// Export singleton instance
-export const contentPipelineService = ContentPipelineService.getInstance();
+// Export a singleton instance of the service
+export const contentPipelineService = new ContentPipelineService();

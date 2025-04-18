@@ -13,6 +13,8 @@ import AutoContentPage from "@/pages/auto-content-page";
 import ListingsPage from "@/pages/listings-page";
 import FactCheckPage from "@/pages/fact-check-page";
 import PRKreationPage from "@/pages/pr-kreation-page";
+import PipelinesPage from "@/pages/pipelines-page";
+import PipelineRunPage from "@/pages/pipeline-run-page";
 import TestAuthPage from "@/pages/test-auth-page";
 import { Loader2 } from "lucide-react";
 
@@ -92,6 +94,12 @@ function App() {
       </Route>
       <Route path="/pr-kreation">
         <ProtectedRoute path="/pr-kreation" component={PRKreationPage} />
+      </Route>
+      <Route path="/pipelines">
+        <ProtectedRoute path="/pipelines" component={PipelinesPage} />
+      </Route>
+      <Route path="/pipeline-runs/:runId">
+        <ProtectedRoute path="/pipeline-runs/:runId" component={PipelineRunPage} />
       </Route>
       {/* Test auth route - not protected for debugging */}
       <Route path="/test-auth">
