@@ -362,7 +362,11 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
             
             {/* Generate Button */}
             <Button 
-              type="submit" 
+              type="button" 
+              onClick={() => {
+                console.log("Generate button clicked");
+                form.handleSubmit(onSubmit)();
+              }}
               className="w-full bg-primary hover:bg-primary-dark text-white"
               disabled={generating}
             >

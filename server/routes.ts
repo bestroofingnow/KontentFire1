@@ -299,7 +299,7 @@ export function registerRoutes(app: Express): Server {
   
   // Content generation endpoints
   app.post('/api/content/generate', async (req: Request, res: Response) => {
-    console.log("Content generation request received");
+    console.log("==== Content generation request received ====");
     console.log("Auth status:", req.isAuthenticated());
     console.log("User:", req.user ? req.user.id : "none");
     
@@ -309,7 +309,7 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
-      console.log("Request body:", JSON.stringify(req.body));
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
       
       const { 
         prompt, 
@@ -321,6 +321,10 @@ export function registerRoutes(app: Express): Server {
         template,
         templateData
       } = req.body;
+      
+      console.log("OPENAI_API_KEY exists:", !!process.env.OPENAI_API_KEY);
+      console.log("PERPLEXITY_API_KEY exists:", !!process.env.PERPLEXITY_API_KEY);
+      console.log("ANTHROPIC_API_KEY exists:", !!process.env.ANTHROPIC_API_KEY);
       
       console.log("Parsed content values:", { 
         promptLength: prompt ? prompt.length : 0, 
