@@ -16,9 +16,10 @@ import { PlusCircle, MinusCircle } from "lucide-react";
 interface BattleRoyaleTemplateProps {
   formData: any;
   onChange: (newData: any) => void;
+  onGenerateContent?: (formData: any) => void;
 }
 
-export default function BattleRoyaleTemplate({ formData, onChange }: BattleRoyaleTemplateProps) {
+export default function BattleRoyaleTemplate({ formData, onChange, onGenerateContent }: BattleRoyaleTemplateProps) {
   const [rounds, setRounds] = useState<string[]>(
     formData.rounds || ["costs", "durability", "performance", "maintenance", "sustainability"]
   );
@@ -184,6 +185,30 @@ export default function BattleRoyaleTemplate({ formData, onChange }: BattleRoyal
           Add Custom Round
         </Button>
       </div>
+      
+      {/* Direct generate button for Battle Royale template */}
+      {onGenerateContent && (
+        <div className="border-t pt-4 mt-4">
+          <Button 
+            type="button" 
+            onClick={() => {
+              console.log("Battle Royale direct generate button clicked");
+              
+              // Validate required fields
+              if (!formData.option1 || !formData.option2 || !formData.comparisonFocus) {
+                alert("Please fill in Option 1, Option 2, and Core Comparison Focus fields");
+                return;
+              }
+              
+              // Call the generate function with the current formData
+              onGenerateContent(formData);
+            }}
+            className="w-full bg-primary hover:bg-primary-dark text-white"
+          >
+            Generate Battle Royale Content
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

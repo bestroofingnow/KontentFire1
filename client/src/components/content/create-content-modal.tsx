@@ -261,6 +261,34 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
               <BattleRoyaleTemplate 
                 formData={templateData} 
                 onChange={handleTemplateDataChange}
+                onGenerateContent={(templateData) => {
+                  try {
+                    console.log("Battle Royale direct generate triggered");
+                    
+                    // Create submission data directly
+                    const directSubmission: Record<string, any> = {
+                      contentType: form.getValues().contentType || "both",
+                      platform: form.getValues().platform || "blog",
+                      tone: form.getValues().tone || "professional",
+                      length: form.getValues().length || "medium",
+                      template: "battle-royale",
+                      templateData: templateData
+                    };
+                    
+                    console.log("Direct Battle Royale submission:", JSON.stringify(directSubmission, null, 2));
+                    
+                    // Submit directly
+                    setGenerating(true);
+                    generateContentMutation.mutate(directSubmission);
+                  } catch (error) {
+                    console.error("Error in Battle Royale direct submission:", error);
+                    toast({
+                      title: "Submission Error",
+                      description: "There was an error submitting the Battle Royale template. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
               />
             )}
 
