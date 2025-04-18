@@ -426,3 +426,143 @@ export type ListingSyncTask = typeof listingSyncTasks.$inferSelect;
 
 export type InsertBusinessReview = z.infer<typeof insertBusinessReviewSchema>;
 export type BusinessReview = typeof businessReviews.$inferSelect;
+
+// Huginn Agent Enums
+export const agentTypeEnum = pgEnum('agent_type', [
+  'web_scraper', 'content_monitor', 'content_creator', 'social_media', 
+  'listing_manager', 'review_responder', 'seo_tracker', 'lead_generator', 
+  'competitor_monitor', 'trend_analyzer', 'custom'
+]);
+
+export const agentStatusEnum = pgEnum('agent_status', ['active', 'paused', 'error', 'configuring']);
+export const agentScheduleEnum = pgEnum('agent_schedule', ['manual', 'hourly', 'daily', 'weekly', 'monthly', 'custom']);
+export const agentTriggerEnum = pgEnum('agent_trigger', ['schedule', 'webhook', 'event', 'manual', 'api']);
+
+// Huginn Agents table
+export const huginnAgents = pgTable('huginn_agents', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  type: agentTypeEnum('type').notNull(),
+  status: agentStatusEnum('status').default('configuring').notNull(),
+  schedule: agentScheduleEnum('schedule').default('manual').notNull(),
+  customSchedule: text('custom_schedule'),
+  triggerType: agentTriggerEnum('trigger_type').default('manual').notNull(),
+  configuration: jsonb('configuration').notNull(),
+  lastRun: timestamp('last_run'),
+  nextRun: timestamp('next_run'),
+  lastResult: jsonb('last_result'),
+  workflowPosition: integer('workflow_position').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at'),
+});
+
+// Huginn Agent relations
+export const huginnAgentsRelations = relations(huginnAgents, ({ one, many }) => ({
+  user: one(users, {
+    fields: [huginnAgents.userId],
+    references: [users.id],
+  }),
+  events: many(huginnEvents),
+  workflows: many(huginnWorkflows),
+}));
+
+// Huginn Events table (for event-driven agent communication)
+export const huginnEvents = pgTable('huginn_events', {
+  id: serial('id').primaryKey(),
+  agentId: integer('agent_id').notNull().references(() => huginnAgents.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  payload: jsonb('payload').notNull(),
+  processed: boolean('processed').default(false).notNull(),
+  processedAt: timestamp('processed_at'),
+  receiverId: integer('receiver_id').references(() => huginnAgents.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Huginn Events relations
+export const huginnEventsRelations = relations(huginnEvents, ({ one }) => ({
+  agent: one(huginnAgents, {
+    fields: [huginnEvents.agentId],
+    references: [huginnAgents.id],
+  }),
+  receiver: one(huginnAgents, {
+    fields: [huginnEvents.receiverId],
+    references: [huginnAgents.id],
+  }),
+}));
+
+// Huginn Workflows table (for connected agent workflows)
+export const huginnWorkflows = pgTable('huginn_workflows', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  agentIds: integer('agent_ids').array().notNull(),
+  flowConfig: jsonb('flow_config').notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  lastRun: timestamp('last_run'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at'),
+});
+
+// Huginn Workflows relations
+export const huginnWorkflowsRelations = relations(huginnWorkflows, ({ one }) => ({
+  user: one(users, {
+    fields: [huginnWorkflows.userId],
+    references: [users.id],
+  }),
+}));
+
+// Huginn Log entries table
+export const huginnLogs = pgTable('huginn_logs', {
+  id: serial('id').primaryKey(),
+  agentId: integer('agent_id').references(() => huginnAgents.id, { onDelete: 'cascade' }),
+  workflowId: integer('workflow_id').references(() => huginnWorkflows.id, { onDelete: 'cascade' }),
+  level: text('level').notNull(),
+  message: text('message').notNull(),
+  details: jsonb('details'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Insert schemas for Huginn tables
+export const insertHuginnAgentSchema = createInsertSchema(huginnAgents).omit({
+  id: true,
+  lastRun: true,
+  nextRun: true,
+  lastResult: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertHuginnEventSchema = createInsertSchema(huginnEvents).omit({
+  id: true,
+  processed: true,
+  processedAt: true,
+  createdAt: true,
+});
+
+export const insertHuginnWorkflowSchema = createInsertSchema(huginnWorkflows).omit({
+  id: true,
+  lastRun: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertHuginnLogSchema = createInsertSchema(huginnLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types for Huginn tables
+export type InsertHuginnAgent = z.infer<typeof insertHuginnAgentSchema>;
+export type HuginnAgent = typeof huginnAgents.$inferSelect;
+
+export type InsertHuginnEvent = z.infer<typeof insertHuginnEventSchema>;
+export type HuginnEvent = typeof huginnEvents.$inferSelect;
+
+export type InsertHuginnWorkflow = z.infer<typeof insertHuginnWorkflowSchema>;
+export type HuginnWorkflow = typeof huginnWorkflows.$inferSelect;
+
+export type InsertHuginnLog = z.infer<typeof insertHuginnLogSchema>;
+export type HuginnLog = typeof huginnLogs.$inferSelect;

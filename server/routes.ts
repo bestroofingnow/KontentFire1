@@ -24,6 +24,13 @@ import {
   listingSyncTasks,
   taskStatusEnum,
   businessReviews,
+  huginnAgents,
+  huginnWorkflows,
+  huginnLogs,
+  agentTypeEnum,
+  agentStatusEnum,
+  agentScheduleEnum,
+  agentTriggerEnum
 } from "@shared/schema";
 import { eq, and, or, gte, lte, desc, asc, sql, not, isNull } from "drizzle-orm";
 import { factCheck, type FactCheckRequest, getReferences, type ReferencesRequest } from "./perplexity";
@@ -32,6 +39,7 @@ import { generateContent, type ContentPrompt, type GeneratedContent, getRelevant
 import { enhanceContent } from "./anthropic";
 import { repurposeContent, type RepurposeRequest, type RepurposeResponse } from "./content-repurpose";
 import { initAutoContentTasks } from "./auto-content-task";
+import { huginnAgentService } from "./huginn-agents";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.warn("STRIPE_SECRET_KEY is not set. Stripe integration will be disabled.");
@@ -2456,6 +2464,327 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error('Listings analytics error:', error);
       return res.status(500).json({ message: `Error fetching listings analytics: ${error.message}` });
+    }
+  });
+  
+  // Huginn Agent System Routes
+  
+  // Use huginnAgentService that we already imported at the top of file
+  
+  // Get all agent types (for dropdowns)
+  app.get('/api/huginn/agent-types', (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    res.json({ types: ["web_scraper", "content_monitor", "content_creator", "social_media", "listing_manager", "review_responder", "custom"] });
+  });
+  
+  // Get all agent schedules (for dropdowns)
+  app.get('/api/huginn/agent-schedules', (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    res.json({ schedules: ["manual", "hourly", "daily", "weekly", "monthly", "custom"] });
+  });
+  
+  // Get all agent triggers (for dropdowns)
+  app.get('/api/huginn/agent-triggers', (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    res.json({ triggers: ["schedule", "webhook", "event", "manual", "api"] });
+  });
+  
+  // Get all user's agents
+  app.get('/api/huginn/agents', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const agents = await huginnAgentService.getUserAgents(req.user.id);
+      res.json(agents);
+    } catch (error: any) {
+      console.error('Error fetching agents:', error);
+      res.status(500).json({ message: `Error fetching agents: ${error.message}` });
+    }
+  });
+  
+  // Get a specific agent
+  app.get('/api/huginn/agents/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const agentId = parseInt(req.params.id);
+      
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: 'Invalid agent ID' });
+      }
+      
+      const agent = await huginnAgentService.getAgent(agentId);
+      
+      if (!agent || agent.userId !== req.user.id) {
+        return res.status(404).json({ message: 'Agent not found' });
+      }
+      
+      res.json(agent);
+    } catch (error: any) {
+      console.error('Error fetching agent:', error);
+      res.status(500).json({ message: `Error fetching agent: ${error.message}` });
+    }
+  });
+  
+  // Create a new agent
+  app.post('/api/huginn/agents', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const {
+        name,
+        description,
+        type,
+        schedule,
+        customSchedule,
+        triggerType,
+        configuration
+      } = req.body;
+      
+      if (!name || !type || !schedule || !triggerType) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      const agent = await huginnAgentService.createAgent(req.user.id, {
+        name,
+        description,
+        type,
+        schedule,
+        customSchedule,
+        triggerType,
+        configuration: configuration || {}
+      });
+      
+      res.status(201).json(agent);
+    } catch (error: any) {
+      console.error('Error creating agent:', error);
+      res.status(500).json({ message: `Error creating agent: ${error.message}` });
+    }
+  });
+  
+  // Update an agent
+  app.put('/api/huginn/agents/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const agentId = parseInt(req.params.id);
+      
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: 'Invalid agent ID' });
+      }
+      
+      const {
+        name,
+        description,
+        status,
+        schedule,
+        customSchedule,
+        triggerType,
+        configuration
+      } = req.body;
+      
+      const agent = await huginnAgentService.updateAgent(agentId, req.user.id, {
+        name,
+        description,
+        status,
+        schedule,
+        customSchedule,
+        triggerType,
+        configuration
+      });
+      
+      res.json(agent);
+    } catch (error: any) {
+      console.error('Error updating agent:', error);
+      res.status(500).json({ message: `Error updating agent: ${error.message}` });
+    }
+  });
+  
+  // Delete an agent
+  app.delete('/api/huginn/agents/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const agentId = parseInt(req.params.id);
+      
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: 'Invalid agent ID' });
+      }
+      
+      await huginnAgentService.deleteAgent(agentId, req.user.id);
+      
+      res.status(204).end();
+    } catch (error: any) {
+      console.error('Error deleting agent:', error);
+      res.status(500).json({ message: `Error deleting agent: ${error.message}` });
+    }
+  });
+  
+  // Run an agent manually
+  app.post('/api/huginn/agents/:id/run', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const agentId = parseInt(req.params.id);
+      
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: 'Invalid agent ID' });
+      }
+      
+      const result = await huginnAgentService.runAgent(agentId, req.user.id);
+      
+      res.json({ success: true, result });
+    } catch (error: any) {
+      console.error('Error running agent:', error);
+      res.status(500).json({ message: `Error running agent: ${error.message}` });
+    }
+  });
+  
+  // Get agent logs
+  app.get('/api/huginn/agents/:id/logs', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const agentId = parseInt(req.params.id);
+      
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: 'Invalid agent ID' });
+      }
+      
+      // First verify that the agent belongs to the user
+      const agent = await huginnAgentService.getAgent(agentId);
+      
+      if (!agent || agent.userId !== req.user.id) {
+        return res.status(404).json({ message: 'Agent not found' });
+      }
+      
+      // Instead of using the database directly, fetch logs through the service
+      const logs = await huginnAgentService.getAgentLogs(agentId);
+      
+      res.json(logs);
+    } catch (error: any) {
+      console.error('Error fetching agent logs:', error);
+      res.status(500).json({ message: `Error fetching agent logs: ${error.message}` });
+    }
+  });
+  
+  // Workflow routes
+  
+  // Get all user's workflows
+  app.get('/api/huginn/workflows', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const workflows = await huginnAgentService.getUserWorkflows(req.user.id);
+      res.json(workflows);
+    } catch (error: any) {
+      console.error('Error fetching workflows:', error);
+      res.status(500).json({ message: `Error fetching workflows: ${error.message}` });
+    }
+  });
+  
+  // Get a specific workflow
+  app.get('/api/huginn/workflows/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const workflowId = parseInt(req.params.id);
+      
+      if (isNaN(workflowId)) {
+        return res.status(400).json({ message: 'Invalid workflow ID' });
+      }
+      
+      const workflow = await huginnAgentService.getWorkflow(workflowId, req.user.id);
+      
+      if (!workflow) {
+        return res.status(404).json({ message: 'Workflow not found' });
+      }
+      
+      res.json(workflow);
+    } catch (error: any) {
+      console.error('Error fetching workflow:', error);
+      res.status(500).json({ message: `Error fetching workflow: ${error.message}` });
+    }
+  });
+  
+  // Create a new workflow
+  app.post('/api/huginn/workflows', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const {
+        name,
+        description,
+        agentIds,
+        flowConfig
+      } = req.body;
+      
+      if (!name || !agentIds || !Array.isArray(agentIds) || agentIds.length === 0) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      const workflow = await huginnAgentService.createWorkflow(req.user.id, {
+        name,
+        description,
+        agentIds,
+        flowConfig: flowConfig || {}
+      });
+      
+      res.status(201).json(workflow);
+    } catch (error: any) {
+      console.error('Error creating workflow:', error);
+      res.status(500).json({ message: `Error creating workflow: ${error.message}` });
+    }
+  });
+  
+  // Run a workflow
+  app.post('/api/huginn/workflows/:id/run', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const workflowId = parseInt(req.params.id);
+      
+      if (isNaN(workflowId)) {
+        return res.status(400).json({ message: 'Invalid workflow ID' });
+      }
+      
+      const results = await huginnAgentService.runWorkflow(workflowId, req.user.id);
+      
+      res.json({ success: true, results });
+    } catch (error: any) {
+      console.error('Error running workflow:', error);
+      res.status(500).json({ message: `Error running workflow: ${error.message}` });
     }
   });
   
