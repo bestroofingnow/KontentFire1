@@ -30,6 +30,7 @@ import {
 import { format, formatDistanceToNow, formatDuration, intervalToDuration } from 'date-fns';
 import PipelineLogs from '@/components/pipelines/pipeline-logs';
 import PipelineGraph from '@/components/pipelines/pipeline-graph';
+import MainLayout from '@/components/layout/main-layout';
 
 // Types for our data
 interface Pipeline {
@@ -233,7 +234,7 @@ const PipelineRunPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+      <MainLayout>
         <div className="flex items-center mb-6">
           <Button variant="outline" size="sm" asChild>
             <Link to="/pipelines">
@@ -259,13 +260,13 @@ const PipelineRunPage: React.FC = () => {
             </Card>
           ))}
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="container mx-auto py-8">
+      <MainLayout>
         <div className="flex items-center mb-6">
           <Button variant="outline" size="sm" asChild>
             <Link to="/pipelines">
@@ -284,7 +285,7 @@ const PipelineRunPage: React.FC = () => {
             <Link to="/pipelines">Return to Pipelines</Link>
           </Button>
         </Card>
-      </div>
+      </MainLayout>
     );
   }
 
@@ -301,7 +302,7 @@ const PipelineRunPage: React.FC = () => {
   })) || [];
 
   return (
-    <div className="container mx-auto py-8">
+    <MainLayout>
       <div className="flex items-center mb-6">
         <Button variant="outline" size="sm" asChild>
           <Link to="/pipelines">
@@ -457,7 +458,7 @@ const PipelineRunPage: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </MainLayout>
   );
 };
 
