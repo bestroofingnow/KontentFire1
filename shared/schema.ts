@@ -9,12 +9,20 @@ export const users = pgTable('users', {
   username: text('username').notNull().unique(),
   email: text('email').notNull(),
   password: text('password').notNull(),
-  role: text('role').default('user').notNull(),
+  isAdmin: boolean('is_admin').default(false),
+  plan: text('plan').default('blaze'),
+  planStatus: text('plan_status').default('active'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  wpIntegrationActive: boolean('wp_integration_active').default(false),
+  shopifyIntegrationActive: boolean('shopify_integration_active').default(false),
+  wpSiteUrl: text('wp_site_url'),
+  wpUsername: text('wp_username'),
+  wpAuthToken: text('wp_auth_token'),
+  shopifyUrl: text('shopify_url'),
+  shopifyApiKey: text('shopify_api_key'),
+  shopifyApiSecret: text('shopify_api_secret'),
   stripeCustomerId: text('stripe_customer_id'),
   stripeSubscriptionId: text('stripe_subscription_id'),
-  subscriptionTier: text('subscription_tier').default('blaze'),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
