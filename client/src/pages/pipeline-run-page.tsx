@@ -85,7 +85,7 @@ const StatusBadge = ({ status }: { status: 'running' | 'success' | 'failed' | 'c
     case 'running':
       return <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Running</Badge>;
     case 'success':
-      return <Badge variant="success">Success</Badge>;
+      return <Badge className="bg-green-500 hover:bg-green-600">Success</Badge>;
     case 'failed':
       return <Badge variant="destructive">Failed</Badge>;
     case 'cancelled':

@@ -10,7 +10,8 @@ import {
   Flame,
   Shield,
   SearchCheck,
-  FileText
+  FileText,
+  GitBranch
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export default function Sidebar() {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Content', href: '/content', icon: PenTool },
     { name: 'PR Kreation', href: '/pr-kreation', icon: FileText },
+    { name: 'Pipelines', href: '/pipelines', icon: GitBranch },
     { name: 'Schedule', href: '/schedule', icon: Calendar },
     { name: 'Fact Check', href: '/fact-check', icon: SearchCheck },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },

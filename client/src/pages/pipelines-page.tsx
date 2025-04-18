@@ -66,9 +66,9 @@ interface PipelineRun {
 const PipelineStatusBadge = ({ status }: { status: Pipeline['status'] }) => {
   switch (status) {
     case 'active':
-      return <Badge variant="success">Active</Badge>;
+      return <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>;
     case 'paused':
-      return <Badge variant="warning">Paused</Badge>;
+      return <Badge className="bg-yellow-500 hover:bg-yellow-600">Paused</Badge>;
     case 'archived':
       return <Badge variant="secondary">Archived</Badge>;
     default:
@@ -82,7 +82,7 @@ const PipelineRunStatusBadge = ({ status }: { status: PipelineRun['status'] }) =
     case 'running':
       return <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Running</Badge>;
     case 'success':
-      return <Badge variant="success">Success</Badge>;
+      return <Badge className="bg-green-500 hover:bg-green-600">Success</Badge>;
     case 'failed':
       return <Badge variant="destructive">Failed</Badge>;
     case 'cancelled':
