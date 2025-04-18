@@ -45,7 +45,8 @@ import OpenAI from "openai";
 import { generateContent, type ContentPrompt, type GeneratedContent, getRelevantSources } from "./openai";
 import { enhanceContent } from "./anthropic";
 import { repurposeContent, type RepurposeRequest, type RepurposeResponse } from "./content-repurpose";
-import { initAutoContentTasks } from "./auto-content-task";
+// Auto content tasks temporarily disabled until schema components are implemented
+// import { initAutoContentTasks } from "./auto-content-task";
 import { huginnAgentService } from "./huginn-agents";
 import { processAssistantMessage } from "./assistant";
 
@@ -66,7 +67,8 @@ export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // Start auto-content tasks (will check for eligible users based on plan type)
-  initAutoContentTasks();
+  // Temporarily disabled until schema components are implemented
+  // initAutoContentTasks();
 
   // Subscription management endpoints
   

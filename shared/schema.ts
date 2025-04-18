@@ -1,321 +1,267 @@
-import { pgTable, text, serial, integer, boolean, timestamp, date, pgEnum, jsonb } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
-import { relations } from "drizzle-orm";
-
-// Enums
-export const planEnum = pgEnum('plan_type', ['premium']);
-export const contentTypeEnum = pgEnum('content_type', ['text', 'image', 'both']);
-export const contentStatusEnum = pgEnum('content_status', ['draft', 'scheduled', 'published']);
-export const platformEnum = pgEnum('platform_type', ['blog', 'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'pinterest', 'press-release']);
-export const frequencyEnum = pgEnum('frequency_type', ['daily', 'weekly', 'bi-weekly', 'monthly']);
-export const toneEnum = pgEnum('tone_type', ['professional', 'casual', 'friendly', 'authoritative', 'humorous']);
-export const autoContentStatusEnum = pgEnum('auto_content_status', ['pending', 'published', 'failed']);
-export const listingPlatformEnum = pgEnum('listing_platform_type', [
-  'google', 'facebook', 'instagram', 'linkedin', 'foursquare', 'youtube',
-  'apple_maps', 'yelp', 'bing', 'angi', 'yellowpages', 'bbb', 'chamber'
-]);
-export const listingSyncStatusEnum = pgEnum('listing_sync_status', ['synced', 'pending', 'failed', 'manual_required']);
-export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'completed', 'failed']);
-
-// Content Pipeline Enums
-export const pipelineStatusEnum = pgEnum('pipeline_status', ['active', 'paused', 'archived', 'deleted']);
-export const pipelineRunStatusEnum = pgEnum('pipeline_run_status', ['pending', 'running', 'success', 'completed', 'failed', 'cancelled']);
-export const pipelineStageStatusEnum = pgEnum('pipeline_stage_status', ['pending', 'running', 'success', 'completed', 'failed', 'cancelled', 'skipped']);
-export const pipelineJobStatusEnum = pgEnum('pipeline_job_status', ['pending', 'running', 'success', 'completed', 'failed', 'cancelled', 'skipped']);
-export const pipelineJobTypeEnum = pgEnum('pipeline_job_type', [
-  'huginn_agent', 'content_generation', 'content_publishing', 'data_transformation'
-]);
+import { pgTable, serial, text, timestamp, integer, boolean, json, pgEnum } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+import { createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod';
 
 // Users table
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   username: text('username').notNull().unique(),
-  email: text('email').notNull().unique(),
+  email: text('email').notNull(),
   password: text('password').notNull(),
+  role: text('role').default('user').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  plan: planEnum('plan').default('premium').notNull(),
-  planStatus: text('plan_status').default('active'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
   stripeCustomerId: text('stripe_customer_id'),
   stripeSubscriptionId: text('stripe_subscription_id'),
-  isAdmin: boolean('is_admin').default(false).notNull(),
-  // WordPress integration fields
-  wpSiteUrl: text('wp_site_url'),
-  wpUsername: text('wp_username'),
-  wpAuthToken: text('wp_auth_token'),
-  wpIntegrationActive: boolean('wp_integration_active').default(false),
-  // Shopify integration fields
-  shopifyUrl: text('shopify_url'),
-  shopifyApiKey: text('shopify_api_key'),
-  shopifyApiSecret: text('shopify_api_secret'),
-  shopifyIntegrationActive: boolean('shopify_integration_active').default(false),
+  subscriptionTier: text('subscription_tier').default('blaze'),
 });
 
-// User relations
 export const usersRelations = relations(users, ({ many }) => ({
   contents: many(contents),
-  socialAccounts: many(socialAccounts),
+  schedules: many(schedules),
+  contentPipelines: many(contentPipelines),
 }));
 
-// Social Accounts table
-export const socialAccounts = pgTable('social_accounts', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  platform: platformEnum('platform').notNull(),
-  accessToken: text('access_token').notNull(),
-  refreshToken: text('refresh_token'),
-  tokenExpiry: timestamp('token_expiry'),
-  platformUserId: text('platform_user_id'),
-  platformUsername: text('platform_username'),
-});
+// Content statuses enum
+export const contentStatusEnum = pgEnum('content_status', [
+  'draft',
+  'scheduled',
+  'published',
+  'archived',
+]);
 
-// Social Account relations
-export const socialAccountsRelations = relations(socialAccounts, ({ one }) => ({
-  user: one(users, {
-    fields: [socialAccounts.userId],
-    references: [users.id],
-  }),
-}));
+// Content types enum
+export const contentTypeEnum = pgEnum('content_type', [
+  'article',
+  'social',
+  'video',
+  'newsletter',
+]);
+
+// Content templates enum
+export const contentTemplateEnum = pgEnum('content_template', [
+  'standard',
+  'battle-royale',
+  'basics-101',
+  'myth-buster',
+  'technical-guide',
+  'case-against',
+  'checklist',
+]);
+
+// Content personalities enum
+export const contentPersonalityEnum = pgEnum('content_personality', [
+  'thoughtful',
+  'enthusiastic',
+  'skeptical',
+  'inspirational',
+  'analytical',
+]);
+
+// Tone enum
+export const toneEnum = pgEnum('tone', [
+  'professional',
+  'casual',
+  'friendly',
+  'formal',
+  'humorous',
+  'authoritative',
+]);
+
+// Platform enum
+export const platformEnum = pgEnum('platform', [
+  'website',
+  'twitter',
+  'facebook',
+  'instagram',
+  'linkedin',
+  'youtube',
+  'tiktok',
+]);
+
+// Frequency enum
+export const frequencyEnum = pgEnum('frequency', [
+  'daily',
+  'weekly',
+  'monthly',
+  'custom',
+]);
 
 // Contents table
 export const contents = pgTable('contents', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').references(() => users.id).notNull(),
   title: text('title').notNull(),
-  textContent: text('text_content'),
-  imageUrl: text('image_url'),
-  contentType: contentTypeEnum('content_type').notNull(),
+  description: text('description'),
+  content: text('content'),
   status: contentStatusEnum('status').default('draft').notNull(),
+  type: contentTypeEnum('type').default('article').notNull(),
+  template: contentTemplateEnum('template').default('standard').notNull(),
+  personality: contentPersonalityEnum('personality').default('thoughtful').notNull(),
+  featuredImage: text('featured_image'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  publishedAt: timestamp('published_at'),
+  scheduledAt: timestamp('scheduled_at'),
+  metadata: json('metadata'),
 });
 
-// Content relations
 export const contentsRelations = relations(contents, ({ one, many }) => ({
   user: one(users, {
     fields: [contents.userId],
     references: [users.id],
   }),
-  schedules: many(schedules),
+  images: many(contentImages),
+  pipelineRuns: many(contentPipelineRuns),
+}));
+
+// Content images table
+export const contentImages = pgTable('content_images', {
+  id: serial('id').primaryKey(),
+  contentId: integer('content_id').references(() => contents.id).notNull(),
+  url: text('url').notNull(),
+  alt: text('alt'),
+  caption: text('caption'),
+  order: integer('order').default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const contentImagesRelations = relations(contentImages, ({ one }) => ({
+  content: one(contents, {
+    fields: [contentImages.contentId],
+    references: [contents.id],
+  }),
 }));
 
 // Schedules table
 export const schedules = pgTable('schedules', {
   id: serial('id').primaryKey(),
-  contentId: integer('content_id').notNull().references(() => contents.id, { onDelete: 'cascade' }),
-  platform: platformEnum('platform').notNull(),
-  scheduledDate: timestamp('scheduled_date').notNull(),
-  published: boolean('published').default(false).notNull(),
-  publishedDate: timestamp('published_date'),
-  engagementMetrics: text('engagement_metrics'),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  frequency: text('frequency').notNull(), // cron expression
+  template: contentTemplateEnum('template').default('standard').notNull(),
+  type: contentTypeEnum('type').default('article').notNull(),
+  personality: contentPersonalityEnum('personality').default('thoughtful').notNull(),
+  keywords: text('keywords'),
+  active: boolean('active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  lastRunAt: timestamp('last_run_at'),
+  metadata: json('metadata'),
 });
 
-// Schedule relations
 export const schedulesRelations = relations(schedules, ({ one }) => ({
-  content: one(contents, {
-    fields: [schedules.contentId],
-    references: [contents.id],
+  user: one(users, {
+    fields: [schedules.userId],
+    references: [users.id],
   }),
 }));
 
-// Company Profiles table
+// Company profiles table
 export const companyProfiles = pgTable('company_profiles', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  companyName: text('company_name').notNull(),
-  industry: text('industry'),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  name: text('name').notNull(),
   description: text('description'),
-  websiteUrl: text('website_url'),
-  logoUrl: text('logo_url'),
-  primaryColor: text('primary_color'),
-  secondaryColor: text('secondary_color'),
-  facebookUrl: text('facebook_url'),
-  twitterUrl: text('twitter_url'),
-  instagramUrl: text('instagram_url'),
-  linkedinUrl: text('linkedin_url'),
-  youtubeUrl: text('youtube_url'),
-  tiktokUrl: text('tiktok_url'),
-  pinterestUrl: text('pinterest_url'),
-  additionalInfo: text('additional_info'),
+  industry: text('industry'),
+  website: text('website'),
+  logo: text('logo'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  metadata: json('metadata'),
 });
 
-// Company Profile relations
-export const companyProfilesRelations = relations(companyProfiles, ({ one, many }) => ({
+export const companyProfilesRelations = relations(companyProfiles, ({ one }) => ({
   user: one(users, {
     fields: [companyProfiles.userId],
     references: [users.id],
   }),
-  businessHours: one(businessHours),
-  businessListings: many(businessListings),
 }));
 
-// Auto Content Configuration table
-export const autoContentConfigs = pgTable('auto_content_configs', {
+// Platform integrations enum
+export const platformIntegrationEnum = pgEnum('platform_integration', [
+  'wordpress',
+  'shopify',
+  'twitter',
+  'facebook',
+  'instagram',
+  'linkedin',
+  'youtube',
+  'tiktok',
+]);
+
+// Platform integrations table
+export const platformIntegrations = pgTable('platform_integrations', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  enabled: boolean('enabled').default(false).notNull(),
-  postFrequency: frequencyEnum('post_frequency').default('weekly').notNull(),
-  platforms: text('platforms').array().notNull(),
-  topicCategories: text('topic_categories').array().notNull(),
-  contentTone: toneEnum('content_tone').default('professional').notNull(),
-  includeImages: boolean('include_images').default(true).notNull(),
-  customNotes: text('custom_notes'),
-  defaultHashtags: text('default_hashtags'),
-  bestTimeToPost: boolean('best_time_to_post').default(true).notNull(),
-  specificPostTime: text('specific_post_time'),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  platform: platformIntegrationEnum('platform').notNull(),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  tokenExpiry: timestamp('token_expiry'),
+  metadata: json('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Auto Content Configuration relations
-export const autoContentConfigsRelations = relations(autoContentConfigs, ({ one }) => ({
+export const platformIntegrationsRelations = relations(platformIntegrations, ({ one }) => ({
   user: one(users, {
-    fields: [autoContentConfigs.userId],
+    fields: [platformIntegrations.userId],
     references: [users.id],
   }),
 }));
 
-// Auto Generated Content table
-export const autoGeneratedContents = pgTable('auto_generated_contents', {
+// Analytics table
+export const analytics = pgTable('analytics', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  configId: integer('config_id').notNull().references(() => autoContentConfigs.id, { onDelete: 'cascade' }),
-  title: text('title').notNull(),
-  textContent: text('text_content'),
-  imageUrl: text('image_url'),
-  contentType: contentTypeEnum('content_type').notNull(),
-  platform: platformEnum('platform').notNull(),
-  scheduledDate: timestamp('scheduled_date').notNull(),
-  status: autoContentStatusEnum('status').default('pending').notNull(),
-  generationPrompt: text('generation_prompt'),
-  publishedDate: timestamp('published_date'),
-  engagementMetrics: text('engagement_metrics'),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  contentId: integer('content_id').references(() => contents.id),
+  event: text('event').notNull(),
+  platform: text('platform'),
+  value: integer('value'),
+  metadata: json('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Auto Generated Content relations
-export const autoGeneratedContentsRelations = relations(autoGeneratedContents, ({ one }) => ({
+export const analyticsRelations = relations(analytics, ({ one }) => ({
   user: one(users, {
-    fields: [autoGeneratedContents.userId],
+    fields: [analytics.userId],
     references: [users.id],
   }),
-  config: one(autoContentConfigs, {
-    fields: [autoGeneratedContents.configId],
-    references: [autoContentConfigs.id],
+  content: one(contents, {
+    fields: [analytics.contentId],
+    references: [contents.id],
   }),
 }));
 
-// Admin Settings table
-export const adminSettings = pgTable('admin_settings', {
-  id: serial('id').primaryKey(),
-  premiumPrice: integer('premium_price').default(9900).notNull(), // $99.00 in cents
-  stripeProductId: text('stripe_product_id'),
-  premiumPriceId: text('premium_price_id'),
-  selfPromoEnabled: boolean('self_promo_enabled').default(true).notNull(),
-  selfPromoInterval: integer('self_promo_interval').default(7).notNull(), // days
-  customAutomationsEnabled: boolean('custom_automations_enabled').default(true).notNull(),
-});
+// Pipeline stages enum
+export const pipelineStageEnum = pgEnum('pipeline_stage', [
+  'content_generation',
+  'research',
+  'editing',
+  'review',
+  'approval',
+  'publishing',
+  'distribution',
+]);
 
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  planStatus: true,
-  stripeCustomerId: true,
-  stripeSubscriptionId: true,
-  isAdmin: true,
-  wpSiteUrl: true,
-  wpUsername: true,
-  wpAuthToken: true,
-  wpIntegrationActive: true,
-  shopifyUrl: true,
-  shopifyApiKey: true,
-  shopifyApiSecret: true,
-  shopifyIntegrationActive: true,
-});
-
-export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({
-  id: true,
-});
-
-export const insertContentSchema = createInsertSchema(contents).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertScheduleSchema = createInsertSchema(schedules).omit({
-  id: true,
-  published: true,
-  publishedDate: true,
-  engagementMetrics: true,
-});
-
-export const insertAdminSettingsSchema = createInsertSchema(adminSettings).omit({
-  id: true,
-});
-
-export const insertCompanyProfileSchema = createInsertSchema(companyProfiles).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAutoContentConfigSchema = createInsertSchema(autoContentConfigs).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertAutoGeneratedContentSchema = createInsertSchema(autoGeneratedContents).omit({
-  id: true,
-  createdAt: true,
-  publishedDate: true,
-  engagementMetrics: true,
-});
-
-// Types
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-export type InsertSocialAccount = z.infer<typeof insertSocialAccountSchema>;
-export type SocialAccount = typeof socialAccounts.$inferSelect;
-
-export type InsertContent = z.infer<typeof insertContentSchema>;
-export type Content = typeof contents.$inferSelect;
-
-export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
-export type Schedule = typeof schedules.$inferSelect;
-
-export type InsertAdminSettings = z.infer<typeof insertAdminSettingsSchema>;
-export type AdminSettings = typeof adminSettings.$inferSelect;
-
-export type InsertCompanyProfile = z.infer<typeof insertCompanyProfileSchema>;
-export type CompanyProfile = typeof companyProfiles.$inferSelect;
-
-export type InsertAutoContentConfig = z.infer<typeof insertAutoContentConfigSchema>;
-export type AutoContentConfig = typeof autoContentConfigs.$inferSelect;
-
-export type InsertAutoGeneratedContent = z.infer<typeof insertAutoGeneratedContentSchema>;
-export type AutoGeneratedContent = typeof autoGeneratedContents.$inferSelect;
-
-// Content Pipeline tables
+// Content pipelines table
 export const contentPipelines = pgTable('content_pipelines', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').references(() => users.id).notNull(),
   name: text('name').notNull(),
   description: text('description'),
-  automated: boolean('automated').default(false).notNull(),
-  schedule: text('schedule'), // cron expression for automated pipelines
-  configuration: jsonb('configuration').notNull(),
-  status: pipelineStatusEnum('status').default('active').notNull(),
+  stages: json('stages').notNull(), // Array of stage definitions
+  isActive: boolean('is_active').default(true).notNull(),
+  isAutomated: boolean('is_automated').default(false).notNull(),
+  triggerSchedule: text('trigger_schedule'), // cron expression for automated pipelines
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  lastRunAt: timestamp('last_run_at'),
+  metadata: json('metadata'),
 });
 
-// Content Pipeline relations
 export const contentPipelinesRelations = relations(contentPipelines, ({ one, many }) => ({
   user: one(users, {
     fields: [contentPipelines.userId],
@@ -324,353 +270,442 @@ export const contentPipelinesRelations = relations(contentPipelines, ({ one, man
   runs: many(contentPipelineRuns),
 }));
 
-// Content Pipeline Runs table
+// Pipeline run statuses enum
+export const pipelineRunStatusEnum = pgEnum('pipeline_run_status', [
+  'pending',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+]);
+
+// Content pipeline runs table
 export const contentPipelineRuns = pgTable('content_pipeline_runs', {
   id: serial('id').primaryKey(),
-  pipelineId: integer('pipeline_id').notNull().references(() => contentPipelines.id, { onDelete: 'cascade' }),
-  status: pipelineRunStatusEnum('status').notNull(),
-  params: jsonb('params').default({}).notNull(),
-  result: jsonb('result'),
-  errorMessage: text('error_message'),
-  startTime: timestamp('start_time').notNull(),
-  endTime: timestamp('end_time'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  pipelineId: integer('pipeline_id').references(() => contentPipelines.id).notNull(),
+  contentId: integer('content_id').references(() => contents.id),
+  status: pipelineRunStatusEnum('status').default('pending').notNull(),
+  currentStage: integer('current_stage').default(0),
+  results: json('results'), // Results of each stage
+  startedAt: timestamp('started_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+  error: text('error'),
+  metadata: json('metadata'),
 });
 
-// Content Pipeline Runs relations
 export const contentPipelineRunsRelations = relations(contentPipelineRuns, ({ one, many }) => ({
   pipeline: one(contentPipelines, {
     fields: [contentPipelineRuns.pipelineId],
     references: [contentPipelines.id],
   }),
-  stages: many(contentPipelineStages),
-}));
-
-// Content Pipeline Stages table
-export const contentPipelineStages = pgTable('content_pipeline_stages', {
-  id: serial('id').primaryKey(),
-  pipelineRunId: integer('pipeline_run_id').notNull().references(() => contentPipelineRuns.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  status: pipelineStageStatusEnum('status').notNull(),
-  errorMessage: text('error_message'),
-  startTime: timestamp('start_time').notNull(),
-  endTime: timestamp('end_time'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
-});
-
-// Content Pipeline Stages relations
-export const contentPipelineStagesRelations = relations(contentPipelineStages, ({ one, many }) => ({
-  pipelineRun: one(contentPipelineRuns, {
-    fields: [contentPipelineStages.pipelineRunId],
-    references: [contentPipelineRuns.id],
+  content: one(contents, {
+    fields: [contentPipelineRuns.contentId],
+    references: [contents.id],
   }),
   jobs: many(contentPipelineJobs),
 }));
 
-// Content Pipeline Jobs table
+// Pipeline job statuses enum
+export const pipelineJobStatusEnum = pgEnum('pipeline_job_status', [
+  'pending',
+  'running',
+  'completed',
+  'failed',
+  'cancelled',
+]);
+
+// Content pipeline jobs table
 export const contentPipelineJobs = pgTable('content_pipeline_jobs', {
   id: serial('id').primaryKey(),
-  stageRunId: integer('stage_run_id').notNull().references(() => contentPipelineStages.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  type: pipelineJobTypeEnum('type').notNull(),
-  status: pipelineJobStatusEnum('status').notNull(),
-  result: jsonb('result'),
-  errorMessage: text('error_message'),
-  startTime: timestamp('start_time').notNull(),
-  endTime: timestamp('end_time'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  runId: integer('run_id').references(() => contentPipelineRuns.id).notNull(),
+  stage: integer('stage').notNull(),
+  type: text('type').notNull(), // e.g., 'openai', 'perplexity', 'anthropic', 'distribution'
+  status: pipelineJobStatusEnum('status').default('pending').notNull(),
+  config: json('config').notNull(), // Job-specific configuration
+  result: json('result'), // Result of the job
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  error: text('error'),
+  metadata: json('metadata'),
 });
 
-// Content Pipeline Jobs relations
 export const contentPipelineJobsRelations = relations(contentPipelineJobs, ({ one }) => ({
-  stage: one(contentPipelineStages, {
-    fields: [contentPipelineJobs.stageRunId],
-    references: [contentPipelineStages.id],
+  run: one(contentPipelineRuns, {
+    fields: [contentPipelineJobs.runId],
+    references: [contentPipelineRuns.id],
   }),
 }));
 
-// Insert schemas for content pipelines
-export const insertContentPipelineSchema = createInsertSchema(contentPipelines).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// Schemas for data validation and type generation
 
-export const insertContentPipelineRunSchema = createInsertSchema(contentPipelineRuns).omit({
-  id: true,
-  result: true,
-  errorMessage: true,
-  endTime: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// User schemas
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
 
-export const insertContentPipelineStageSchema = createInsertSchema(contentPipelineStages).omit({
-  id: true,
-  errorMessage: true,
-  endTime: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// Content schemas
+export const insertContentSchema = createInsertSchema(contents).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertContent = z.infer<typeof insertContentSchema>;
+export type Content = typeof contents.$inferSelect;
 
-export const insertContentPipelineJobSchema = createInsertSchema(contentPipelineJobs).omit({
-  id: true,
-  result: true,
-  errorMessage: true,
-  endTime: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// Content image schemas
+export const insertContentImageSchema = createInsertSchema(contentImages).omit({ id: true, createdAt: true });
+export type InsertContentImage = z.infer<typeof insertContentImageSchema>;
+export type ContentImage = typeof contentImages.$inferSelect;
 
-// Content Pipeline types
+// Schedule schemas
+export const insertScheduleSchema = createInsertSchema(schedules).omit({ id: true, createdAt: true, updatedAt: true, lastRunAt: true });
+export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
+export type Schedule = typeof schedules.$inferSelect;
+
+// Company profile schemas
+export const insertCompanyProfileSchema = createInsertSchema(companyProfiles).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCompanyProfile = z.infer<typeof insertCompanyProfileSchema>;
+export type CompanyProfile = typeof companyProfiles.$inferSelect;
+
+// Platform integration schemas
+export const insertPlatformIntegrationSchema = createInsertSchema(platformIntegrations).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPlatformIntegration = z.infer<typeof insertPlatformIntegrationSchema>;
+export type PlatformIntegration = typeof platformIntegrations.$inferSelect;
+
+// Analytics schemas
+export const insertAnalyticsSchema = createInsertSchema(analytics).omit({ id: true, createdAt: true });
+export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
+export type Analytics = typeof analytics.$inferSelect;
+
+// Content pipeline schemas
+export const insertContentPipelineSchema = createInsertSchema(contentPipelines).omit({ id: true, createdAt: true, updatedAt: true, lastRunAt: true });
 export type InsertContentPipeline = z.infer<typeof insertContentPipelineSchema>;
 export type ContentPipeline = typeof contentPipelines.$inferSelect;
 
+// Content pipeline run schemas
+export const insertContentPipelineRunSchema = createInsertSchema(contentPipelineRuns).omit({ id: true, startedAt: true, completedAt: true });
 export type InsertContentPipelineRun = z.infer<typeof insertContentPipelineRunSchema>;
 export type ContentPipelineRun = typeof contentPipelineRuns.$inferSelect;
 
-export type InsertContentPipelineStage = z.infer<typeof insertContentPipelineStageSchema>;
-export type ContentPipelineStage = typeof contentPipelineStages.$inferSelect;
-
+// Content pipeline job schemas
+export const insertContentPipelineJobSchema = createInsertSchema(contentPipelineJobs).omit({ id: true, startedAt: true, completedAt: true });
 export type InsertContentPipelineJob = z.infer<typeof insertContentPipelineJobSchema>;
 export type ContentPipelineJob = typeof contentPipelineJobs.$inferSelect;
 
-// Business Listings tables and types
+// Stage definition for content pipelines
+export interface PipelineStageDefinition {
+  id: string;
+  name: string;
+  type: string; // e.g., 'openai', 'perplexity', 'anthropic', 'distribution'
+  config: Record<string, any>;
+  dependsOn?: string[]; // IDs of stages that must complete before this one
+  condition?: string; // Expression to determine if this stage should run
+}
 
-// Business Hours table (extends company profile with operating hours)
-export const businessHours = pgTable('business_hours', {
+// Stage result for pipeline runs
+export interface PipelineStageResult {
+  stageId: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  startedAt?: string;
+  completedAt?: string;
+  output?: any;
+  error?: string;
+}
+
+// Admin settings table for global configuration
+export const adminSettings = pgTable('admin_settings', {
   id: serial('id').primaryKey(),
-  companyProfileId: integer('company_profile_id').notNull().references(() => companyProfiles.id, { onDelete: 'cascade' }),
-  monday: text('monday'),
-  tuesday: text('tuesday'),
-  wednesday: text('wednesday'),
-  thursday: text('thursday'),
-  friday: text('friday'),
-  saturday: text('saturday'),
-  sunday: text('sunday'),
-  holidays: text('holidays'),
+  platformName: text('platform_name').default('Kontent Fire').notNull(),
+  platformLogo: text('platform_logo'),
+  primaryColor: text('primary_color').default('#ff5722'),
+  secondaryColor: text('secondary_color').default('#2196f3'),
+  featuresEnabled: json('features_enabled'), // JSON object with feature flags
+  apiKeys: json('api_keys'), // Encrypted/hashed API keys
+  emailConfig: json('email_config'), 
+  integrationConfig: json('integration_config'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Business Hours relations
-export const businessHoursRelations = relations(businessHours, ({ one }) => ({
-  companyProfile: one(companyProfiles, {
-    fields: [businessHours.companyProfileId],
-    references: [companyProfiles.id],
+// Admin settings schema
+export const insertAdminSettingsSchema = createInsertSchema(adminSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertAdminSettings = z.infer<typeof insertAdminSettingsSchema>;
+export type AdminSettings = typeof adminSettings.$inferSelect;
+
+// Auto content status enum
+export const autoContentStatusEnum = pgEnum('auto_content_status', [
+  'pending',
+  'generating',
+  'reviewing',
+  'publishing',
+  'completed',
+  'failed',
+]);
+
+// Auto content configuration table
+export const autoContentConfigs = pgTable('auto_content_configs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  topics: json('topics'), // Array of topics to generate content about
+  contentTypes: json('content_types'), // Array of content types to generate
+  platforms: json('platforms'), // Array of platforms to publish to
+  schedule: text('schedule').notNull(), // CRON expression
+  maxContentPerRun: integer('max_content_per_run').default(1),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  lastRunAt: timestamp('last_run_at'),
+  metadata: json('metadata'),
+});
+
+export const autoContentConfigsRelations = relations(autoContentConfigs, ({ one, many }) => ({
+  user: one(users, {
+    fields: [autoContentConfigs.userId],
+    references: [users.id],
+  }),
+  generatedContents: many(autoGeneratedContents),
+}));
+
+// Auto generated contents table
+export const autoGeneratedContents = pgTable('auto_generated_contents', {
+  id: serial('id').primaryKey(),
+  configId: integer('config_id').references(() => autoContentConfigs.id).notNull(),
+  contentId: integer('content_id').references(() => contents.id),
+  topic: text('topic'),
+  status: autoContentStatusEnum('status').default('pending').notNull(),
+  scheduledFor: timestamp('scheduled_for'),
+  publishedAt: timestamp('published_at'),
+  error: text('error'),
+  metadata: json('metadata'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const autoGeneratedContentsRelations = relations(autoGeneratedContents, ({ one }) => ({
+  config: one(autoContentConfigs, {
+    fields: [autoGeneratedContents.configId],
+    references: [autoContentConfigs.id],
+  }),
+  content: one(contents, {
+    fields: [autoGeneratedContents.contentId],
+    references: [contents.id],
   }),
 }));
 
-// Listings table (for each platform the business is listed on)
-export const businessListings = pgTable('business_listings', {
+// Auto content configuration schema
+export const insertAutoContentConfigSchema = createInsertSchema(autoContentConfigs).omit({ id: true, createdAt: true, updatedAt: true, lastRunAt: true });
+export type InsertAutoContentConfig = z.infer<typeof insertAutoContentConfigSchema>;
+export type AutoContentConfig = typeof autoContentConfigs.$inferSelect;
+
+// Auto generated content schema
+export const insertAutoGeneratedContentSchema = createInsertSchema(autoGeneratedContents).omit({ id: true, createdAt: true });
+export type InsertAutoGeneratedContent = z.infer<typeof insertAutoGeneratedContentSchema>;
+export type AutoGeneratedContent = typeof autoGeneratedContents.$inferSelect;
+
+// Business listing related schema components
+
+// Listing platform enum
+export const listingPlatformEnum = pgEnum('listing_platform', [
+  'google',
+  'yelp',
+  'facebook',
+  'tripadvisor',
+  'bing',
+  'apple',
+  'yellowpages',
+]);
+
+// Listing sync status enum
+export const listingSyncStatusEnum = pgEnum('listing_sync_status', [
+  'pending',
+  'syncing',
+  'synced',
+  'failed',
+  'incomplete',
+]);
+
+// Task status enum
+export const taskStatusEnum = pgEnum('task_status', [
+  'pending',
+  'in_progress',
+  'completed',
+  'failed',
+]);
+
+// Business hours table
+export const businessHours = pgTable('business_hours', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  companyProfileId: integer('company_profile_id').notNull().references(() => companyProfiles.id, { onDelete: 'cascade' }),
-  platform: listingPlatformEnum('platform').notNull(),
-  listingId: text('listing_id'),
-  listingUrl: text('listing_url'),
-  syncStatus: listingSyncStatusEnum('sync_status').default('pending').notNull(),
-  lastSynced: timestamp('last_synced'),
-  platformData: jsonb('platform_data'),
-  platformCredentials: jsonb('platform_credentials'),
-  verificationStatus: boolean('verification_status').default(false).notNull(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  monday: json('monday'),
+  tuesday: json('tuesday'),
+  wednesday: json('wednesday'),
+  thursday: json('thursday'),
+  friday: json('friday'),
+  saturday: json('saturday'),
+  sunday: json('sunday'),
+  holidayHours: json('holiday_hours'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Business Listings relations
-export const businessListingsRelations = relations(businessListings, ({ one }) => ({
+export const businessHoursRelations = relations(businessHours, ({ one }) => ({
+  user: one(users, {
+    fields: [businessHours.userId],
+    references: [users.id],
+  }),
+}));
+
+// Business listings table
+export const businessListings = pgTable('business_listings', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  platform: listingPlatformEnum('platform').notNull(),
+  status: listingSyncStatusEnum('status').default('pending').notNull(),
+  name: text('name').notNull(),
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zip: text('zip'),
+  phone: text('phone'),
+  website: text('website'),
+  category: text('category'),
+  description: text('description'),
+  photos: json('photos'),
+  lastSynced: timestamp('last_synced'),
+  platformListingId: text('platform_listing_id'),
+  platformUrl: text('platform_url'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  metadata: json('metadata'),
+});
+
+export const businessListingsRelations = relations(businessListings, ({ one, many }) => ({
   user: one(users, {
     fields: [businessListings.userId],
     references: [users.id],
   }),
-  companyProfile: one(companyProfiles, {
-    fields: [businessListings.companyProfileId],
-    references: [companyProfiles.id],
-  }),
+  syncTasks: many(listingSyncTasks),
+  reviews: many(businessReviews),
 }));
 
-// Listing Sync Tasks (for manual verification platforms)
+// Listing sync tasks table
 export const listingSyncTasks = pgTable('listing_sync_tasks', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  listingId: integer('listing_id').references(() => businessListings.id, { onDelete: 'cascade' }),
-  platform: listingPlatformEnum('platform').notNull(),
-  taskType: text('task_type').notNull(),
-  taskDescription: text('task_description').notNull(),
+  listingId: integer('listing_id').references(() => businessListings.id).notNull(),
+  type: text('type').notNull(), // e.g., 'update_name', 'update_hours', 'add_photo'
   status: taskStatusEnum('status').default('pending').notNull(),
-  completionSteps: jsonb('completion_steps'),
-  completedSteps: jsonb('completed_steps'),
+  data: json('data'), // Task-specific data
   notes: text('notes'),
-  dueDate: timestamp('due_date'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
   completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Listing Sync Tasks relations
 export const listingSyncTasksRelations = relations(listingSyncTasks, ({ one }) => ({
-  user: one(users, {
-    fields: [listingSyncTasks.userId],
-    references: [users.id],
-  }),
   listing: one(businessListings, {
     fields: [listingSyncTasks.listingId],
     references: [businessListings.id],
   }),
 }));
 
-// Reviews table (from various platforms)
+// Business reviews table
 export const businessReviews = pgTable('business_reviews', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  listingId: integer('listing_id').references(() => businessListings.id, { onDelete: 'cascade' }),
+  listingId: integer('listing_id').references(() => businessListings.id).notNull(),
   platform: listingPlatformEnum('platform').notNull(),
-  platformReviewId: text('platform_review_id'),
-  authorName: text('author_name'),
-  authorAvatar: text('author_avatar'),
-  rating: integer('rating'),
+  rating: integer('rating').notNull(),
   reviewText: text('review_text'),
-  reviewDate: timestamp('review_date'),
-  responseText: text('response_text'),
+  reviewerName: text('reviewer_name'),
+  reviewDate: timestamp('review_date').notNull(),
+  response: text('response'),
   responseDate: timestamp('response_date'),
+  isResponded: boolean('is_responded').default(false),
+  platformReviewId: text('platform_review_id'),
+  platformReviewUrl: text('platform_review_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Business Reviews relations
 export const businessReviewsRelations = relations(businessReviews, ({ one }) => ({
-  user: one(users, {
-    fields: [businessReviews.userId],
-    references: [users.id],
-  }),
   listing: one(businessListings, {
     fields: [businessReviews.listingId],
     references: [businessListings.id],
   }),
 }));
 
-// Insert schemas for new tables
-export const insertBusinessHoursSchema = createInsertSchema(businessHours).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertBusinessListingSchema = createInsertSchema(businessListings).omit({
-  id: true,
-  lastSynced: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertListingSyncTaskSchema = createInsertSchema(listingSyncTasks).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  completedAt: true,
-});
-
-export const insertBusinessReviewSchema = createInsertSchema(businessReviews).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// Types for new tables
-export type InsertBusinessHours = z.infer<typeof insertBusinessHoursSchema>;
-export type BusinessHours = typeof businessHours.$inferSelect;
-
-export type InsertBusinessListing = z.infer<typeof insertBusinessListingSchema>;
-export type BusinessListing = typeof businessListings.$inferSelect;
-
-export type InsertListingSyncTask = z.infer<typeof insertListingSyncTaskSchema>;
-export type ListingSyncTask = typeof listingSyncTasks.$inferSelect;
-
-export type InsertBusinessReview = z.infer<typeof insertBusinessReviewSchema>;
-export type BusinessReview = typeof businessReviews.$inferSelect;
-
-// Huginn Agent Enums
+// Huginn agent types enum
 export const agentTypeEnum = pgEnum('agent_type', [
-  'web_scraper', 'content_monitor', 'content_creator', 'social_media', 
-  'listing_manager', 'review_responder', 'seo_tracker', 'lead_generator', 
-  'competitor_monitor', 'trend_analyzer', 'custom'
+  'browser',
+  'scheduler',
+  'rss_reader',
+  'webhook',
+  'email',
+  'twitter',
+  'api',
+  'data_transformation',
+  'notification',
 ]);
 
-export const agentStatusEnum = pgEnum('agent_status', ['active', 'paused', 'error', 'configuring']);
-export const agentScheduleEnum = pgEnum('agent_schedule', ['manual', 'hourly', 'daily', 'weekly', 'monthly', 'custom']);
-export const agentTriggerEnum = pgEnum('agent_trigger', ['schedule', 'webhook', 'event', 'manual', 'api']);
+// Huginn agent schedule enum
+export const agentScheduleEnum = pgEnum('agent_schedule', [
+  'none',
+  'every_5m',
+  'every_15m',
+  'every_30m',
+  'hourly',
+  'daily',
+  'weekly',
+]);
 
-// Huginn Agents table
+// Huginn agent trigger enum
+export const agentTriggerEnum = pgEnum('agent_trigger', [
+  'manual',
+  'scheduled',
+  'event',
+  'webhook',
+]);
+
+// Huginn agent status enum
+export const agentStatusEnum = pgEnum('agent_status', [
+  'active',
+  'inactive',
+  'error',
+]);
+
+// Huginn agents table
 export const huginnAgents = pgTable('huginn_agents', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').references(() => users.id).notNull(),
   name: text('name').notNull(),
-  description: text('description'),
   type: agentTypeEnum('type').notNull(),
-  status: agentStatusEnum('status').default('configuring').notNull(),
-  schedule: agentScheduleEnum('schedule').default('manual').notNull(),
-  customSchedule: text('custom_schedule'),
-  triggerType: agentTriggerEnum('trigger_type').default('manual').notNull(),
-  configuration: jsonb('configuration').notNull(),
-  nextRun: timestamp('next_run'),
-  workflowPosition: integer('workflow_position').default(0).notNull(),
+  status: agentStatusEnum('status').default('active').notNull(),
+  schedule: agentScheduleEnum('schedule').default('none').notNull(),
+  trigger: agentTriggerEnum('trigger').default('manual').notNull(),
+  configuration: json('configuration').notNull(),
+  lastRunAt: timestamp('last_run_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Huginn Agent relations
 export const huginnAgentsRelations = relations(huginnAgents, ({ one, many }) => ({
   user: one(users, {
     fields: [huginnAgents.userId],
     references: [users.id],
   }),
-  events: many(huginnEvents),
-  workflows: many(huginnWorkflows),
+  logs: many(huginnLogs),
 }));
 
-// Huginn Events table (for event-driven agent communication)
-export const huginnEvents = pgTable('huginn_events', {
-  id: serial('id').primaryKey(),
-  agentId: integer('agent_id').notNull().references(() => huginnAgents.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  payload: jsonb('payload').notNull(),
-  processed: boolean('processed').default(false).notNull(),
-  processedAt: timestamp('processed_at'),
-  receiverId: integer('receiver_id').references(() => huginnAgents.id),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
-// Huginn Events relations
-export const huginnEventsRelations = relations(huginnEvents, ({ one }) => ({
-  agent: one(huginnAgents, {
-    fields: [huginnEvents.agentId],
-    references: [huginnAgents.id],
-  }),
-  receiver: one(huginnAgents, {
-    fields: [huginnEvents.receiverId],
-    references: [huginnAgents.id],
-  }),
-}));
-
-// Huginn Workflows table (for connected agent workflows)
+// Huginn workflows table
 export const huginnWorkflows = pgTable('huginn_workflows', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').references(() => users.id).notNull(),
   name: text('name').notNull(),
   description: text('description'),
-  agentIds: integer('agent_ids').array().notNull(),
-  flowConfig: jsonb('flow_config').notNull(),
-  isActive: boolean('is_active').default(true).notNull(),
-  lastRun: timestamp('last_run'),
+  agents: json('agents').notNull(), // Array of agent IDs and their connections
+  schedule: agentScheduleEnum('schedule').default('none'),
+  isActive: boolean('is_active').default(true),
+  lastRunAt: timestamp('last_run_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Huginn Workflows relations
 export const huginnWorkflowsRelations = relations(huginnWorkflows, ({ one }) => ({
   user: one(users, {
     fields: [huginnWorkflows.userId],
@@ -678,53 +713,47 @@ export const huginnWorkflowsRelations = relations(huginnWorkflows, ({ one }) => 
   }),
 }));
 
-// Huginn Log entries table
+// Huginn logs table
 export const huginnLogs = pgTable('huginn_logs', {
   id: serial('id').primaryKey(),
-  agentId: integer('agent_id').references(() => huginnAgents.id, { onDelete: 'cascade' }),
-  workflowId: integer('workflow_id').references(() => huginnWorkflows.id, { onDelete: 'cascade' }),
-  level: text('level').notNull(),
+  agentId: integer('agent_id').references(() => huginnAgents.id).notNull(),
+  level: text('level').default('info'),
   message: text('message').notNull(),
-  details: jsonb('details'),
+  details: json('details'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Insert schemas for Huginn tables
-export const insertHuginnAgentSchema = createInsertSchema(huginnAgents).omit({
-  id: true,
-  nextRun: true,
-  createdAt: true,
-  updatedAt: true,
+export const huginnLogsRelations = relations(huginnLogs, ({ one }) => ({
+  agent: one(huginnAgents, {
+    fields: [huginnLogs.agentId],
+    references: [huginnAgents.id],
+  }),
+}));
+
+// Content pipeline stages table - represents a running stage in a pipeline
+export const contentPipelineStages = pgTable('content_pipeline_stages', {
+  id: serial('id').primaryKey(),
+  runId: integer('run_id').references(() => contentPipelineRuns.id).notNull(),
+  stageId: text('stage_id').notNull(), // Reference to the stage ID in the pipeline definition
+  name: text('name').notNull(),
+  status: pipelineRunStatusEnum('status').default('pending').notNull(),
+  order: integer('order').default(0),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  output: json('output'),
+  error: text('error'),
+  metadata: json('metadata'),
 });
 
-export const insertHuginnEventSchema = createInsertSchema(huginnEvents).omit({
-  id: true,
-  processed: true,
-  processedAt: true,
-  createdAt: true,
-});
+export const contentPipelineStagesRelations = relations(contentPipelineStages, ({ one, many }) => ({
+  run: one(contentPipelineRuns, {
+    fields: [contentPipelineStages.runId],
+    references: [contentPipelineRuns.id],
+  }),
+  jobs: many(contentPipelineJobs),
+}));
 
-export const insertHuginnWorkflowSchema = createInsertSchema(huginnWorkflows).omit({
-  id: true,
-  lastRun: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertHuginnLogSchema = createInsertSchema(huginnLogs).omit({
-  id: true,
-  createdAt: true,
-});
-
-// Types for Huginn tables
-export type InsertHuginnAgent = z.infer<typeof insertHuginnAgentSchema>;
-export type HuginnAgent = typeof huginnAgents.$inferSelect;
-
-export type InsertHuginnEvent = z.infer<typeof insertHuginnEventSchema>;
-export type HuginnEvent = typeof huginnEvents.$inferSelect;
-
-export type InsertHuginnWorkflow = z.infer<typeof insertHuginnWorkflowSchema>;
-export type HuginnWorkflow = typeof huginnWorkflows.$inferSelect;
-
-export type InsertHuginnLog = z.infer<typeof insertHuginnLogSchema>;
-export type HuginnLog = typeof huginnLogs.$inferSelect;
+// Insert schema for pipeline stage
+export const insertContentPipelineStageSchema = createInsertSchema(contentPipelineStages).omit({ id: true, startedAt: true, completedAt: true });
+export type InsertContentPipelineStage = z.infer<typeof insertContentPipelineStageSchema>;
+export type ContentPipelineStage = typeof contentPipelineStages.$inferSelect;

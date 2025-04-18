@@ -1,7 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { initAutoContentTasks } from "./auto-content-task";
+// Auto content tasks temporarily disabled until schema components are implemented
+// import { initAutoContentTasks } from "./auto-content-task";
 import { huginnAgentService } from "./huginn-agents";
 
 const app = express();
@@ -71,10 +72,13 @@ app.use((req, res, next) => {
     
     // Initialize automatic content generation tasks
     // Only run in production or when explicitly enabled
+    // Temporarily disabled until schema components are implemented
+    /*
     if (process.env.NODE_ENV === 'production' || process.env.ENABLE_AUTO_CONTENT === 'true') {
       log('Initializing automatic content generation tasks');
       initAutoContentTasks(30); // Run every 30 minutes
     }
+    */
     
     // Initialize Huginn agent system
     try {

@@ -1,19 +1,20 @@
+// THIS FILE IS COMMENTED OUT TEMPORARILY
+// There are references to database tables and enums that don't exist yet
+// Needs implementation of contentPipelineStages and other missing schemas
+/*
 import { db } from "./db";
 import { eq, and, or, desc } from "drizzle-orm";
 import { 
   contentPipelines, 
   contentPipelineRuns, 
-  contentPipelineStages, 
   contentPipelineJobs,
   pipelineRunStatusEnum,
-  pipelineStageStatusEnum,
   pipelineJobStatusEnum,
-  pipelineJobTypeEnum,
   ContentPipelineRun,
-  ContentPipelineStage,
   ContentPipelineJob
 } from "@shared/schema";
 import { huginnAgentService } from "./huginn-agents";
+*/
 
 /**
  * ContentPipelineService is a service that manages content pipelines.
