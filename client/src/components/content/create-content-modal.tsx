@@ -133,42 +133,72 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
     console.log("Selected template:", selectedTemplate);
     console.log("Template data:", templateData);
     
-    // Validate based on template type
-    if (selectedTemplate === 'standard' && (!values.prompt || values.prompt.length < 5)) {
-      toast({
-        title: "Invalid Prompt",
-        description: "Please enter a prompt with at least 5 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (selectedTemplate === 'battle-royale') {
-      // Log the template data for debugging
-      console.log("Battle Royale template data:", JSON.stringify(templateData, null, 2));
-      
-      if (!templateData || !templateData.option1 || !templateData.option2 || !templateData.comparisonFocus) {
+    try {
+      // Validate based on template type
+      if (selectedTemplate === 'standard' && (!values.prompt || values.prompt.length < 5)) {
         toast({
-          title: "Missing Required Fields",
-          description: "Both options and comparison focus are required for Battle Royale template",
+          title: "Invalid Prompt",
+          description: "Please enter a prompt with at least 5 characters",
           variant: "destructive",
         });
         return;
       }
+      
+      if (selectedTemplate === 'battle-royale') {
+        // Log the template data for debugging
+        console.log("Battle Royale template data:", JSON.stringify(templateData, null, 2));
+        
+        if (!templateData || !templateData.option1 || !templateData.option2 || !templateData.comparisonFocus) {
+          toast({
+            title: "Missing Required Fields",
+            description: "Both options and comparison focus are required for Battle Royale template",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
+      // Create a direct variable for template data to ensure it's properly included
+      const templateDataToSend = selectedTemplate !== 'standard' ? templateData : null;
+      
+      // Create a submission payload in the format the server expects
+      const payload: Record<string, any> = {
+        contentType: values.contentType,
+        platform: values.platform,
+        tone: values.tone,
+        length: values.length,
+        template: selectedTemplate
+      };
+      
+      // Add personality if it exists
+      if (values.personality) {
+        payload.personality = values.personality;
+      }
+      
+      // Add prompt only for standard template
+      if (selectedTemplate === 'standard') {
+        payload.prompt = values.prompt;
+      }
+      
+      // Add template data for non-standard templates
+      if (selectedTemplate !== 'standard' && templateDataToSend) {
+        payload.templateData = templateDataToSend;
+      }
+      
+      console.log("Final values being sent:", JSON.stringify(payload, null, 2));
+      
+      // Send the content generation request
+      setGenerating(true);
+      generateContentMutation.mutate(payload);
+      
+    } catch (error) {
+      console.error("Error preparing form data:", error);
+      toast({
+        title: "Form Error",
+        description: "There was an error preparing your form data. Please try again.",
+        variant: "destructive",
+      });
     }
-    
-    // Prepare submission data
-    const finalValues = {
-      ...values,
-      template: selectedTemplate,
-      // Include relevant data based on template type
-      ...(selectedTemplate === 'standard' ? { prompt: values.prompt } : {}),
-      ...(selectedTemplate !== 'standard' ? { templateData } : {})
-    };
-    
-    console.log("Sending data to API:", finalValues);
-    setGenerating(true);
-    generateContentMutation.mutate(finalValues);
   };
   
   const handleSave = () => {
