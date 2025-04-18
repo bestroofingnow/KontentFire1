@@ -17,6 +17,8 @@ import { FactCheckDialog, ReferencesDialog } from "@/components/fact-check";
 import { RepurposeDialog } from "./repurpose-dialog";
 import TemplateSelector from "./template-selector";
 import BattleRoyaleTemplate from "./battle-royale-template";
+import Basics101Template from "./basics-101-template";
+import MythBusterTemplate from "./myth-buster-template";
 
 type ContentType = 'text' | 'image' | 'both';
 type ToneType = 'professional' | 'casual' | 'friendly' | 'authoritative' | 'humorous';
@@ -158,6 +160,32 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
         }
       }
       
+      if (selectedTemplate === 'basics-101') {
+        console.log("Basics 101 template data:", JSON.stringify(templateData, null, 2));
+        
+        if (!templateData || !templateData.topic) {
+          toast({
+            title: "Missing Required Fields",
+            description: "Topic is required for Basics 101 template",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
+      if (selectedTemplate === 'myth-buster') {
+        console.log("Myth Buster template data:", JSON.stringify(templateData, null, 2));
+        
+        if (!templateData || !templateData.topic) {
+          toast({
+            title: "Missing Required Fields",
+            description: "Topic is required for Myth Buster template",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
       // Create a direct variable for template data to ensure it's properly included
       const templateDataToSend = selectedTemplate !== 'standard' ? templateData : null;
       
@@ -285,6 +313,78 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
                     toast({
                       title: "Submission Error",
                       description: "There was an error submitting the Battle Royale template. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              />
+            )}
+
+            {/* Basics 101 Template */}
+            {selectedTemplate === 'basics-101' && (
+              <Basics101Template 
+                formData={templateData} 
+                onChange={handleTemplateDataChange}
+                onGenerateContent={(templateData) => {
+                  try {
+                    console.log("Basics 101 direct generate triggered");
+                    
+                    // Create submission data directly
+                    const directSubmission: Record<string, any> = {
+                      contentType: form.getValues().contentType || "both",
+                      platform: form.getValues().platform || "blog",
+                      tone: form.getValues().tone || "professional",
+                      length: form.getValues().length || "medium",
+                      template: "basics-101",
+                      templateData: templateData
+                    };
+                    
+                    console.log("Direct Basics 101 submission:", JSON.stringify(directSubmission, null, 2));
+                    
+                    // Submit directly
+                    setGenerating(true);
+                    generateContentMutation.mutate(directSubmission);
+                  } catch (error) {
+                    console.error("Error in Basics 101 direct submission:", error);
+                    toast({
+                      title: "Submission Error",
+                      description: "There was an error submitting the Basics 101 template. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              />
+            )}
+
+            {/* Myth Buster Template */}
+            {selectedTemplate === 'myth-buster' && (
+              <MythBusterTemplate 
+                formData={templateData} 
+                onChange={handleTemplateDataChange}
+                onGenerateContent={(templateData) => {
+                  try {
+                    console.log("Myth Buster direct generate triggered");
+                    
+                    // Create submission data directly
+                    const directSubmission: Record<string, any> = {
+                      contentType: form.getValues().contentType || "both",
+                      platform: form.getValues().platform || "blog",
+                      tone: form.getValues().tone || "professional",
+                      length: form.getValues().length || "medium",
+                      template: "myth-buster",
+                      templateData: templateData
+                    };
+                    
+                    console.log("Direct Myth Buster submission:", JSON.stringify(directSubmission, null, 2));
+                    
+                    // Submit directly
+                    setGenerating(true);
+                    generateContentMutation.mutate(directSubmission);
+                  } catch (error) {
+                    console.error("Error in Myth Buster direct submission:", error);
+                    toast({
+                      title: "Submission Error",
+                      description: "There was an error submitting the Myth Buster template. Please try again.",
                       variant: "destructive",
                     });
                   }
