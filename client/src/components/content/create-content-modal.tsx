@@ -124,27 +124,41 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
   });
   
   const onSubmit = (values: FormValues) => {
-    // Validate Battle Royale template fields if selected
+    console.log("Form submit triggered with values:", values);
+    console.log("Selected template:", selectedTemplate);
+    console.log("Template data:", templateData);
+    
+    // Validate based on template type
+    if (selectedTemplate === 'standard' && (!values.prompt || values.prompt.length < 5)) {
+      toast({
+        title: "Invalid Prompt",
+        description: "Please enter a prompt with at least 5 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (selectedTemplate === 'battle-royale') {
       if (!templateData.option1 || !templateData.option2 || !templateData.comparisonFocus) {
         toast({
-          title: "Missing required fields",
-          description: "Please fill in both options and the comparison focus",
+          title: "Missing Required Fields",
+          description: "Both options and comparison focus are required for Battle Royale template",
           variant: "destructive",
         });
         return;
       }
     }
-
-    // If we're using a template other than standard, we don't need a prompt
+    
+    // Prepare submission data
     const finalValues = {
       ...values,
       template: selectedTemplate,
       // Only include prompt for standard template
       prompt: selectedTemplate === 'standard' ? values.prompt : undefined,
-      templateData
+      templateData: selectedTemplate !== 'standard' ? templateData : undefined
     };
     
+    console.log("Sending data to API:", finalValues);
     setGenerating(true);
     generateContentMutation.mutate(finalValues);
   };
