@@ -2892,9 +2892,10 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
+      // Using created_by instead of userId based on the actual database schema
       const pipelines = await db.select()
         .from(contentPipelines)
-        .where(eq(contentPipelines.userId, req.user.id))
+        .where(eq(contentPipelines.created_by, req.user.id))
         .orderBy(desc(contentPipelines.createdAt));
       
       res.json(pipelines);

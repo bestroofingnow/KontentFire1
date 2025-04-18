@@ -47,7 +47,7 @@ interface Pipeline {
 interface PipelineRun {
   id: number;
   pipelineId: number;
-  status: 'running' | 'success' | 'failed' | 'cancelled';
+  status: 'pending' | 'running' | 'success' | 'completed' | 'failed' | 'cancelled' | 'skipped';
   params: any;
   result: any;
   errorMessage: string | null;
@@ -75,7 +75,7 @@ interface PipelineJob {
   stageRunId: number;
   name: string;
   type: 'huginn_agent' | 'content_generation' | 'content_publishing' | 'data_transformation';
-  status: 'running' | 'success' | 'failed' | 'cancelled';
+  status: 'pending' | 'running' | 'success' | 'completed' | 'failed' | 'cancelled' | 'skipped';
   result: any;
   errorMessage: string | null;
   startTime: string;
@@ -85,16 +85,22 @@ interface PipelineJob {
 }
 
 // Helper function to get status badge
-const StatusBadge = ({ status }: { status: 'running' | 'success' | 'failed' | 'cancelled' }) => {
+const StatusBadge = ({ status }: { status: 'pending' | 'running' | 'success' | 'completed' | 'failed' | 'cancelled' | 'skipped' }) => {
   switch (status) {
+    case 'pending':
+      return <Badge variant="outline" className="bg-slate-100 text-slate-500">Pending</Badge>;
     case 'running':
       return <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Running</Badge>;
     case 'success':
       return <Badge className="bg-green-500 hover:bg-green-600">Success</Badge>;
+    case 'completed':
+      return <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>;
     case 'failed':
       return <Badge variant="destructive">Failed</Badge>;
     case 'cancelled':
       return <Badge variant="outline">Cancelled</Badge>;
+    case 'skipped':
+      return <Badge variant="outline" className="bg-amber-100 text-amber-500">Skipped</Badge>;
     default:
       return <Badge variant="outline">Unknown</Badge>;
   }
@@ -123,16 +129,21 @@ const formatTimeDuration = (startTime: string, endTime: string | null) => {
 };
 
 // Helper function to get a status icon
-const StatusIcon = ({ status }: { status: 'running' | 'success' | 'failed' | 'cancelled' }) => {
+const StatusIcon = ({ status }: { status: 'pending' | 'running' | 'success' | 'completed' | 'failed' | 'cancelled' | 'skipped' }) => {
   switch (status) {
+    case 'pending':
+      return <Clock className="h-4 w-4 text-slate-400" />;
     case 'running':
       return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
     case 'success':
+    case 'completed':
       return <CheckCircle2 className="h-4 w-4 text-green-500" />;
     case 'failed':
       return <AlertCircle className="h-4 w-4 text-red-500" />;
     case 'cancelled':
       return <Clock className="h-4 w-4 text-gray-500" />;
+    case 'skipped':
+      return <Clock className="h-4 w-4 text-amber-500" />;
     default:
       return null;
   }
