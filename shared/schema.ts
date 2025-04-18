@@ -26,9 +26,20 @@ export const users = pgTable('users', {
   password: text('password').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   plan: planEnum('plan').default('premium').notNull(),
+  planStatus: text('plan_status').default('active'),
   stripeCustomerId: text('stripe_customer_id'),
   stripeSubscriptionId: text('stripe_subscription_id'),
   isAdmin: boolean('is_admin').default(false).notNull(),
+  // WordPress integration fields
+  wpSiteUrl: text('wp_site_url'),
+  wpUsername: text('wp_username'),
+  wpAuthToken: text('wp_auth_token'),
+  wpIntegrationActive: boolean('wp_integration_active').default(false),
+  // Shopify integration fields
+  shopifyUrl: text('shopify_url'),
+  shopifyApiKey: text('shopify_api_key'),
+  shopifyApiSecret: text('shopify_api_secret'),
+  shopifyIntegrationActive: boolean('shopify_integration_active').default(false),
 });
 
 // User relations
@@ -202,9 +213,18 @@ export const adminSettings = pgTable('admin_settings', {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  planStatus: true,
   stripeCustomerId: true,
   stripeSubscriptionId: true,
   isAdmin: true,
+  wpSiteUrl: true,
+  wpUsername: true,
+  wpAuthToken: true,
+  wpIntegrationActive: true,
+  shopifyUrl: true,
+  shopifyApiKey: true,
+  shopifyApiSecret: true,
+  shopifyIntegrationActive: true,
 });
 
 export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({

@@ -20,6 +20,9 @@ import { Loader2 } from "lucide-react";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminAuthPage from "@/pages/admin/admin-auth-page";
 
+// Components
+import { AIAssistant } from "@/components/assistant/ai-assistant";
+
 // Regular protected route component
 import { ProtectedRoute } from "@/lib/protected-route";
 // Admin-specific protected route
@@ -38,16 +41,20 @@ function App() {
   }
   
   return (
-    <Switch>
-      {/* Regular user authentication */}
-      <Route path="/auth">
-        {user ? <Redirect to="/" /> : <AuthPage />}
-      </Route>
+    <>
+      {/* AI Assistant always visible for authenticated users */}
+      {user && !user.isAdmin && <AIAssistant />}
       
-      {/* Admin authentication - separate from regular user auth */}
-      <Route path="/admin/login">
-        {user && user.isAdmin ? <Redirect to="/admin" /> : <AdminAuthPage />}
-      </Route>
+      <Switch>
+        {/* Regular user authentication */}
+        <Route path="/auth">
+          {user ? <Redirect to="/" /> : <AuthPage />}
+        </Route>
+        
+        {/* Admin authentication - separate from regular user auth */}
+        <Route path="/admin/login">
+          {user && user.isAdmin ? <Redirect to="/admin" /> : <AdminAuthPage />}
+        </Route>
       
       {/* Admin protected routes */}
       <AdminProtectedRoute path="/admin" component={AdminDashboard} />
@@ -94,6 +101,7 @@ function App() {
         <NotFound />
       </Route>
     </Switch>
+    </>
   );
 }
 

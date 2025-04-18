@@ -2806,6 +2806,127 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: `Error running workflow: ${error.message}` });
     }
   });
+
+  // AI Assistant chat endpoint
+  app.post('/api/assistant/message', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { content } = req.body;
+      
+      if (!content || typeof content !== 'string' || content.trim() === '') {
+        return res.status(400).json({ message: 'Invalid message content' });
+      }
+      
+      // Get chat history from session if available
+      const chatHistory = req.session.chatHistory || [];
+      
+      // Process the message with the AI assistant
+      const response = await processAssistantMessage(content, chatHistory);
+      
+      // Update chat history in the session
+      // Store the latest 10 messages to keep context without making it too long
+      const updatedHistory = [
+        ...chatHistory,
+        { role: 'user', content },
+        { role: 'assistant', content: response }
+      ].slice(-10);
+      
+      req.session.chatHistory = updatedHistory;
+      
+      res.json({ response, success: true });
+    } catch (error: any) {
+      console.error('Error processing assistant message:', error);
+      res.status(500).json({ message: `Error processing message: ${error.message}` });
+    }
+  });
+  
+  // Social media integrations endpoint - WordPress
+  app.post('/api/integrations/wordpress', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { site_url, username, password, application_password } = req.body;
+      
+      if (!site_url || !username || !(password || application_password)) {
+        return res.status(400).json({ message: 'Missing required WordPress credentials' });
+      }
+      
+      // Store integration credentials (securely!) for the user
+      await db.update(users)
+        .set({
+          wpSiteUrl: site_url,
+          wpUsername: username,
+          wpAuthToken: password || application_password,
+          wpIntegrationActive: true
+        })
+        .where(eq(users.id, req.user.id));
+      
+      res.json({ success: true, message: 'WordPress integration configured successfully' });
+    } catch (error: any) {
+      console.error('Error configuring WordPress integration:', error);
+      res.status(500).json({ message: `Error configuring WordPress: ${error.message}` });
+    }
+  });
+  
+  // Social media integrations endpoint - Shopify
+  app.post('/api/integrations/shopify', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { shop_url, api_key, api_secret } = req.body;
+      
+      if (!shop_url || !api_key || !api_secret) {
+        return res.status(400).json({ message: 'Missing required Shopify credentials' });
+      }
+      
+      // Store integration credentials (securely!) for the user
+      await db.update(users)
+        .set({
+          shopifyUrl: shop_url,
+          shopifyApiKey: api_key,
+          shopifyApiSecret: api_secret,
+          shopifyIntegrationActive: true
+        })
+        .where(eq(users.id, req.user.id));
+      
+      res.json({ success: true, message: 'Shopify integration configured successfully' });
+    } catch (error: any) {
+      console.error('Error configuring Shopify integration:', error);
+      res.status(500).json({ message: `Error configuring Shopify: ${error.message}` });
+    }
+  });
+  
+  // Get integration status endpoint
+  app.get('/api/integrations', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const user = req.user;
+      
+      res.json({
+        wordpress: {
+          active: !!user.wpIntegrationActive,
+          site_url: user.wpSiteUrl || null
+        },
+        shopify: {
+          active: !!user.shopifyIntegrationActive,
+          shop_url: user.shopifyUrl || null
+        }
+      });
+    } catch (error: any) {
+      console.error('Error fetching integrations:', error);
+      res.status(500).json({ message: `Error fetching integrations: ${error.message}` });
+    }
+  });
   
   const httpServer = createServer(app);
   return httpServer;
