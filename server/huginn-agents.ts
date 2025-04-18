@@ -400,7 +400,6 @@ export class HuginnAgentService {
       // Update last run time
       await db.update(huginnAgents)
         .set({
-          lastRun: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(huginnAgents.id, agentId));
@@ -430,10 +429,12 @@ export class HuginnAgentService {
           result = await this.runCustomAgent(agent);
       }
       
-      // Store result
+      // Log the result
+      await this.logAgentActivity(agentId, null, 'info', 'Agent result', { result });
+      
+      // Update timestamp
       await db.update(huginnAgents)
         .set({
-          lastResult: result,
           updatedAt: new Date(),
         })
         .where(eq(huginnAgents.id, agentId));
@@ -524,10 +525,9 @@ export class HuginnAgentService {
         throw new Error('Workflow not found or does not belong to user');
       }
       
-      // Update last run time
+      // Update last updated time
       await db.update(huginnWorkflows)
         .set({
-          lastRun: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(huginnWorkflows.id, workflowId));
