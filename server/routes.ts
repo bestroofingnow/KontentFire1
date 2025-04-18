@@ -40,6 +40,7 @@ import { enhanceContent } from "./anthropic";
 import { repurposeContent, type RepurposeRequest, type RepurposeResponse } from "./content-repurpose";
 import { initAutoContentTasks } from "./auto-content-task";
 import { huginnAgentService } from "./huginn-agents";
+import { processAssistantMessage } from "./assistant";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.warn("STRIPE_SECRET_KEY is not set. Stripe integration will be disabled.");
