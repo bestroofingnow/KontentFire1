@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Table, 
   TableBody, 
@@ -22,9 +23,13 @@ import {
   CheckCircle2, 
   Clock, 
   Loader2, 
-  Terminal
+  Terminal,
+  BarChart,
+  ListFilter
 } from 'lucide-react';
 import { format, formatDistanceToNow, formatDuration, intervalToDuration } from 'date-fns';
+import PipelineLogs from '@/components/pipelines/pipeline-logs';
+import PipelineGraph from '@/components/pipelines/pipeline-graph';
 
 // Types for our data
 interface Pipeline {
@@ -274,6 +279,16 @@ const PipelineRunPage: React.FC = () => {
 
   const { run, pipeline, stages } = data;
   
+  const [activeTab, setActiveTab] = useState<string>("details");
+
+  // Convert stages to the format expected by PipelineGraph
+  const stagesForGraph = stages?.map((stage) => ({
+    id: stage.id,
+    name: stage.name,
+    status: stage.status,
+    jobs: stage.jobs
+  })) || [];
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex items-center mb-6">
@@ -329,50 +344,108 @@ const PipelineRunPage: React.FC = () => {
         </div>
       )}
       
-      <div className="mb-6">
-        <h2 className="text-xl font-bold mb-4">Stages</h2>
-        {stages.length > 0 ? (
-          <div className="space-y-6">
-            {stages.map((stage: PipelineStage) => (
-              <StageSection key={stage.id} stage={stage} />
-            ))}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <TabsList className="grid grid-cols-4 mb-6">
+          <TabsTrigger value="details" className="flex items-center">
+            <ListFilter className="mr-2 h-4 w-4" />
+            Details
+          </TabsTrigger>
+          <TabsTrigger value="graph" className="flex items-center">
+            <BarChart className="mr-2 h-4 w-4" />
+            Visualization
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="flex items-center">
+            <Terminal className="mr-2 h-4 w-4" />
+            Logs
+          </TabsTrigger>
+          <TabsTrigger value="params" className="flex items-center">
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Parameters
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="details" className="space-y-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold mb-4">Stages</h2>
+            {stages.length > 0 ? (
+              <div className="space-y-6">
+                {stages.map((stage: PipelineStage) => (
+                  <StageSection key={stage.id} stage={stage} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-8 border rounded-md">
+                <Terminal className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Stages Found</h3>
+                <p className="text-muted-foreground">
+                  This pipeline run doesn't have any stages. This may be due to an error in the pipeline configuration.
+                </p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="text-center p-8 border rounded-md">
-            <Terminal className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Stages Found</h3>
-            <p className="text-muted-foreground">
-              This pipeline run doesn't have any stages. This may be due to an error in the pipeline configuration.
-            </p>
-          </div>
-        )}
-      </div>
-      
-      {Object.keys(run.params || {}).length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-bold mb-4">Parameters</h2>
+          
+          {run.result && (
+            <div>
+              <h2 className="text-xl font-bold mb-4">Results</h2>
+              <Card>
+                <CardContent className="pt-6">
+                  <pre className="text-sm overflow-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
+                    {JSON.stringify(run.result, null, 2)}
+                  </pre>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="graph">
+          {stages.length > 0 ? (
+            <PipelineGraph 
+              stages={stagesForGraph}
+              title="Pipeline Execution Flow"
+              description="Visual representation of pipeline stages and jobs"
+            />
+          ) : (
+            <div className="text-center p-8 border rounded-md">
+              <BarChart className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Visualization Available</h3>
+              <p className="text-muted-foreground mb-4">
+                This pipeline run doesn't have any stages to visualize.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="logs">
+          <PipelineLogs 
+            pipelineId={pipeline.id} 
+            pipelineRunId={run.id}
+            maxHeight="600px"
+          />
+        </TabsContent>
+        
+        <TabsContent value="params">
           <Card>
-            <CardContent className="pt-6">
-              <pre className="text-sm overflow-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
-                {JSON.stringify(run.params, null, 2)}
-              </pre>
+            <CardHeader>
+              <CardTitle>Pipeline Parameters</CardTitle>
+              <CardDescription>
+                Parameters passed to this pipeline run
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(run.params || {}).length > 0 ? (
+                <pre className="text-sm overflow-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
+                  {JSON.stringify(run.params, null, 2)}
+                </pre>
+              ) : (
+                <div className="text-center p-4 text-muted-foreground">
+                  No parameters were provided for this pipeline run.
+                </div>
+              )}
             </CardContent>
           </Card>
-        </div>
-      )}
-      
-      {run.result && (
-        <div>
-          <h2 className="text-xl font-bold mb-4">Results</h2>
-          <Card>
-            <CardContent className="pt-6">
-              <pre className="text-sm overflow-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-md">
-                {JSON.stringify(run.result, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
