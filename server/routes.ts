@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import Stripe from "stripe";
 import { db } from "./db";
 import { setupAuth } from "./auth";
+import { contentPipelineService } from "./cds-integration";
 import {
   users,
   contents,
@@ -28,6 +29,12 @@ import {
   huginnWorkflows,
   huginnLogs,
   agentTypeEnum,
+  contentPipelines,
+  contentPipelineRuns,
+  contentPipelineStages,
+  contentPipelineJobs,
+  pipelineStatusEnum,
+  pipelineRunStatusEnum,
   agentStatusEnum,
   agentScheduleEnum,
   agentTriggerEnum
@@ -2873,6 +2880,292 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error('Error fetching integrations:', error);
       res.status(500).json({ message: `Error fetching integrations: ${error.message}` });
+    }
+  });
+
+  // Content Pipeline API Endpoints
+
+  // Get all pipelines for user
+  app.get('/api/pipelines', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const pipelines = await db.select()
+        .from(contentPipelines)
+        .where(eq(contentPipelines.userId, req.user.id))
+        .orderBy(desc(contentPipelines.createdAt));
+      
+      res.json(pipelines);
+    } catch (error: any) {
+      console.error('Error fetching pipelines:', error);
+      res.status(500).json({ message: `Error fetching pipelines: ${error.message}` });
+    }
+  });
+
+  // Get specific pipeline by ID
+  app.get('/api/pipelines/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { id } = req.params;
+      
+      const [pipeline] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, parseInt(id)),
+          eq(contentPipelines.userId, req.user.id)
+        ));
+      
+      if (!pipeline) {
+        return res.status(404).json({ message: 'Pipeline not found' });
+      }
+      
+      res.json(pipeline);
+    } catch (error: any) {
+      console.error('Error fetching pipeline:', error);
+      res.status(500).json({ message: `Error fetching pipeline: ${error.message}` });
+    }
+  });
+
+  // Create new pipeline
+  app.post('/api/pipelines', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { name, description, automated, schedule, configuration } = req.body;
+      
+      if (!name || !configuration) {
+        return res.status(400).json({ message: 'Name and configuration are required' });
+      }
+      
+      const [pipeline] = await db.insert(contentPipelines)
+        .values({
+          userId: req.user.id,
+          name,
+          description,
+          automated: automated || false,
+          schedule,
+          configuration,
+          status: 'active',
+        })
+        .returning();
+      
+      res.status(201).json(pipeline);
+    } catch (error: any) {
+      console.error('Error creating pipeline:', error);
+      res.status(500).json({ message: `Error creating pipeline: ${error.message}` });
+    }
+  });
+
+  // Update pipeline
+  app.put('/api/pipelines/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { name, description, automated, schedule, configuration, status } = req.body;
+      
+      // Check if pipeline exists and belongs to the user
+      const [existingPipeline] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, parseInt(id)),
+          eq(contentPipelines.userId, req.user.id)
+        ));
+      
+      if (!existingPipeline) {
+        return res.status(404).json({ message: 'Pipeline not found' });
+      }
+      
+      // Update the pipeline
+      const [updatedPipeline] = await db.update(contentPipelines)
+        .set({
+          name: name || existingPipeline.name,
+          description,
+          automated: automated !== undefined ? automated : existingPipeline.automated,
+          schedule,
+          configuration: configuration || existingPipeline.configuration,
+          status: status || existingPipeline.status,
+          updatedAt: new Date(),
+        })
+        .where(eq(contentPipelines.id, parseInt(id)))
+        .returning();
+      
+      res.json(updatedPipeline);
+    } catch (error: any) {
+      console.error('Error updating pipeline:', error);
+      res.status(500).json({ message: `Error updating pipeline: ${error.message}` });
+    }
+  });
+
+  // Delete pipeline
+  app.delete('/api/pipelines/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { id } = req.params;
+      
+      // Check if pipeline exists and belongs to the user
+      const [existingPipeline] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, parseInt(id)),
+          eq(contentPipelines.userId, req.user.id)
+        ));
+      
+      if (!existingPipeline) {
+        return res.status(404).json({ message: 'Pipeline not found' });
+      }
+      
+      // Delete the pipeline
+      await db.delete(contentPipelines)
+        .where(eq(contentPipelines.id, parseInt(id)));
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error('Error deleting pipeline:', error);
+      res.status(500).json({ message: `Error deleting pipeline: ${error.message}` });
+    }
+  });
+
+  // Get pipeline runs for a specific pipeline
+  app.get('/api/pipelines/:id/runs', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { id } = req.params;
+      
+      // Check if pipeline exists and belongs to the user
+      const [existingPipeline] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, parseInt(id)),
+          eq(contentPipelines.userId, req.user.id)
+        ));
+      
+      if (!existingPipeline) {
+        return res.status(404).json({ message: 'Pipeline not found' });
+      }
+      
+      // Get pipeline runs
+      const pipelineRuns = await db.select()
+        .from(contentPipelineRuns)
+        .where(eq(contentPipelineRuns.pipelineId, parseInt(id)))
+        .orderBy(desc(contentPipelineRuns.createdAt));
+      
+      res.json(pipelineRuns);
+    } catch (error: any) {
+      console.error('Error fetching pipeline runs:', error);
+      res.status(500).json({ message: `Error fetching pipeline runs: ${error.message}` });
+    }
+  });
+
+  // Get details of a specific pipeline run
+  app.get('/api/pipeline-runs/:runId', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { runId } = req.params;
+      
+      // Get pipeline run with its associated pipeline
+      const [pipelineRun] = await db.select()
+        .from(contentPipelineRuns)
+        .where(eq(contentPipelineRuns.id, parseInt(runId)));
+      
+      if (!pipelineRun) {
+        return res.status(404).json({ message: 'Pipeline run not found' });
+      }
+      
+      // Check if the associated pipeline belongs to the user
+      const [pipeline] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, pipelineRun.pipelineId),
+          eq(contentPipelines.userId, req.user.id)
+        ));
+      
+      if (!pipeline) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Get stages for this run
+      const stages = await db.select()
+        .from(contentPipelineStages)
+        .where(eq(contentPipelineStages.pipelineRunId, pipelineRun.id))
+        .orderBy(contentPipelineStages.createdAt);
+      
+      // Get jobs for each stage
+      const stagesWithJobs = await Promise.all(stages.map(async (stage) => {
+        const jobs = await db.select()
+          .from(contentPipelineJobs)
+          .where(eq(contentPipelineJobs.stageRunId, stage.id))
+          .orderBy(contentPipelineJobs.createdAt);
+        
+        return {
+          ...stage,
+          jobs,
+        };
+      }));
+      
+      res.json({
+        run: pipelineRun,
+        pipeline,
+        stages: stagesWithJobs,
+      });
+    } catch (error: any) {
+      console.error('Error fetching pipeline run details:', error);
+      res.status(500).json({ message: `Error fetching pipeline run details: ${error.message}` });
+    }
+  });
+
+  // Execute a pipeline
+  app.post('/api/pipelines/:id/execute', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const { id } = req.params;
+      const params = req.body.params || {};
+      
+      // Check if pipeline exists and belongs to the user
+      const [existingPipeline] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, parseInt(id)),
+          eq(contentPipelines.userId, req.user.id)
+        ));
+      
+      if (!existingPipeline) {
+        return res.status(404).json({ message: 'Pipeline not found' });
+      }
+      
+      // Execute the pipeline using the service
+      try {
+        const pipelineRun = await contentPipelineService.runPipeline(parseInt(id), params);
+        
+        // Return the initial run information
+        res.json(pipelineRun);
+      } catch (pipelineError: any) {
+        return res.status(400).json({ message: `Error executing pipeline: ${pipelineError.message}` });
+      }
+    } catch (error: any) {
+      console.error('Error executing pipeline:', error);
+      res.status(500).json({ message: `Error executing pipeline: ${error.message}` });
     }
   });
   
