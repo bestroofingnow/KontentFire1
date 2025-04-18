@@ -2892,11 +2892,10 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
-      // Using created_by instead of userId based on the actual database schema
-      const pipelines = await db.select()
-        .from(contentPipelines)
-        .where(eq(contentPipelines.created_by, req.user.id))
-        .orderBy(desc(contentPipelines.createdAt));
+      // Using raw SQL query to match the actual database column name (created_by)
+      const pipelines = await db.execute(
+        sql`SELECT * FROM content_pipelines WHERE created_by = ${req.user.id} ORDER BY created_at DESC`
+      );
       
       res.json(pipelines);
     } catch (error: any) {
@@ -2914,12 +2913,12 @@ export function registerRoutes(app: Express): Server {
     try {
       const { id } = req.params;
       
-      const [pipeline] = await db.select()
-        .from(contentPipelines)
-        .where(and(
-          eq(contentPipelines.id, parseInt(id)),
-          eq(contentPipelines.userId, req.user.id)
-        ));
+      // Using raw SQL to match the actual database column names
+      const result = await db.execute(
+        sql`SELECT * FROM content_pipelines WHERE id = ${parseInt(id)} AND created_by = ${req.user.id} LIMIT 1`
+      );
+      
+      const pipeline = result.length > 0 ? result[0] : null;
       
       if (!pipeline) {
         return res.status(404).json({ message: 'Pipeline not found' });
@@ -2945,17 +2944,15 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: 'Name and configuration are required' });
       }
       
-      const [pipeline] = await db.insert(contentPipelines)
-        .values({
-          userId: req.user.id,
-          name,
-          description,
-          automated: automated || false,
-          schedule,
-          configuration,
-          status: 'active',
-        })
-        .returning();
+      // Using raw SQL to match the actual database column names
+      const configJson = typeof configuration === 'string' ? configuration : JSON.stringify(configuration);
+      const result = await db.execute(
+        sql`INSERT INTO content_pipelines (created_by, name, description, automated, schedule, config, status, created_at) 
+            VALUES (${req.user.id}, ${name}, ${description}, ${automated || false}, ${schedule}, ${configJson}::jsonb, 'active', NOW())
+            RETURNING *`
+      );
+      
+      const pipeline = result.length > 0 ? result[0] : null;
       
       res.status(201).json(pipeline);
     } catch (error: any) {
@@ -3048,23 +3045,21 @@ export function registerRoutes(app: Express): Server {
     try {
       const { id } = req.params;
       
-      // Check if pipeline exists and belongs to the user
-      const [existingPipeline] = await db.select()
-        .from(contentPipelines)
-        .where(and(
-          eq(contentPipelines.id, parseInt(id)),
-          eq(contentPipelines.userId, req.user.id)
-        ));
+      // Check if pipeline exists and belongs to the user using raw SQL
+      const pipelineCheck = await db.execute(
+        sql`SELECT id FROM content_pipelines WHERE id = ${parseInt(id)} AND created_by = ${req.user.id} LIMIT 1`
+      );
       
-      if (!existingPipeline) {
+      if (!pipelineCheck.length) {
         return res.status(404).json({ message: 'Pipeline not found' });
       }
       
-      // Get pipeline runs
-      const pipelineRuns = await db.select()
-        .from(contentPipelineRuns)
-        .where(eq(contentPipelineRuns.pipelineId, parseInt(id)))
-        .orderBy(desc(contentPipelineRuns.createdAt));
+      // Get pipeline runs using raw SQL
+      const pipelineRuns = await db.execute(
+        sql`SELECT * FROM content_pipeline_runs 
+            WHERE pipeline_id = ${parseInt(id)} 
+            ORDER BY created_at DESC`
+      );
       
       res.json(pipelineRuns);
     } catch (error: any) {
