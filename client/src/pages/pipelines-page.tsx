@@ -35,6 +35,7 @@ import {
   SettingsIcon
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import MainLayout from '@/components/layout/main-layout';
 
 // Types for our content pipeline data
 interface Pipeline {
@@ -514,7 +515,7 @@ const PipelinesPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <MainLayout>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Content Pipelines</h1>
@@ -558,7 +559,7 @@ const PipelinesPage: React.FC = () => {
           <CreatePipelineDialog onSuccess={handlePipelineCreated} />
         </div>
       )}
-    </div>
+    </MainLayout>
   );
 };
 
