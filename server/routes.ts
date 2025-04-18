@@ -318,6 +318,31 @@ export function registerRoutes(app: Express): Server {
       
       // With the simplified membership model, all users have access to all features
       const user = req.user;
+
+      // Get company profile to personalize content
+      let companyContext = "";
+      try {
+        const [companyProfile] = await db.select()
+          .from(companyProfiles)
+          .where(eq(companyProfiles.userId, user.id));
+
+        if (companyProfile) {
+          // Create a company context to personalize content
+          companyContext = `
+            Company Name: ${companyProfile.companyName}
+            Industry: ${companyProfile.industry || ""}
+            Description: ${companyProfile.description || ""}
+            Voice/Tone: ${companyProfile.primaryColor ? "Consistent with brand colors" : tone || "professional"}
+            Target Market: ${companyProfile.targetMarket || ""}
+            Website: ${companyProfile.websiteUrl || ""}
+            Key Services: ${companyProfile.services || ""}
+          `;
+          
+          console.log("Using company profile for content generation");
+        }
+      } catch (err) {
+        console.log("No company profile found, proceeding without company context");
+      }
       
       const result: GeneratedContent = await generateContent({ 
         prompt: prompt || '', 
@@ -327,7 +352,8 @@ export function registerRoutes(app: Express): Server {
         personality: personality || 'thoughtful', // Default to thoughtful if not specified
         platform: platform || null, // Pass platform for proper formatting
         template,
-        templateData
+        templateData,
+        companyContext // Pass company context to content generation
       });
       
       return res.json(result);

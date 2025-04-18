@@ -27,7 +27,7 @@ type TemplateType = 'standard' | 'battle-royale' | 'basics-101' | 'myth-buster' 
 const formSchema = z.object({
   contentType: z.enum(['text', 'image', 'both'] as const),
   platform: z.enum(['blog', 'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'pinterest'] as const),
-  prompt: z.string().min(5, "Prompt must be at least 5 characters"),
+  prompt: z.string().min(5, "Prompt must be at least 5 characters").optional(),
   tone: z.enum(['professional', 'casual', 'friendly', 'authoritative', 'humorous'] as const),
   length: z.enum(['short', 'medium', 'long'] as const),
   template: z.enum(['standard', 'battle-royale', 'basics-101', 'myth-buster', 'technical-guide', 'case-against', 'checklist'] as const).optional(),
@@ -124,12 +124,29 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
   });
   
   const onSubmit = (values: FormValues) => {
-    setGenerating(true);
-    generateContentMutation.mutate({
+    // Validate Battle Royale template fields if selected
+    if (selectedTemplate === 'battle-royale') {
+      if (!templateData.option1 || !templateData.option2 || !templateData.comparisonFocus) {
+        toast({
+          title: "Missing required fields",
+          description: "Please fill in both options and the comparison focus",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // If we're using a template other than standard, we don't need a prompt
+    const finalValues = {
       ...values,
       template: selectedTemplate,
+      // Only include prompt for standard template
+      prompt: selectedTemplate === 'standard' ? values.prompt : undefined,
       templateData
-    });
+    };
+    
+    setGenerating(true);
+    generateContentMutation.mutate(finalValues);
   };
   
   const handleSave = () => {

@@ -46,6 +46,7 @@ export type ContentPrompt = {
   platform?: 'blog' | 'facebook' | 'instagram' | 'gmb' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest' | 'press-release';
   template?: 'standard' | 'battle-royale' | 'basics-101' | 'myth-buster' | 'technical-guide' | 'case-against' | 'checklist';
   templateData?: any;
+  companyContext?: string; // Company profile information for customized content
 };
 
 // Generate text content based on prompt
@@ -188,7 +189,18 @@ import { generateTemplatePrompt } from './template-handlers';
 
 // Generate both text and image with sources
 export async function generateContent(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
-  const { prompt, contentType, tone, length, personality, platform, template, templateData } = contentPrompt;
+  const { 
+    prompt, 
+    contentType, 
+    tone, 
+    length, 
+    personality, 
+    platform, 
+    template, 
+    templateData,
+    companyContext 
+  } = contentPrompt;
+  
   const result: GeneratedContent = {};
 
   try {
@@ -210,6 +222,19 @@ export async function generateContent(contentPrompt: ContentPrompt): Promise<Gen
       } catch (error: any) {
         console.warn(`Template handling error: ${error.message}. Falling back to standard prompt.`);
       }
+    }
+
+    // Incorporate company context if available
+    if (companyContext && companyContext.trim()) {
+      console.log("Using company context information for personalized content");
+      effectivePrompt = `
+        ${effectivePrompt}
+        
+        Use the following company information to personalize the content:
+        ${companyContext}
+        
+        Make sure the content aligns with the company's brand voice, industry, and target audience.
+      `;
     }
 
     // First get relevant sources using Perplexity
