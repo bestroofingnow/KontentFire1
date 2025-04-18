@@ -19,6 +19,9 @@ import TemplateSelector from "./template-selector";
 import BattleRoyaleTemplate from "./battle-royale-template";
 import Basics101Template from "./basics-101-template";
 import MythBusterTemplate from "./myth-buster-template";
+import TechnicalGuideTemplate from "./technical-guide-template";
+import CaseAgainstTemplate from "./case-against-template";
+import ChecklistTemplate from "./checklist-template";
 
 type ContentType = 'text' | 'image' | 'both';
 type ToneType = 'professional' | 'casual' | 'friendly' | 'authoritative' | 'humorous';
@@ -180,6 +183,45 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
           toast({
             title: "Missing Required Fields",
             description: "Topic is required for Myth Buster template",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      if (selectedTemplate === 'technical-guide') {
+        console.log("Technical Guide template data:", JSON.stringify(templateData, null, 2));
+        
+        if (!templateData || !templateData.topic) {
+          toast({
+            title: "Missing Required Fields",
+            description: "Topic is required for Technical Guide template",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      if (selectedTemplate === 'case-against') {
+        console.log("Case Against template data:", JSON.stringify(templateData, null, 2));
+        
+        if (!templateData || !templateData.topic) {
+          toast({
+            title: "Missing Required Fields",
+            description: "Topic is required for Case Against template",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      if (selectedTemplate === 'checklist') {
+        console.log("Checklist template data:", JSON.stringify(templateData, null, 2));
+        
+        if (!templateData || !templateData.topic) {
+          toast({
+            title: "Missing Required Fields",
+            description: "Topic is required for Checklist template",
             variant: "destructive",
           });
           return;
@@ -385,6 +427,114 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
                     toast({
                       title: "Submission Error",
                       description: "There was an error submitting the Myth Buster template. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              />
+            )}
+
+            {/* Technical Guide Template */}
+            {selectedTemplate === 'technical-guide' && (
+              <TechnicalGuideTemplate 
+                formData={templateData} 
+                onChange={handleTemplateDataChange}
+                onGenerateContent={(templateData) => {
+                  try {
+                    console.log("Technical Guide direct generate triggered");
+                    
+                    // Create submission data directly
+                    const directSubmission: Record<string, any> = {
+                      contentType: form.getValues().contentType || "both",
+                      platform: form.getValues().platform || "blog",
+                      tone: form.getValues().tone || "professional",
+                      length: form.getValues().length || "medium",
+                      template: "technical-guide",
+                      templateData: templateData
+                    };
+                    
+                    console.log("Direct Technical Guide submission:", JSON.stringify(directSubmission, null, 2));
+                    
+                    // Submit directly
+                    setGenerating(true);
+                    generateContentMutation.mutate(directSubmission);
+                  } catch (error) {
+                    console.error("Error in Technical Guide direct submission:", error);
+                    toast({
+                      title: "Submission Error",
+                      description: "There was an error submitting the Technical Guide template. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              />
+            )}
+
+            {/* Case Against Template */}
+            {selectedTemplate === 'case-against' && (
+              <CaseAgainstTemplate 
+                formData={templateData} 
+                onChange={handleTemplateDataChange}
+                onGenerateContent={(templateData) => {
+                  try {
+                    console.log("Case Against direct generate triggered");
+                    
+                    // Create submission data directly
+                    const directSubmission: Record<string, any> = {
+                      contentType: form.getValues().contentType || "both",
+                      platform: form.getValues().platform || "blog",
+                      tone: form.getValues().tone || "professional",
+                      length: form.getValues().length || "medium",
+                      template: "case-against",
+                      templateData: templateData
+                    };
+                    
+                    console.log("Direct Case Against submission:", JSON.stringify(directSubmission, null, 2));
+                    
+                    // Submit directly
+                    setGenerating(true);
+                    generateContentMutation.mutate(directSubmission);
+                  } catch (error) {
+                    console.error("Error in Case Against direct submission:", error);
+                    toast({
+                      title: "Submission Error",
+                      description: "There was an error submitting the Case Against template. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              />
+            )}
+
+            {/* Checklist Template */}
+            {selectedTemplate === 'checklist' && (
+              <ChecklistTemplate 
+                formData={templateData} 
+                onChange={handleTemplateDataChange}
+                onGenerateContent={(templateData) => {
+                  try {
+                    console.log("Checklist direct generate triggered");
+                    
+                    // Create submission data directly
+                    const directSubmission: Record<string, any> = {
+                      contentType: form.getValues().contentType || "both",
+                      platform: form.getValues().platform || "blog",
+                      tone: form.getValues().tone || "professional",
+                      length: form.getValues().length || "medium",
+                      template: "checklist",
+                      templateData: templateData
+                    };
+                    
+                    console.log("Direct Checklist submission:", JSON.stringify(directSubmission, null, 2));
+                    
+                    // Submit directly
+                    setGenerating(true);
+                    generateContentMutation.mutate(directSubmission);
+                  } catch (error) {
+                    console.error("Error in Checklist direct submission:", error);
+                    toast({
+                      title: "Submission Error",
+                      description: "There was an error submitting the Checklist template. Please try again.",
                       variant: "destructive",
                     });
                   }
