@@ -44,6 +44,8 @@ export type ContentPrompt = {
   length?: 'short' | 'medium' | 'long';
   personality?: 'thoughtful' | 'enthusiastic' | 'skeptical' | 'inspirational' | 'analytical';
   platform?: 'blog' | 'facebook' | 'instagram' | 'gmb' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest' | 'press-release';
+  template?: 'standard' | 'battle-royale' | 'basics-101' | 'myth-buster' | 'technical-guide' | 'case-against' | 'checklist';
+  templateData?: any;
 };
 
 // Generate text content based on prompt
@@ -181,17 +183,44 @@ export async function generateImage(prompt: string): Promise<string> {
   }
 }
 
-// Generate both text and image with sources
+// Import template handler
+import { generateTemplatePrompt } from './template-handlers';
 
+// Generate both text and image with sources
 export async function generateContent(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
-  const { prompt, contentType, tone, length, personality, platform } = contentPrompt;
+  const { prompt, contentType, tone, length, personality, platform, template, templateData } = contentPrompt;
   const result: GeneratedContent = {};
 
   try {
+    // Determine the effective prompt based on template
+    let effectivePrompt = prompt;
+    
+    if (template && template !== 'standard' && templateData) {
+      try {
+        // Generate template-specific prompt
+        console.log(`Using template: ${template}`);
+        effectivePrompt = generateTemplatePrompt(
+          template,
+          templateData,
+          tone || 'professional',
+          personality || 'analytical',
+          platform || 'blog'
+        );
+        console.log(`Generated template prompt for ${template}`);
+      } catch (error: any) {
+        console.warn(`Template handling error: ${error.message}. Falling back to standard prompt.`);
+      }
+    }
+
     // First get relevant sources using Perplexity
     let sources: Array<{title: string, url: string, snippet: string}> = [];
     try {
-      sources = await getRelevantSources(prompt);
+      // If using a template, make the search query more specific
+      const searchQuery = template && template !== 'standard' && templateData 
+        ? (templateData.comparisonFocus || templateData.topic || effectivePrompt.substring(0, 100))
+        : effectivePrompt;
+      
+      sources = await getRelevantSources(searchQuery);
       result.sources = sources;
       console.log(`Found ${sources.length} sources using Perplexity`);
     } catch (error) {
@@ -202,15 +231,23 @@ export async function generateContent(contentPrompt: ContentPrompt): Promise<Gen
     if (contentType === 'text' || contentType === 'both') {
       // Step 1: Generate base outline with OpenAI
       // For the outline, we'll use a more structured approach
-      const outlinePrompt = `Create a detailed outline for content about: ${prompt}
+      let outlinePrompt;
       
-      The outline should include:
-      - Main topics and subtopics to cover
-      - Key points for each section
-      - Logical structure and flow
-      - Questions that should be addressed
-      
-      This is just an outline that will be expanded and enhanced later.`;
+      if (template && template !== 'standard') {
+        // For templates, use the template-generated prompt directly
+        outlinePrompt = effectivePrompt;
+      } else {
+        // For standard content, create a structured outline
+        outlinePrompt = `Create a detailed outline for content about: ${effectivePrompt}
+        
+        The outline should include:
+        - Main topics and subtopics to cover
+        - Key points for each section
+        - Logical structure and flow
+        - Questions that should be addressed
+        
+        This is just an outline that will be expanded and enhanced later.`;
+      }
       
       console.log("Generating base outline with OpenAI...");
       const baseOutline = await generateText(outlinePrompt, 'professional', 'medium', 'analytical', platform);
@@ -231,9 +268,20 @@ export async function generateContent(contentPrompt: ContentPrompt): Promise<Gen
     // Generate image if requested
     if (contentType === 'image' || contentType === 'both') {
       // For 'both' type, adjust the image prompt based on the generated text
-      const imagePrompt = contentType === 'both' && result.text 
-        ? `Create an image to accompany this text: ${result.text.substring(0, 300)}...` 
-        : prompt;
+      let imagePrompt;
+      
+      if (template === 'battle-royale' && templateData) {
+        // For Battle Royale, create a more specific image prompt
+        imagePrompt = `Create a professional comparison image showing ${templateData.option1} versus ${templateData.option2} 
+          for ${templateData.comparisonFocus || 'business'} applications. 
+          Use a visual metaphor of competition or comparison.`;
+      } else if (contentType === 'both' && result.text) {
+        // For other content with text, use text to inform image
+        imagePrompt = `Create an image to accompany this text: ${result.text.substring(0, 300)}...`;
+      } else {
+        // Default to the original prompt
+        imagePrompt = effectivePrompt;
+      }
       
       result.imageUrl = await generateImage(imagePrompt);
     }

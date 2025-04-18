@@ -296,22 +296,38 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
-      const { prompt, contentType, tone, length, personality, platform } = req.body as ContentPrompt;
+      const { 
+        prompt, 
+        contentType, 
+        tone, 
+        length, 
+        personality, 
+        platform,
+        template,
+        templateData
+      } = req.body as ContentPrompt;
       
-      if (!prompt) {
-        return res.status(400).json({ message: 'Missing prompt parameter' });
+      // Validate the request based on template
+      if (template === 'standard' && !prompt) {
+        return res.status(400).json({ message: 'Missing prompt parameter for standard template' });
+      }
+      
+      if (template && template !== 'standard' && !templateData) {
+        return res.status(400).json({ message: `Missing template data for ${template} template` });
       }
       
       // With the simplified membership model, all users have access to all features
       const user = req.user;
       
       const result: GeneratedContent = await generateContent({ 
-        prompt, 
+        prompt: prompt || '', 
         contentType, 
         tone, 
         length, 
         personality: personality || 'thoughtful', // Default to thoughtful if not specified
-        platform: platform || null // Pass platform for proper formatting
+        platform: platform || null, // Pass platform for proper formatting
+        template,
+        templateData
       });
       
       return res.json(result);
@@ -336,6 +352,8 @@ export function registerRoutes(app: Express): Server {
         platform,
         scheduledDate,
         imageUrl,
+        template,
+        templateData
       } = req.body;
       
       if (!title || !content) {
@@ -343,6 +361,11 @@ export function registerRoutes(app: Express): Server {
       }
       
       const user = req.user;
+      
+      // Store template metadata as JSON if provided
+      const metadata = (template && template !== 'standard' && templateData) 
+        ? { template, templateData } 
+        : null;
       
       const [newContent] = await db.insert(contents)
         .values({
@@ -354,6 +377,7 @@ export function registerRoutes(app: Express): Server {
           platform: platform || null,
           scheduledDate: scheduledDate || null,
           imageUrl: imageUrl || null,
+          metadata: metadata ? JSON.stringify(metadata) : null,
           createdAt: new Date(),
           updatedAt: new Date(),
         })

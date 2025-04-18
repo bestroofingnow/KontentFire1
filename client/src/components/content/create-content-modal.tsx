@@ -15,11 +15,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, BookOpen } from "lucide-react";
 import { FactCheckDialog, ReferencesDialog } from "@/components/fact-check";
 import { RepurposeDialog } from "./repurpose-dialog";
+import TemplateSelector from "./template-selector";
+import BattleRoyaleTemplate from "./battle-royale-template";
 
 type ContentType = 'text' | 'image' | 'both';
 type ToneType = 'professional' | 'casual' | 'friendly' | 'authoritative' | 'humorous';
 type LengthType = 'short' | 'medium' | 'long';
 type PlatformType = 'blog' | 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'youtube' | 'tiktok' | 'pinterest';
+type TemplateType = 'standard' | 'battle-royale' | 'basics-101' | 'myth-buster' | 'technical-guide' | 'case-against' | 'checklist';
 
 const formSchema = z.object({
   contentType: z.enum(['text', 'image', 'both'] as const),
@@ -27,6 +30,7 @@ const formSchema = z.object({
   prompt: z.string().min(5, "Prompt must be at least 5 characters"),
   tone: z.enum(['professional', 'casual', 'friendly', 'authoritative', 'humorous'] as const),
   length: z.enum(['short', 'medium', 'long'] as const),
+  template: z.enum(['standard', 'battle-royale', 'basics-101', 'myth-buster', 'technical-guide', 'case-against', 'checklist'] as const).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -44,6 +48,8 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [repurposeOpen, setRepurposeOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("standard");
+  const [templateData, setTemplateData] = useState<any>({});
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -52,13 +58,18 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
       platform: 'blog',
       prompt: '',
       tone: 'professional',
-      length: 'medium'
+      length: 'medium',
+      template: 'standard'
     }
   });
   
   const generateContentMutation = useMutation({
-    mutationFn: async (data: FormValues) => {
-      const res = await apiRequest("POST", "/api/content/generate", data);
+    mutationFn: async (data: FormValues & { templateData?: any }) => {
+      const requestData = {
+        ...data,
+        templateData: selectedTemplate !== 'standard' ? templateData : undefined
+      };
+      const res = await apiRequest("POST", "/api/content/generate", requestData);
       return res.json();
     },
     onSuccess: (data) => {
@@ -85,6 +96,8 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
       textContent?: string;
       imageUrl?: string;
       contentType: ContentType;
+      template?: TemplateType;
+      templateData?: any;
     }) => {
       const res = await apiRequest("POST", "/api/content", data);
       return res.json();
@@ -112,7 +125,11 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
   
   const onSubmit = (values: FormValues) => {
     setGenerating(true);
-    generateContentMutation.mutate(values);
+    generateContentMutation.mutate({
+      ...values,
+      template: selectedTemplate,
+      templateData
+    });
   };
   
   const handleSave = () => {
@@ -131,6 +148,8 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
       textContent: generatedContent.text,
       imageUrl: generatedContent.imageUrl,
       contentType: form.getValues().contentType,
+      template: selectedTemplate,
+      templateData: selectedTemplate !== 'standard' ? templateData : undefined
     });
   };
   
@@ -138,7 +157,18 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
     form.reset();
     setGeneratedContent({});
     setTitle("");
+    setSelectedTemplate("standard");
+    setTemplateData({});
     onClose();
+  };
+
+  const handleTemplateChange = (value: string) => {
+    setSelectedTemplate(value as TemplateType);
+    form.setValue('template', value as any);
+  };
+
+  const handleTemplateDataChange = (data: any) => {
+    setTemplateData(data);
   };
   
   return (
@@ -150,6 +180,41 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
         
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
+            {/* Template Selection */}
+            <TemplateSelector 
+              value={selectedTemplate} 
+              onChange={handleTemplateChange}
+            />
+
+            {/* Template-specific inputs */}
+            {selectedTemplate === 'battle-royale' && (
+              <BattleRoyaleTemplate 
+                formData={templateData} 
+                onChange={handleTemplateDataChange}
+              />
+            )}
+
+            {/* Only show prompt input for standard template */}
+            {selectedTemplate === 'standard' && (
+              <div>
+                <Label className="block text-gray-700 font-medium mb-2">Prompt (What do you want to create?)</Label>
+                <Controller
+                  name="prompt"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Textarea
+                      {...field}
+                      className="w-full border rounded-lg p-3 text-gray-700 h-24"
+                      placeholder="Example: Create a post about the benefits of meditation for stress relief..."
+                    />
+                  )}
+                />
+                {form.formState.errors.prompt && (
+                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.prompt.message}</p>
+                )}
+              </div>
+            )}
+            
             {/* Content Type Selection */}
             <div>
               <Label className="block text-gray-700 font-medium mb-2">Content Type</Label>
@@ -208,25 +273,6 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
               />
               {form.formState.errors.platform && (
                 <p className="text-red-500 text-sm mt-1">{form.formState.errors.platform.message}</p>
-              )}
-            </div>
-            
-            {/* Prompt Input */}
-            <div>
-              <Label className="block text-gray-700 font-medium mb-2">Prompt (What do you want to create?)</Label>
-              <Controller
-                name="prompt"
-                control={form.control}
-                render={({ field }) => (
-                  <Textarea
-                    {...field}
-                    className="w-full border rounded-lg p-3 text-gray-700 h-24"
-                    placeholder="Example: Create a post about the benefits of meditation for stress relief..."
-                  />
-                )}
-              />
-              {form.formState.errors.prompt && (
-                <p className="text-red-500 text-sm mt-1">{form.formState.errors.prompt.message}</p>
               )}
             </div>
             
@@ -340,7 +386,7 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
                       triggerLabel="Fact Check"
                     />
                     <ReferencesDialog 
-                      initialQuery={form.getValues().prompt}
+                      initialQuery={form.getValues().prompt || `About ${templateData.comparisonFocus || 'the topic'}`}
                       triggerLabel="Find References"
                     />
                   </div>
