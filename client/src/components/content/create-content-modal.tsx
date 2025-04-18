@@ -43,7 +43,11 @@ interface CreateContentModalProps {
 
 export default function CreateContentModal({ open, onClose, onContentCreated }: CreateContentModalProps) {
   const { toast } = useToast();
-  const [generatedContent, setGeneratedContent] = useState<{text?: string, imageUrl?: string}>({});
+  const [generatedContent, setGeneratedContent] = useState<{
+    text?: string, 
+    imageUrl?: string,
+    additionalImages?: string[]
+  }>({});
   const [title, setTitle] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -95,6 +99,7 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
       title: string;
       textContent?: string;
       imageUrl?: string;
+      additionalImages?: string[];
       contentType: ContentType;
       template?: TemplateType;
       templateData?: any;
@@ -178,6 +183,7 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
       title,
       textContent: generatedContent.text,
       imageUrl: generatedContent.imageUrl,
+      additionalImages: generatedContent.additionalImages, // Add additional images for database storage
       contentType: form.getValues().contentType,
       template: selectedTemplate,
       templateData: selectedTemplate !== 'standard' ? templateData : undefined
@@ -390,12 +396,37 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
             
             {generatedContent.imageUrl && (
               <div className="mb-4">
-                <Label className="block text-gray-700 font-medium mb-2">Generated Image</Label>
+                <Label className="block text-gray-700 font-medium mb-2">Featured Image</Label>
                 <img 
                   src={generatedContent.imageUrl} 
-                  alt="Generated content" 
+                  alt="Featured image" 
                   className="w-full h-auto max-h-64 object-contain border rounded"
                 />
+              </div>
+            )}
+            
+            {generatedContent.additionalImages && generatedContent.additionalImages.length > 0 && (
+              <div className="mb-4">
+                <Label className="block text-gray-700 font-medium mb-2">
+                  Additional Images ({generatedContent.additionalImages.length})
+                </Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {generatedContent.additionalImages.map((imgUrl, index) => (
+                    <div key={index} className="border rounded overflow-hidden">
+                      <img 
+                        src={imgUrl} 
+                        alt={`Supporting image ${index + 1}`} 
+                        className="w-full h-40 object-cover"
+                      />
+                      <div className="p-2 text-xs text-center text-gray-500">
+                        Supporting image {index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  These images will be embedded throughout your content (1 image per 400 words).
+                </p>
               </div>
             )}
             

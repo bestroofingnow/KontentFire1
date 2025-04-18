@@ -400,17 +400,18 @@ export function registerRoutes(app: Express): Server {
     try {
       const {
         title,
-        content,
+        textContent,
         contentType,
         status,
         platform,
         scheduledDate,
         imageUrl,
+        additionalImages,
         template,
         templateData
       } = req.body;
       
-      if (!title || !content) {
+      if (!title) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
       
@@ -421,33 +422,40 @@ export function registerRoutes(app: Express): Server {
         ? { template, templateData } 
         : null;
       
+      // Store additionalImages in the metadata if provided
+      const additionalImagesData = additionalImages && additionalImages.length > 0 
+        ? { additionalImages } 
+        : null;
+        
+      // Combine template data and additional images in metadata
+      const combinedMetadata = {
+        ...(metadata || {}),
+        ...(additionalImagesData || {})
+      };
+      
       const [newContent] = await db.insert(contents)
         .values({
           userId: user.id,
           title,
-          content,
+          textContent: textContent || null,
           contentType: contentType || 'text',
           status: status || 'draft',
-          platform: platform || null,
-          scheduledDate: scheduledDate || null,
+          // No platform or scheduledDate in schema, store in metadata
           imageUrl: imageUrl || null,
-          metadata: metadata ? JSON.stringify(metadata) : null,
+          metadata: Object.keys(combinedMetadata).length > 0 ? JSON.stringify(combinedMetadata) : null,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
         .returning();
       
-      if (status === 'scheduled' && scheduledDate) {
+      if (status === 'scheduled' && scheduledDate && platform) {
         // Create schedule entry
         await db.insert(schedules)
           .values({
-            userId: user.id,
             contentId: newContent.id,
+            platform: platform as any, // Cast to expected platform type 
             scheduledDate: new Date(scheduledDate),
-            platform: platform || null,
-            status: 'pending',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            published: false
           });
       }
       
