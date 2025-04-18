@@ -30,6 +30,7 @@ try {
 export type GeneratedContent = {
   text?: string;
   imageUrl?: string;
+  additionalImages?: string[]; // For supporting multiple images in content
   sources?: Array<{
     title: string;
     url: string;
@@ -290,25 +291,77 @@ export async function generateContent(contentPrompt: ContentPrompt): Promise<Gen
       result.text = enhancedContent;
     }
 
-    // Generate image if requested
+    // Generate images if requested
     if (contentType === 'image' || contentType === 'both') {
       // For 'both' type, adjust the image prompt based on the generated text
-      let imagePrompt;
+      let mainImagePrompt;
       
       if (template === 'battle-royale' && templateData) {
         // For Battle Royale, create a more specific image prompt
-        imagePrompt = `Create a professional comparison image showing ${templateData.option1} versus ${templateData.option2} 
+        mainImagePrompt = `Create a professional comparison image showing ${templateData.option1} versus ${templateData.option2} 
           for ${templateData.comparisonFocus || 'business'} applications. 
           Use a visual metaphor of competition or comparison.`;
       } else if (contentType === 'both' && result.text) {
         // For other content with text, use text to inform image
-        imagePrompt = `Create an image to accompany this text: ${result.text.substring(0, 300)}...`;
+        mainImagePrompt = `Create a featured image to accompany this text: ${result.text.substring(0, 300)}...`;
       } else {
         // Default to the original prompt
-        imagePrompt = effectivePrompt;
+        mainImagePrompt = effectivePrompt;
       }
       
-      result.imageUrl = await generateImage(imagePrompt);
+      // Generate the main featured image
+      result.imageUrl = await generateImage(mainImagePrompt);
+      
+      // For blog content, generate additional images based on content length (1 image per 400 words)
+      if (platform === 'blog' && result.text) {
+        const wordCount = result.text.split(/\s+/).length;
+        const numAdditionalImages = Math.floor(wordCount / 400);
+        
+        console.log(`Content length: ${wordCount} words, generating ${numAdditionalImages} additional images`);
+        
+        if (numAdditionalImages > 0) {
+          result.additionalImages = [];
+          
+          // Extract sections from the content
+          const sections = result.text.split(/<h2>|<h3>/).filter(section => section.trim().length > 0);
+          
+          // Generate one image for each section up to the number of additional images needed
+          for (let i = 0; i < Math.min(numAdditionalImages, sections.length); i++) {
+            const sectionText = sections[i].substring(0, 300);
+            const sectionImagePrompt = `Create a supporting image for this section of content: ${sectionText}...`;
+            
+            try {
+              const imageUrl = await generateImage(sectionImagePrompt);
+              if (imageUrl) {
+                result.additionalImages.push(imageUrl);
+              }
+            } catch (error) {
+              console.warn(`Failed to generate additional image ${i+1}:`, error);
+            }
+          }
+          
+          // If we couldn't extract enough sections, generate generic topic-based images
+          if (result.additionalImages.length < numAdditionalImages) {
+            const remaining = numAdditionalImages - result.additionalImages.length;
+            for (let i = 0; i < remaining; i++) {
+              const genericPrompt = template === 'battle-royale' && templateData
+                ? `Create a detailed image related to ${templateData.comparisonFocus || 'the comparison topic'} showing aspect ${i+1} of the comparison.`
+                : `Create a relevant image for ${effectivePrompt.substring(0, 100)}... (image ${i+1})`;
+              
+              try {
+                const imageUrl = await generateImage(genericPrompt);
+                if (imageUrl) {
+                  result.additionalImages.push(imageUrl);
+                }
+              } catch (error) {
+                console.warn(`Failed to generate generic additional image ${i+1}:`, error);
+              }
+            }
+          }
+          
+          console.log(`Generated ${result.additionalImages.length} additional images for content`);
+        }
+      }
     }
 
     return result;

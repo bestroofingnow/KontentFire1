@@ -2,10 +2,12 @@
  * Huginn Agent System
  * This module integrates with Huginn for creating smart agents that can automate various tasks.
  * Based on: https://github.com/huginn/huginn
+ * 
+ * Implementation uses Docker for quick setup as recommended in the official documentation.
  */
 
 import axios from 'axios';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -83,7 +85,7 @@ export class HuginnAgentService {
   }
   
   /**
-   * Initialize the Huginn agent system
+   * Initialize the Huginn agent system using Docker
    */
   public async initialize(): Promise<void> {
     if (this.isInitialized) return;
@@ -94,10 +96,40 @@ export class HuginnAgentService {
         fs.mkdirSync(this.huginnPath, { recursive: true });
       }
       
-      // Check if we need to clone Huginn repo
-      if (!fs.existsSync(path.join(this.huginnPath, 'Gemfile'))) {
-        console.log('Cloning Huginn repository...');
+      // Check if Docker setup is needed
+      if (!fs.existsSync(path.join(this.huginnPath, 'docker-compose.yml'))) {
+        console.log('Setting up Huginn using Docker...');
         await this.cloneHuginnRepo();
+      }
+      
+      // Check if Docker is available and optionally start Huginn container
+      try {
+        await new Promise<void>((resolve, reject) => {
+          exec('docker --version', async (error, stdout, stderr) => {
+            if (error) {
+              console.warn('Docker not found. Huginn Docker container cannot be started automatically.');
+              console.warn('Please install Docker to use the Huginn integration.');
+              console.warn('You can follow the setup instructions in: ' + path.join(this.huginnPath, 'README.md'));
+              resolve();
+            } else {
+              console.log('Docker detected:', stdout.trim());
+              
+              // Check if Huginn container is already running
+              const checkHuginnContainer = await this.checkHuginnContainer();
+              
+              if (!checkHuginnContainer.running) {
+                console.log('Huginn container is not running. You can start it manually by following the instructions in:');
+                console.log(path.join(this.huginnPath, 'README.md'));
+              } else {
+                console.log('Huginn container is already running at: http://localhost:3000');
+              }
+              
+              resolve();
+            }
+          });
+        });
+      } catch (error) {
+        console.warn('Failed to check Docker installation:', error);
       }
       
       // Initialize agent schedules for active agents
@@ -112,24 +144,161 @@ export class HuginnAgentService {
   }
   
   /**
-   * Clone the Huginn repository from GitHub
+   * Check if Huginn Docker container is running
+   */
+  private async checkHuginnContainer(): Promise<{running: boolean, containerId?: string}> {
+    return new Promise((resolve, reject) => {
+      exec('docker ps --filter "name=huginn_huginn" --format "{{.ID}}"', (error, stdout, stderr) => {
+        if (error) {
+          console.warn('Failed to check Huginn container status:', error.message);
+          resolve({ running: false });
+          return;
+        }
+        
+        const containerId = stdout.trim();
+        resolve({
+          running: containerId.length > 0,
+          containerId: containerId.length > 0 ? containerId : undefined
+        });
+      });
+    });
+  }
+  
+  /**
+   * Start Huginn Docker container
+   */
+  public async startHuginnContainer(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      console.log('Starting Huginn Docker container...');
+      
+      const cwd = this.huginnPath;
+      exec('docker-compose up -d', { cwd }, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Failed to start Huginn container:', error.message);
+          console.error(stderr);
+          resolve(false);
+          return;
+        }
+        
+        console.log('Huginn container started successfully');
+        console.log('Huginn is now accessible at: http://localhost:3000');
+        console.log('Default login: admin / password');
+        resolve(true);
+      });
+    });
+  }
+  
+  /**
+   * Stop Huginn Docker container
+   */
+  public async stopHuginnContainer(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      console.log('Stopping Huginn Docker container...');
+      
+      const cwd = this.huginnPath;
+      exec('docker-compose down', { cwd }, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Failed to stop Huginn container:', error.message);
+          console.error(stderr);
+          resolve(false);
+          return;
+        }
+        
+        console.log('Huginn container stopped successfully');
+        resolve(true);
+      });
+    });
+  }
+  
+  /**
+   * Setup Huginn Docker environment
+   * Uses official Docker image as recommended in Huginn documentation
    */
   private async cloneHuginnRepo(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const gitClone = spawn('git', ['clone', 'https://github.com/huginn/huginn.git', this.huginnPath]);
+      console.log('Setting up Huginn Docker environment...');
       
-      gitClone.on('close', (code) => {
-        if (code === 0) {
-          console.log('Huginn repository cloned successfully');
-          resolve();
-        } else {
-          reject(new Error(`Git clone failed with code ${code}`));
-        }
-      });
+      // Create a docker-compose.yml file in the Huginn directory
+      const dockerComposeContent = `
+version: '3'
+services:
+  huginn:
+    image: huginn/huginn
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - HUGINN_DATABASE_ADAPTER=postgresql
+      - HUGINN_DATABASE_USERNAME=${process.env.PGUSER}
+      - HUGINN_DATABASE_PASSWORD=${process.env.PGPASSWORD}
+      - HUGINN_DATABASE_HOST=${process.env.PGHOST}
+      - HUGINN_DATABASE_PORT=${process.env.PGPORT}
+      - HUGINN_DATABASE_NAME=${process.env.PGDATABASE}
+      - APP_SECRET_TOKEN=${process.env.SESSION_SECRET || 'app_secret_token_huginn_development'}
+    volumes:
+      - ./data:/var/lib/mysql
+      - ./config:/app/config
+`;
       
-      gitClone.stderr.on('data', (data) => {
-        console.error(`Git clone stderr: ${data}`);
-      });
+      // Ensure the data and config directories exist
+      fs.mkdirSync(path.join(this.huginnPath, 'data'), { recursive: true });
+      fs.mkdirSync(path.join(this.huginnPath, 'config'), { recursive: true });
+      
+      // Write the docker-compose.yml file
+      fs.writeFileSync(path.join(this.huginnPath, 'docker-compose.yml'), dockerComposeContent);
+      
+      // Create a basic .env file for any additional environment variables
+      fs.writeFileSync(path.join(this.huginnPath, '.env'), `
+# Huginn environment variables
+DATABASE_URL=${process.env.DATABASE_URL}
+PGUSER=${process.env.PGUSER}
+PGPASSWORD=${process.env.PGPASSWORD}
+PGHOST=${process.env.PGHOST}
+PGPORT=${process.env.PGPORT}
+PGDATABASE=${process.env.PGDATABASE}
+`);
+      
+      // Create a simple README file with instructions
+      fs.writeFileSync(path.join(this.huginnPath, 'README.md'), `
+# Huginn Docker Setup
+
+This is an automated setup for Huginn using Docker. The official Huginn Docker image is used.
+
+## Starting Huginn
+
+Run the following command to start Huginn:
+
+\`\`\`
+docker-compose up -d
+\`\`\`
+
+## Accessing Huginn
+
+Once started, Huginn will be available at:
+
+http://localhost:3000
+
+The default login is:
+- Username: admin
+- Password: password
+
+Make sure to change these credentials after first login.
+
+## Stopping Huginn
+
+To stop Huginn, run:
+
+\`\`\`
+docker-compose down
+\`\`\`
+
+## Configuration
+
+You can customize Huginn by modifying environment variables in the docker-compose.yml file.
+`);
+      
+      console.log('Huginn Docker environment setup complete.');
+      resolve();
     });
   }
   

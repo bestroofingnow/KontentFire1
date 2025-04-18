@@ -1,0 +1,19 @@
+
+version: '3'
+services:
+  huginn:
+    image: huginn/huginn
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - HUGINN_DATABASE_ADAPTER=postgresql
+      - HUGINN_DATABASE_USERNAME=neondb_owner
+      - HUGINN_DATABASE_PASSWORD=npg_6Stv0HpujVIT
+      - HUGINN_DATABASE_HOST=ep-cold-smoke-a4ahsy47.us-east-1.aws.neon.tech
+      - HUGINN_DATABASE_PORT=5432
+      - HUGINN_DATABASE_NAME=neondb
+      - APP_SECRET_TOKEN=XLN2OLzWomOSNU5vrtdmwSveh57F0xp1T48jATHAD2NNL0qH/mrIOFq97eU3CmzyCaiJnwFSizelL6y6NPf8Kg==
+    volumes:
+      - ./data:/var/lib/mysql
+      - ./config:/app/config

@@ -450,9 +450,7 @@ export const huginnAgents = pgTable('huginn_agents', {
   customSchedule: text('custom_schedule'),
   triggerType: agentTriggerEnum('trigger_type').default('manual').notNull(),
   configuration: jsonb('configuration').notNull(),
-  lastRun: timestamp('last_run'),
   nextRun: timestamp('next_run'),
-  lastResult: jsonb('last_result'),
   workflowPosition: integer('workflow_position').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at'),
@@ -528,9 +526,7 @@ export const huginnLogs = pgTable('huginn_logs', {
 // Insert schemas for Huginn tables
 export const insertHuginnAgentSchema = createInsertSchema(huginnAgents).omit({
   id: true,
-  lastRun: true,
   nextRun: true,
-  lastResult: true,
   createdAt: true,
   updatedAt: true,
 });
