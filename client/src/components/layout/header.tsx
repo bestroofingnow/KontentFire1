@@ -44,7 +44,7 @@ export default function Header() {
     : "U";
     
   const isAdmin = user?.isAdmin;
-  const planType = user?.plan || 'blaze';
+  const planType = user?.plan || 'ember';
   
   const handleLogout = async () => {
     try {
@@ -89,14 +89,6 @@ export default function Header() {
           >
             <span className="text-primary">Kontent</span>Fire
           </a>
-          
-          {/* Plan badge */}
-          <span className={cn(
-            "text-dark font-semibold text-xs px-2 py-1 rounded ml-2 hidden sm:inline-block",
-            planType === 'blaze' ? "bg-secondary" : "bg-primary"
-          )}>
-            {planType === 'blaze' ? 'BLAZE PLAN' : 'INFERNO PLAN'}
-          </span>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -104,12 +96,20 @@ export default function Header() {
             <Bell className="h-6 w-6" />
           </button>
           
+          {/* Plan badge - moved next to bell icon */}
+          <span className={cn(
+            "text-dark font-semibold text-xs px-2 py-1 rounded hidden sm:inline-block",
+            planType === 'ember' ? "bg-secondary" : "bg-primary"
+          )}>
+            {planType === 'ember' ? 'EMBER PLAN' : 'INFERNO PLAN'}
+          </span>
+          
           <DropdownMenu>
             <DropdownMenuTrigger className="focus:outline-none">
               <div className="flex items-center space-x-2">
                 <div className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm",
-                  planType === 'blaze' ? "bg-secondary-light" : "bg-primary-light"
+                  planType === 'ember' ? "bg-secondary-light" : "bg-primary-light"
                 )}>
                   {userInitials}
                 </div>

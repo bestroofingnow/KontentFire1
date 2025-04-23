@@ -129,12 +129,12 @@ export default function Sidebar() {
         {!isCollapsed && (
           <div className="mt-auto p-4">
             <div className="bg-dark-lighter rounded-lg p-4 text-center">
-              {user?.plan === 'blaze' ? (
+              {user?.plan === 'ember' ? (
                 <>
                   <div className="mb-2">
                     <span className="font-semibold text-sm">Upgrade to Inferno</span>
                   </div>
-                  <p className="text-gray-400 text-xs mb-3">Get auto-scheduling, video content, and more.</p>
+                  <p className="text-gray-400 text-xs mb-3">Get unlimited platform integrations and video content.</p>
                   <a 
                     href="/subscription" 
                     className="w-full block bg-primary text-white rounded py-2 text-sm font-medium hover:bg-primary-dark transition cursor-pointer"
