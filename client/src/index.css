@@ -11,3 +11,65 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Logo Animation Styles */
+.logo-animation {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+}
+
+.logo-content {
+  display: inline-block;
+  animation: fadeSlideIn 1.2s ease-out forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.logo-content:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.attribution-animation {
+  position: relative;
+}
+
+.by-text {
+  animation: fadeIn 0.8s ease-out 0.6s forwards;
+}
+
+.by-logo {
+  animation: fadeZoomIn 1s ease-out 0.8s forwards;
+  transform: scale(0.8);
+}
+
+@keyframes fadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeZoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

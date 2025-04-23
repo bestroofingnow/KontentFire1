@@ -1,4 +1,4 @@
-import { Bell } from "lucide-react";
+import { Bell, RefreshCw } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import {
@@ -11,12 +11,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useLogoAnimation } from "@/hooks/use-logo-animation";
 
 export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  
+  // Animation hook for logo reveal
+  const { animationKey, isPlaying, restartAnimation } = useLogoAnimation(500);
   
   // Fetch user on component mount
   useEffect(() => {
@@ -80,23 +84,40 @@ export default function Header() {
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <div className="flex items-center">
-            <a 
-              href="/" 
-              className="text-primary-dark font-bold text-3xl font-display tracking-tight cursor-pointer"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.href = '/';
-              }}
-            >
-              <span className="text-primary">Kontent</span>Fire
-            </a>
-            <div className="flex items-center ml-2">
-              <span className="text-gray-500 mr-1 text-sm">By</span>
-              <img 
-                src="/assets/images/logo-by.png" 
-                alt="High Level Logo" 
-                className="h-5 object-contain"
-              />
+            <div className="relative">
+              <a 
+                href="/" 
+                className="text-primary-dark font-bold text-3xl font-display tracking-tight cursor-pointer logo-animation"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = '/';
+                }}
+                key={`logo-${animationKey}`}
+              >
+                <span className="text-primary logo-content">Kontent</span>
+                <span className="logo-content">Fire</span>
+              </a>
+              <div className="flex items-center ml-2 attribution-animation" key={`by-${animationKey}`}>
+                <span className="text-gray-500 mr-1 text-sm opacity-0 by-text">By</span>
+                <div className="opacity-0 by-logo">
+                  <img 
+                    src="/assets/images/logo-by.png" 
+                    alt="High Level Logo" 
+                    className="h-5 object-contain"
+                  />
+                </div>
+              </div>
+              <button 
+                onClick={restartAnimation}
+                disabled={isPlaying}
+                className={cn(
+                  "absolute -right-8 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-opacity p-1",
+                  isPlaying ? "opacity-0 pointer-events-none" : "opacity-100"
+                )}
+                title="Replay logo animation"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
