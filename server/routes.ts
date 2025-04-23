@@ -60,8 +60,9 @@ const stripe = process.env.STRIPE_SECRET_KEY
     })
   : null;
 
-// All users now have the premium plan
-const PREMIUM_PLAN_PRICE_ID = "price_premium";
+// Subscription plans
+const EMBER_PLAN_PRICE_ID = "price_ember_monthly"; // $99/month
+const INFERNO_PLAN_PRICE_ID = "price_inferno_monthly"; // $999/month
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -73,7 +74,7 @@ export function registerRoutes(app: Express): Server {
   // Subscription management endpoints
   
   // Now subscribes all users to premium plan
-  app.post('/api/subscribe/blaze', async (req: Request, res: Response) => {
+  app.post('/api/subscribe/ember', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
