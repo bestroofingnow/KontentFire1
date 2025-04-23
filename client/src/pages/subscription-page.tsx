@@ -280,10 +280,12 @@ export default function SubscriptionPage() {
                       {subscription?.status === 'active' && (
                         <div className="mt-4">
                           <p className="text-gray-600">
-                            {subscription?.plan === 'blaze' ? (
-                              <>You are currently on the Blaze plan at {formatPrice(adminSettings?.blazePrice || 9900)}/month.</>
+                            {subscription?.plan === 'free' ? (
+                              <>You are currently on the Free plan.</>
+                            ) : subscription?.plan === 'ember' ? (
+                              <>You are currently on the Ember plan at $99/month.</>
                             ) : (
-                              <>You are currently on the Inferno plan at {formatPrice(adminSettings?.infernoPrice || 19900)}/month.</>
+                              <>You are currently on the Inferno plan at $999/month.</>
                             )}
                           </p>
                           
@@ -336,12 +338,12 @@ export default function SubscriptionPage() {
                   
                   {/* Available Plans */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Blaze Plan */}
-                    <Card className={`border-2 ${subscription?.plan === 'blaze' ? 'border-secondary' : 'border-transparent'}`}>
+                    {/* Ember Plan */}
+                    <Card className={`border-2 ${subscription?.plan === 'ember' ? 'border-secondary' : 'border-transparent'}`}>
                       <CardHeader className="bg-secondary bg-opacity-5">
                         <CardTitle className="flex items-center">
                           <Flame className="mr-2 h-5 w-5 text-secondary" />
-                          Blaze Plan
+                          Ember Plan
                         </CardTitle>
                         <CardDescription>
                           Standard Plan
@@ -349,51 +351,51 @@ export default function SubscriptionPage() {
                       </CardHeader>
                       <CardContent className="pt-6">
                         <div className="mb-4">
-                          <span className="text-3xl font-bold">{formatPrice(adminSettings?.blazePrice || 9900)}</span>
+                          <span className="text-3xl font-bold">$99</span>
                           <span className="text-gray-500 ml-1">/month</span>
                         </div>
                         
                         <ul className="space-y-3 mb-6">
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Unlimited AI text generation</span>
+                            <span>1 post per day</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Unlimited AI image generation</span>
+                            <span>AI text generation</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Manual scheduling for all platforms</span>
+                            <span>AI image generation</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Basic analytics</span>
+                            <span>1 platform integration</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                            <span>PR content creation</span>
                           </li>
                           <li className="flex items-start text-gray-500">
                             <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
-                            <span>No automatic scheduling</span>
-                          </li>
-                          <li className="flex items-start text-gray-500">
-                            <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
-                            <span>No video generation</span>
+                            <span>Limited platform integrations</span>
                           </li>
                         </ul>
                       </CardContent>
                       <CardFooter>
-                        {subscription?.plan === 'blaze' ? (
+                        {subscription?.plan === 'ember' ? (
                           <Button className="w-full" disabled>
                             <Check className="mr-2 h-4 w-4" />
                             Current Plan
                           </Button>
                         ) : (
                           <Button 
-                            onClick={() => handleUpgrade('blaze')} 
+                            onClick={() => handleUpgrade('ember')} 
                             variant="outline" 
                             className="w-full"
                             disabled={subscribeMutation.isPending}
                           >
-                            Downgrade to Blaze
+                            {subscription?.plan === 'free' ? 'Upgrade to Ember' : 'Downgrade to Ember'}
                           </Button>
                         )}
                       </CardFooter>
@@ -415,30 +417,34 @@ export default function SubscriptionPage() {
                       </CardHeader>
                       <CardContent className="pt-6">
                         <div className="mb-4">
-                          <span className="text-3xl font-bold">{formatPrice(adminSettings?.infernoPrice || 19900)}</span>
+                          <span className="text-3xl font-bold">$999</span>
                           <span className="text-gray-500 ml-1">/month</span>
                         </div>
                         
                         <ul className="space-y-3 mb-6">
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Everything in Blaze</span>
+                            <span>Everything in Ember Plan</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Automatic content scheduling</span>
+                            <span>Unlimited posts</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>AI video generation (via Runway)</span>
+                            <span>All premium features</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Auto post writing & publishing</span>
+                            <span>Unlimited platform integrations</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Priority support</span>
+                            <span>Advanced AI customization</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                            <span>Advanced analytics</span>
                           </li>
                         </ul>
                       </CardContent>
@@ -477,7 +483,7 @@ export default function SubscriptionPage() {
                         <thead>
                           <tr className="bg-gray-50">
                             <th className="py-4 px-6 text-left font-medium text-gray-500">Feature</th>
-                            <th className="py-4 px-6 text-center font-medium text-gray-500">Blaze</th>
+                            <th className="py-4 px-6 text-center font-medium text-gray-500">Ember</th>
                             <th className="py-4 px-6 text-center font-medium text-gray-500">Inferno</th>
                           </tr>
                         </thead>
@@ -556,8 +562,8 @@ export default function SubscriptionPage() {
                           </tr>
                           <tr>
                             <td className="py-4 px-6 text-left font-medium">Price</td>
-                            <td className="py-4 px-6 text-center font-medium">{formatPrice(adminSettings?.blazePrice || 9900)}/month</td>
-                            <td className="py-4 px-6 text-center font-medium">{formatPrice(adminSettings?.infernoPrice || 19900)}/month</td>
+                            <td className="py-4 px-6 text-center font-medium">$99/month</td>
+                            <td className="py-4 px-6 text-center font-medium">$999/month</td>
                           </tr>
                         </tbody>
                       </table>
@@ -581,15 +587,14 @@ export default function SubscriptionPage() {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <Badge 
-                                    className={subscription?.plan === 'blaze' ? 'bg-secondary text-dark' : 'bg-primary text-white'}
+                                    className={subscription?.plan === 'ember' ? 'bg-secondary text-dark' : 'bg-primary text-white'}
                                   >
-                                    {subscription?.plan === 'blaze' ? 'Blaze Plan' : 'Inferno Plan'}
+                                    {subscription?.plan === 'free' ? 'Free Plan' : 
+                                      subscription?.plan === 'ember' ? 'Ember Plan' : 'Inferno Plan'}
                                   </Badge>
                                   <p className="mt-2 text-gray-600">
-                                    {subscription?.plan === 'blaze' ? 
-                                      formatPrice(adminSettings?.blazePrice || 9900) : 
-                                      formatPrice(adminSettings?.infernoPrice || 19900)
-                                    }/month
+                                    {subscription?.plan === 'free' ? 'Free' : 
+                                      subscription?.plan === 'ember' ? '$99' : '$999'}/month
                                   </p>
                                 </div>
                                 
@@ -652,7 +657,7 @@ export default function SubscriptionPage() {
             <DialogDescription>
               {selectedPlan === 'inferno' ? 
                 'You are about to upgrade to the Inferno plan.' :
-                'You are about to downgrade to the Blaze plan.'
+                'You are about to switch to the Ember plan.'
               }
             </DialogDescription>
           </DialogHeader>
@@ -660,9 +665,9 @@ export default function SubscriptionPage() {
           <div className="py-4">
             <p className="text-gray-700">
               {selectedPlan === 'inferno' ? (
-                <>You will be charged {formatPrice(adminSettings?.infernoPrice || 19900)} monthly for the Inferno plan.</>
+                <>You will be charged $999 monthly for the Inferno plan.</>
               ) : (
-                <>Your plan will be changed to Blaze at {formatPrice(adminSettings?.blazePrice || 9900)} per month.</>
+                <>Your plan will be changed to Ember at $99 per month.</>
               )}
             </p>
             
