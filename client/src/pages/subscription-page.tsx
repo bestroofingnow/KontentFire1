@@ -370,7 +370,7 @@ export default function SubscriptionPage() {
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>1 platform integration</span>
+                            <span>Auto posting to 1 platform</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
@@ -539,16 +539,16 @@ export default function SubscriptionPage() {
                           <tr>
                             <td className="py-4 px-6 text-left font-medium flex items-center">
                               <Zap className="h-5 w-5 text-gray-400 mr-2" />
-                              Automatic Scheduling
+                              Auto Posting
                             </td>
                             <td className="py-4 px-6 text-center">
-                              <span className="inline-flex items-center text-red-500">
-                                <AlertCircle className="h-4 w-4 mr-1" /> Not included
+                              <span className="inline-flex items-center text-green-500">
+                                <Check className="h-4 w-4 mr-1" /> 1 Platform
                               </span>
                             </td>
                             <td className="py-4 px-6 text-center">
                               <span className="inline-flex items-center text-green-500">
-                                <Check className="h-4 w-4 mr-1" /> Included
+                                <Check className="h-4 w-4 mr-1" /> Unlimited
                               </span>
                             </td>
                           </tr>
@@ -671,13 +671,13 @@ export default function SubscriptionPage() {
               )}
             </p>
             
-            {selectedPlan === 'inferno' && (
-              <div className="mt-4">
-                <h4 className="font-medium mb-2">You'll get access to:</h4>
+            <div className="mt-4">
+              <h4 className="font-medium mb-2">You'll get access to:</h4>
+              {selectedPlan === 'inferno' ? (
                 <ul className="space-y-2">
                   <li className="flex items-start">
                     <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                    <span>Automatic content scheduling</span>
+                    <span>Unlimited platform integrations</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
@@ -688,8 +688,23 @@ export default function SubscriptionPage() {
                     <span>Priority support</span>
                   </li>
                 </ul>
-              </div>
-            )}
+              ) : (
+                <ul className="space-y-2">
+                  <li className="flex items-start">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                    <span>Auto posting to 1 platform</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                    <span>PR content creation</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                    <span>1 post per day</span>
+                  </li>
+                </ul>
+              )}
+            </div>
           </div>
           
           <DialogFooter>
@@ -728,11 +743,17 @@ export default function SubscriptionPage() {
             </p>
             
             <ul className="mt-4 space-y-2">
+              {subscription?.plan === 'ember' && (
+                <li className="flex items-start">
+                  <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
+                  <span>Auto posting to 1 platform</span>
+                </li>
+              )}
               {subscription?.plan === 'inferno' && (
                 <>
                   <li className="flex items-start">
                     <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
-                    <span>Automatic content scheduling</span>
+                    <span>Auto posting to unlimited platforms</span>
                   </li>
                   <li className="flex items-start">
                     <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
@@ -797,11 +818,17 @@ export default function SubscriptionPage() {
                   <Check className="h-4 w-4 text-green-500 mr-2" />
                   <span>AI content generation</span>
                 </li>
+                {subscription?.plan === 'ember' && (
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    <span>Auto posting to 1 platform</span>
+                  </li>
+                )}
                 {subscription?.plan === 'inferno' && (
                   <>
                     <li className="flex items-center">
                       <Check className="h-4 w-4 text-green-500 mr-2" />
-                      <span>Automatic scheduling</span>
+                      <span>Auto posting to unlimited platforms</span>
                     </li>
                     <li className="flex items-center">
                       <Check className="h-4 w-4 text-green-500 mr-2" />
