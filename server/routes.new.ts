@@ -235,7 +235,202 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
-  // Rest of your routes...
+  app.post('/api/subscription/cancel', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    if (!stripe) {
+      return res.status(503).json({ message: 'Stripe integration not available' });
+    }
+    
+    try {
+      const user = req.user;
+      
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ message: 'No active subscription' });
+      }
+      
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+      
+      // Update user plan status
+      await db.update(users)
+        .set({ planStatus: 'cancelling' })
+        .where(eq(users.id, user.id));
+      
+      return res.json({
+        status: subscription.status,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      });
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      res.status(500).json({ message: `Error cancelling subscription: ${error.message}` });
+    }
+  });
+  
+  app.post('/api/subscription/resume', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    if (!stripe) {
+      return res.status(503).json({ message: 'Stripe integration not available' });
+    }
+    
+    try {
+      const user = req.user;
+      
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ message: 'No active subscription' });
+      }
+      
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: false,
+      });
+      
+      // Update user plan status
+      await db.update(users)
+        .set({ planStatus: 'active' })
+        .where(eq(users.id, user.id));
+      
+      return res.json({
+        status: subscription.status,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      });
+    } catch (error: any) {
+      console.error('Error resuming subscription:', error);
+      res.status(500).json({ message: `Error resuming subscription: ${error.message}` });
+    }
+  });
+  
+  // Content generation endpoints
+  app.post('/api/content/generate', async (req: Request, res: Response) => {
+    console.log("==== Content generation request received ====");
+    console.log("Auth status:", req.isAuthenticated());
+    console.log("User:", req.user ? req.user.id : "none");
+    
+    if (!req.isAuthenticated()) {
+      console.log("Not authenticated, returning 401");
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      console.log("Request body:", JSON.stringify(req.body, null, 2));
+      
+      const { 
+        prompt, 
+        contentType, 
+        tone, 
+        length, 
+        personality, 
+        platform,
+        template,
+        templateData
+      } = req.body;
+      
+      console.log("OPENAI_API_KEY exists:", !!process.env.OPENAI_API_KEY);
+      console.log("PERPLEXITY_API_KEY exists:", !!process.env.PERPLEXITY_API_KEY);
+      console.log("ANTHROPIC_API_KEY exists:", !!process.env.ANTHROPIC_API_KEY);
+      
+      // Log template and template data for debugging
+      console.log("Using template:", template || 'standard');
+      if (template !== 'standard' && templateData) {
+        console.log("Template data:", JSON.stringify(templateData, null, 2));
+      }
+      
+      console.log("Parsed content values:", { 
+        promptLength: prompt ? prompt.length : 0, 
+        contentType, 
+        tone, 
+        length, 
+        personality, 
+        platform,
+        template: template || 'standard',
+        hasTemplateData: templateData ? true : false
+      });
+      
+      // Make validation more flexible for debugging
+      if (template === 'standard' && !prompt) {
+        console.warn('Missing prompt for standard template, but continuing for testing');
+      }
+      
+      if (template && template !== 'standard' && !templateData) {
+        console.warn(`Missing template data for ${template}, but continuing for testing`);
+      }
+      
+      // Add plan-based validation and limitations
+      const user = req.user;
+      console.log("User confirmed:", user.id, user.username);
+      
+      // Ember plan users are limited to 1 post per day
+      if (user.plan === 'ember') {
+        // Check if user has already created a post today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const postsToday = await db.select()
+          .from(contents)
+          .where(
+            and(
+              eq(contents.userId, user.id),
+              gte(contents.createdAt, today)
+            )
+          );
+          
+        if (postsToday.length >= 1) {
+          return res.status(403).json({ 
+            message: 'Ember plan is limited to 1 post per day. Upgrade to Inferno plan for unlimited posts.'
+          });
+        }
+      }
+      
+      // Get company profile to personalize content
+      let companyContext = "";
+      try {
+        const [companyProfile] = await db.select()
+          .from(companyProfiles)
+          .where(eq(companyProfiles.userId, user.id));
+
+        if (companyProfile) {
+          // Create a company context to personalize content
+          companyContext = `
+            Company Name: ${companyProfile.name || ""}
+            Industry: ${companyProfile.industry || ""}
+            Description: ${companyProfile.description || ""}
+            Website: ${companyProfile.website || ""}
+          `;
+          
+          console.log("Using company profile for content generation");
+        }
+      } catch (err) {
+        console.log("No company profile found, proceeding without company context");
+      }
+      
+      console.log("Calling generateContent with prompt length:", prompt ? prompt.length : 0);
+      
+      const result: GeneratedContent = await generateContent({ 
+        prompt: prompt || 'Generate quality content', // Default prompt if none provided
+        contentType: contentType || 'text', 
+        tone: tone || 'professional', 
+        length: length || 'medium', 
+        personality: personality || 'thoughtful',
+        platform: platform || null,
+        template: template || 'standard',
+        templateData: templateData || {},
+        companyContext
+      });
+      
+      console.log("Content generated successfully");
+      return res.json(result);
+    } catch (error: any) {
+      console.error('Content generation error:', error);
+      return res.status(500).json({ message: `Error generating content: ${error.message}` });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

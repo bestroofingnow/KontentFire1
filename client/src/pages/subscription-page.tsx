@@ -17,7 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 type SubscriptionData = {
   status: string;
-  plan: 'blaze' | 'inferno';
+  plan: 'free' | 'ember' | 'inferno';
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
 };
@@ -253,9 +253,15 @@ export default function SubscriptionPage() {
                     <CardContent>
                       <div className="flex items-center">
                         <Badge 
-                          className={subscription?.plan === 'blaze' ? 'bg-secondary text-dark' : 'bg-primary text-white'}
+                          className={
+                            subscription?.plan === 'free' ? 'bg-gray-200 text-dark' : 
+                            subscription?.plan === 'ember' ? 'bg-secondary text-dark' : 
+                            'bg-primary text-white'
+                          }
                         >
-                          {subscription?.plan === 'blaze' ? 'Blaze Plan' : 'Inferno Plan'}
+                          {subscription?.plan === 'free' ? 'Free Plan' : 
+                           subscription?.plan === 'ember' ? 'Ember Plan' : 
+                           'Inferno Plan'}
                         </Badge>
                         
                         {subscription?.status === 'active' && !subscription?.cancelAtPeriodEnd && (
