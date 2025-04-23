@@ -10,7 +10,7 @@ export const users = pgTable('users', {
   email: text('email').notNull(),
   password: text('password').notNull(),
   isAdmin: boolean('is_admin').default(false),
-  plan: text('plan').default('blaze'),
+  plan: text('plan').default('free'),
   planStatus: text('plan_status').default('active'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   wpIntegrationActive: boolean('wp_integration_active').default(false),

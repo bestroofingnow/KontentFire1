@@ -73,7 +73,7 @@ export function registerRoutes(app: Express): Server {
 
   // Subscription management endpoints
   
-  // Now subscribes all users to premium plan
+  // Ember Plan - $99/month with 1 post per day, 1 platform 
   app.post('/api/subscribe/ember', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });
