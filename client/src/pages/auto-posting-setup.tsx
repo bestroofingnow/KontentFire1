@@ -81,6 +81,13 @@ export default function AutoPostingSetup() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
+  // Custom author state
+  const [showCustomAuthorModal, setShowCustomAuthorModal] = useState<boolean>(false);
+  const [customAuthorName, setCustomAuthorName] = useState<string>("");
+  const [customAuthorAvatar, setCustomAuthorAvatar] = useState<string>("😎");
+  const [customAuthorBio, setCustomAuthorBio] = useState<string>("");
+  const [customAuthorAdded, setCustomAuthorAdded] = useState<boolean>(false);
+  
   // Fetch user data to get plan information
   const { data: user } = useQuery<UserData>({
     queryKey: ['/api/user'],
@@ -142,7 +149,7 @@ export default function AutoPostingSetup() {
   ];
 
   // Authors with their distinct tones - dynamically generated for each user
-  const authors: Author[] = [
+  const authorList: Author[] = [
     { id: "professional", name: "Alex Morgan", avatar: "🎓", bio: "Professional: Authoritative and analytical, with precise language and evidence-based statements" },
     { id: "approachable", name: "Riley Chen", avatar: "👩‍🏫", bio: "Approachable: Friendly and explanatory, using relatable analogies and clear examples" },
     { id: "optimistic", name: "Jordan Taylor", avatar: "🌟", bio: "Optimistic: Constructively hopeful, identifying genuine opportunities with concrete examples" },
@@ -155,6 +162,11 @@ export default function AutoPostingSetup() {
     { id: "challenger", name: "Dakota Martinez", avatar: "😏", bio: "Irreverent: Boldly mocks industry hype and overblown marketing claims with edgy humor" },
     { id: "creative", name: "Skyler Evans", avatar: "🎭", bio: "Playful: Energetically engaging, using creativity to keep readers invested and entertained" },
   ];
+  
+  // Add custom author if created
+  const authors: Author[] = customAuthorAdded 
+    ? [...authorList, { id: "custom", name: customAuthorName, avatar: customAuthorAvatar, bio: customAuthorBio }] 
+    : authorList;
 
   // Available platforms (with availability based on plan)
   const platforms: Platform[] = [
@@ -292,6 +304,39 @@ export default function AutoPostingSetup() {
       description: "Your custom template has been added to the selection.",
     });
   };
+  
+  // Handle saving custom author
+  const handleSaveCustomAuthor = () => {
+    if (customAuthorName.trim() === "") {
+      toast({
+        title: "Invalid Input",
+        description: "Please provide a name for your custom author.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (customAuthorBio.trim() === "") {
+      toast({
+        title: "Invalid Input",
+        description: "Please provide a writing style description for your custom author.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Enable the custom author
+    setCustomAuthorAdded(true);
+    
+    // Add custom author to selected authors
+    setSelectedAuthors([...selectedAuthors, "custom"]);
+    setShowCustomAuthorModal(false);
+    
+    toast({
+      title: "Custom Author Added",
+      description: "Your custom author has been added to the selection.",
+    });
+  };
 
   // Create automation
   const createAutomation = async () => {
@@ -301,6 +346,16 @@ export default function AutoPostingSetup() {
       if (selectedTemplates.includes("custom")) {
         templateData["custom"] = {
           instructions: customTemplateInstructions
+        };
+      }
+      
+      // Prepare custom author data if present
+      const authorData: Record<string, any> = {};
+      if (customAuthorAdded && selectedAuthors.includes("custom")) {
+        authorData["custom"] = {
+          name: customAuthorName,
+          avatar: customAuthorAvatar,
+          bio: customAuthorBio
         };
       }
       
@@ -327,7 +382,8 @@ export default function AutoPostingSetup() {
               "article-long": 2000
             }
           },
-          templateData: templateData // Add custom template data if present
+          templateData: templateData, // Add custom template data if present
+          authorData: authorData // Add custom author data if present
         }),
       });
       
@@ -508,6 +564,19 @@ export default function AutoPostingSetup() {
             <h2 className="text-xl font-semibold">Step 2: Choose Writing Styles</h2>
             <p className="text-gray-500">Select the author personalities for your content. The AI will randomly adopt these styles.</p>
             
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Available Writing Styles</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center"
+                onClick={() => setShowCustomAuthorModal(true)}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Create Custom Author
+              </Button>
+            </div>
+            
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {authors.map(author => (
                 <Card 
@@ -540,6 +609,72 @@ export default function AutoPostingSetup() {
               <Button variant="outline" onClick={goToPreviousStep}>Back</Button>
               <Button onClick={goToNextStep}>Continue</Button>
             </div>
+            
+            {/* Custom Author Modal */}
+            <Dialog open={showCustomAuthorModal} onOpenChange={setShowCustomAuthorModal}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Create Your Custom Author</DialogTitle>
+                  <DialogDescription>
+                    Craft a unique author with your preferred writing style, name, and avatar.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="authorName" className="text-right">Name</Label>
+                    <Input 
+                      id="authorName" 
+                      value={customAuthorName} 
+                      onChange={(e) => setCustomAuthorName(e.target.value)} 
+                      className="col-span-3" 
+                      placeholder="Enter author name"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="authorAvatar" className="text-right">Avatar</Label>
+                    <div className="col-span-3 flex items-center space-x-2">
+                      <div className="text-3xl">{customAuthorAvatar}</div>
+                      <Select value={customAuthorAvatar} onValueChange={setCustomAuthorAvatar}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Select emoji" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="😎">😎 Cool</SelectItem>
+                          <SelectItem value="👨‍💼">👨‍💼 Business</SelectItem>
+                          <SelectItem value="👩‍💼">👩‍💼 Professional</SelectItem>
+                          <SelectItem value="🧠">🧠 Intellectual</SelectItem>
+                          <SelectItem value="🦉">🦉 Wise</SelectItem>
+                          <SelectItem value="🚀">🚀 Dynamic</SelectItem>
+                          <SelectItem value="🌿">🌿 Natural</SelectItem>
+                          <SelectItem value="💡">💡 Innovative</SelectItem>
+                          <SelectItem value="🔍">🔍 Analytical</SelectItem>
+                          <SelectItem value="🎨">🎨 Creative</SelectItem>
+                          <SelectItem value="📊">📊 Data-Driven</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="authorBio" className="text-right align-top pt-2">Writing Style</Label>
+                    <Textarea 
+                      id="authorBio" 
+                      value={customAuthorBio} 
+                      onChange={(e) => setCustomAuthorBio(e.target.value)} 
+                      className="col-span-3 min-h-[100px]" 
+                      placeholder="Describe the writing style and tone of this author..."
+                    />
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowCustomAuthorModal(false)}>Cancel</Button>
+                  <Button onClick={handleSaveCustomAuthor}>Add Custom Author</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
         
