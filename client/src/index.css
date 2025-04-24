@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --primary-rgb: 230, 73, 128; /* Default pink - will be overridden by theme */
+  }
+  
   * {
     @apply border-border;
   }
