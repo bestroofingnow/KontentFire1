@@ -913,13 +913,23 @@ export default function AutoPostingSetup() {
                     
                     <div className="flex flex-wrap gap-1 mt-1">
                       {selectedAuthors.map(id => {
-                        const author = authors.find(a => a.id === id);
-                        return (
-                          <div key={id} className="bg-white border border-gray-200 rounded px-1.5 py-0.5 text-xs flex items-center">
-                            <span className="mr-1">{author?.avatar}</span>
-                            <span>{author?.name}</span>
-                          </div>
-                        );
+                        if (id === "custom" && customAuthorAdded) {
+                          return (
+                            <div key={id} className="bg-white border border-primary/30 rounded px-1.5 py-0.5 text-xs flex items-center">
+                              <span className="mr-1">{customAuthorAvatar}</span>
+                              <span>{customAuthorName}</span>
+                              <span className="ml-1 text-[10px] text-primary-light">(Custom)</span>
+                            </div>
+                          );
+                        } else {
+                          const author = authors.find(a => a.id === id);
+                          return (
+                            <div key={id} className="bg-white border border-gray-200 rounded px-1.5 py-0.5 text-xs flex items-center">
+                              <span className="mr-1">{author?.avatar}</span>
+                              <span>{author?.name}</span>
+                            </div>
+                          );
+                        }
                       })}
                     </div>
                   </div>
@@ -1094,12 +1104,22 @@ export default function AutoPostingSetup() {
                   <h4 className="text-sm font-medium">Writing Styles</h4>
                   <div className="mt-1 flex flex-wrap gap-2">
                     {selectedAuthors.map(id => {
-                      const author = authors.find(a => a.id === id);
-                      return author ? (
-                        <div key={id} className="bg-gray-100 px-2 py-1 rounded-md text-xs">
-                          {author.avatar} {author.name}
-                        </div>
-                      ) : null;
+                      if (id === "custom" && customAuthorAdded) {
+                        return (
+                          <div key={id} className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center">
+                            <span>{customAuthorAvatar}</span>
+                            <span className="ml-1">{customAuthorName}</span>
+                            <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1 rounded">Custom</span>
+                          </div>
+                        );
+                      } else {
+                        const author = authors.find(a => a.id === id);
+                        return author ? (
+                          <div key={id} className="bg-gray-100 px-2 py-1 rounded-md text-xs">
+                            {author.avatar} {author.name}
+                          </div>
+                        ) : null;
+                      }
                     })}
                   </div>
                 </div>
