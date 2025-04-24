@@ -60,6 +60,7 @@ export default function Sidebar() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Content', href: '/content', icon: PenTool },
+    { name: 'Auto Posting', href: '/auto-posting-setup', icon: Flame },
     { name: 'PR Kreation', href: '/pr-kreation', icon: FileText },
     { name: 'Pipelines', href: '/pipelines', icon: GitBranch },
     { name: 'Schedule', href: '/schedule', icon: Calendar },

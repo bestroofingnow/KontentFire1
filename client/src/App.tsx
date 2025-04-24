@@ -10,6 +10,7 @@ import IntegrationsPage from "@/pages/integrations-page";
 import SettingsPage from "@/pages/settings-page";
 import SubscriptionPage from "@/pages/subscription-page";
 import AutoContentPage from "@/pages/auto-content-page";
+import AutoPostingSetup from "@/pages/auto-posting-setup";
 import ListingsPage from "@/pages/listings-page";
 import FactCheckPage from "@/pages/fact-check-page";
 import PRKreationPage from "@/pages/pr-kreation-page";
@@ -85,6 +86,9 @@ function App() {
       </Route>
       <Route path="/auto-content">
         <ProtectedRoute path="/auto-content" component={AutoContentPage} />
+      </Route>
+      <Route path="/auto-posting-setup">
+        <ProtectedRoute path="/auto-posting-setup" component={AutoPostingSetup} />
       </Route>
       <Route path="/listings">
         <ProtectedRoute path="/listings" component={ListingsPage} />
