@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { db } from '../db';
-import { platformIntegrations } from '@shared/schema';
+import { platformIntegrations, platformIntegrationEnum, type InsertPlatformIntegration } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 
 interface FacebookAuthResponse {
@@ -43,9 +43,10 @@ export async function connectFacebookAccount(userId: number, authResponse: Faceb
     const userData = userInfoResponse.data;
     const profileImageUrl = userData.picture?.data?.url;
     
-    const integrationData = {
+    // Create integration data that matches our schema
+    const integrationData: InsertPlatformIntegration = {
       userId,
-      platform: 'facebook' as const, // Ensure this is typed as a valid platform enum value
+      platform: 'facebook', // This is a valid value from platformIntegrationEnum
       accessToken: authResponse.accessToken,
       accountId: authResponse.userID,
       accountName: authResponse.name || userData.name,
