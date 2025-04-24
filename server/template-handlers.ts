@@ -472,6 +472,477 @@ export function generateChecklistPrompt({
   return prompt;
 }
 
+/**
+ * Generate structured prompt for Deep Dive (5 Whys) template - root cause analysis
+ */
+export function generateDeepDivePrompt({
+  templateData,
+  tone = 'professional',
+  personality = 'analytical',
+  platform = 'blog'
+}: TemplateHandlerOptions): string {
+  const {
+    topic,
+    industry,
+    areas = [],
+    includeActionItems = true,
+    includeExpertInsights = true
+  } = templateData;
+
+  if (!topic) {
+    throw new Error('Missing required field for Deep Dive template: topic');
+  }
+
+  // Build the structured prompt
+  let prompt = `Create a comprehensive "Deep Dive (5 Whys)" analysis of ${topic}`;
+  
+  if (industry) {
+    prompt += ` within the ${industry} industry`;
+  }
+  
+  prompt += `.\n\n`;
+
+  // Add introduction instructions
+  prompt += `INTRODUCTION: Provide an overview of ${topic} and why understanding its root causes matters. Explain the 5 Whys methodology as a technique for identifying underlying issues by repeatedly asking "Why?" to dig deeper beyond surface-level problems.\n\n`;
+
+  // Add content structure for breaking down the topic into areas
+  prompt += `CORE STRUCTURE: Break down ${topic} into 6 distinct areas of importance. For each area:\n`;
+  prompt += `1. Identify and describe the area clearly\n`;
+  prompt += `2. List 3 specific problems or challenges within this area\n`;
+  prompt += `3. For each problem, apply the "5 Whys" format - ask "Why?" five times, with each answer being a single, clear sentence that leads deeper toward the root cause\n`;
+  prompt += `4. After the fifth "Why," identify the root cause and its implications\n\n`;
+
+  // Add specific areas if provided
+  if (areas && areas.length > 0) {
+    prompt += `INCLUDE THESE SPECIFIC AREAS:\n`;
+    areas.forEach((area: string, index: number) => {
+      prompt += `AREA ${index + 1}: ${area}\n`;
+    });
+    prompt += `\n`;
+  }
+
+  // Add optional sections based on preferences
+  if (includeActionItems) {
+    prompt += `ACTION ITEMS: For each area, after identifying root causes, provide 2-3 specific, actionable recommendations to address these fundamental issues. Make these practical and implementable.\n\n`;
+  }
+
+  if (includeExpertInsights) {
+    prompt += `EXPERT INSIGHTS: Include relevant expert perspectives or industry best practices that provide additional context for understanding and addressing each area's root causes.\n\n`;
+  }
+
+  // Add conclusion instructions
+  prompt += `CONCLUSION: Synthesize the key findings across all areas. Identify common patterns or interconnections between different root causes. Provide a holistic perspective on addressing ${topic} based on this deep analysis.\n\n`;
+
+  // Add formatting guidelines
+  prompt += `FORMAT: Structure this as an analytical deep dive with clear headings for each area, visual distinction for each level of "Why" questions, and a professional presentation that makes complex analysis accessible. Use a ${tone} tone with a ${personality} personality. Optimize for ${platform} format.`;
+
+  return prompt;
+}
+
+/**
+ * Generate structured prompt for Rookie or Pro template - solution evaluation
+ */
+export function generateRookieOrProPrompt({
+  templateData,
+  tone = 'professional',
+  personality = 'analytical',
+  platform = 'blog'
+}: TemplateHandlerOptions): string {
+  const {
+    topic,
+    industry,
+    scenarios = [],
+    includeRatings = true,
+    includeExpertQuotes = true
+  } = templateData;
+
+  if (!topic) {
+    throw new Error('Missing required field for Rookie or Pro template: topic');
+  }
+
+  // Build the structured prompt
+  let prompt = `Create an engaging "Rookie or Pro?" analysis article about solutions for ${topic}`;
+  
+  if (industry) {
+    prompt += ` in the ${industry} industry`;
+  }
+  
+  prompt += `.\n\n`;
+
+  // Add introduction instructions
+  prompt += `INTRODUCTION: Set up the importance of making good decisions regarding ${topic}. Explain that this article will present various scenarios and solutions, asking readers to evaluate whether each approach is a "Rookie move" or a "Pro move" before revealing the answer.\n\n`;
+
+  // Add content structure for scenarios
+  prompt += `CORE STRUCTURE: For each scenario:\n`;
+  prompt += `1. Describe a specific problem related to ${topic}\n`;
+  prompt += `2. Present a potential solution in detail without indicating whether it's good or bad\n`;
+  prompt += `3. Pose the question: "Is this a Rookie or Pro move?"\n`;
+  prompt += `4. Provide the answer: "It's a Pro move" or "It's a Rookie move"\n`;
+  prompt += `5. Explain in detail why this solution is effective (Pro) or ineffective (Rookie)\n`;
+  prompt += `6. If it's a Rookie move, provide the Pro alternative solution\n\n`;
+
+  // Add specific scenarios if provided
+  if (scenarios && scenarios.length > 0) {
+    prompt += `INCLUDE THESE SPECIFIC SCENARIOS:\n`;
+    scenarios.forEach((scenario: any, index: number) => {
+      const scenarioDesc = typeof scenario === 'string' ? scenario : scenario.problem;
+      prompt += `SCENARIO ${index + 1}: ${scenarioDesc}\n`;
+      
+      if (typeof scenario !== 'string' && scenario.solution) {
+        prompt += `Potential solution: ${scenario.solution}\n`;
+        if (scenario.isProMove !== undefined) {
+          prompt += `This is a ${scenario.isProMove ? 'Pro' : 'Rookie'} move.\n`;
+        }
+      }
+      
+      prompt += `\n`;
+    });
+  } else {
+    prompt += `CREATE 5-7 DIVERSE SCENARIOS: Develop a range of realistic problems related to ${topic} that represent common challenges or decisions. Create a mix of Pro and Rookie solutions.\n\n`;
+  }
+
+  // Add optional sections based on preferences
+  if (includeRatings) {
+    prompt += `EFFECTIVENESS RATINGS: For each Pro solution, include a rating scale (1-10) that evaluates the solution on factors like cost-effectiveness, time efficiency, and long-term sustainability.\n\n`;
+  }
+
+  if (includeExpertQuotes) {
+    prompt += `EXPERT PERSPECTIVES: Include quotes or insights from industry professionals that reinforce why the Pro solutions are recommended and explain the pitfalls of Rookie approaches.\n\n`;
+  }
+
+  // Add conclusion instructions
+  prompt += `CONCLUSION: Summarize the key patterns that distinguish Rookie from Pro approaches to ${topic}. Provide general principles that readers can apply to evaluate other solutions they encounter.\n\n`;
+
+  // Add formatting guidelines
+  prompt += `FORMAT: Structure this as an interactive and engaging article with clear scenario breakdowns, visually distinct "Rookie or Pro?" questions, and reveal sections. Make it conversational yet informative. Use a ${tone} tone with a ${personality} personality. Optimize for ${platform} format.`;
+
+  return prompt;
+}
+
+/**
+ * Generate structured prompt for Resource Roundup template - curated resources
+ */
+export function generateResourceRoundupPrompt({
+  templateData,
+  tone = 'professional',
+  personality = 'analytical',
+  platform = 'blog'
+}: TemplateHandlerOptions): string {
+  const {
+    topic,
+    industry,
+    resourceCategories = [],
+    includeRatings = true,
+    includePricingInfo = true,
+    includeDifficultyLevels = true
+  } = templateData;
+
+  if (!topic) {
+    throw new Error('Missing required field for Resource Roundup template: topic');
+  }
+
+  // Build the structured prompt
+  let prompt = `Create a comprehensive "Resource Roundup" article with curated resources about ${topic}`;
+  
+  if (industry) {
+    prompt += ` for the ${industry} industry`;
+  }
+  
+  prompt += `.\n\n`;
+
+  // Add introduction instructions
+  prompt += `INTRODUCTION: Explain why ${topic} is important and why having access to quality resources is valuable. Set up the purpose of this roundup as saving readers time by providing carefully selected, high-quality resources.\n\n`;
+
+  // Add content structure for resource categories
+  prompt += `CORE STRUCTURE: Organize resources into clear categories. For each category:\n`;
+  prompt += `1. Provide a brief overview of why this type of resource is helpful for ${topic}\n`;
+  prompt += `2. List 3-7 specific resources with descriptions of each\n`;
+  prompt += `3. For each resource, include a direct link (or placeholder), a concise description, and what makes it uniquely valuable\n\n`;
+
+  // Add specific resource categories if provided
+  if (resourceCategories && resourceCategories.length > 0) {
+    prompt += `INCLUDE THESE SPECIFIC RESOURCE CATEGORIES:\n`;
+    resourceCategories.forEach((category: string, index: number) => {
+      prompt += `CATEGORY ${index + 1}: ${category}\n`;
+    });
+    prompt += `\n`;
+  } else {
+    prompt += `CREATE THESE STANDARD RESOURCE CATEGORIES:\n`;
+    prompt += `1. Educational Content (courses, tutorials, guides)\n`;
+    prompt += `2. Tools & Software\n`;
+    prompt += `3. Communities & Forums\n`;
+    prompt += `4. Books & Publications\n`;
+    prompt += `5. Expert Blogs & Websites\n\n`;
+  }
+
+  // Add optional sections based on preferences
+  if (includeRatings) {
+    prompt += `RESOURCE RATINGS: Include a 1-5 star rating for each resource based on quality, comprehensiveness, and usefulness for the specific topic.\n\n`;
+  }
+
+  if (includePricingInfo) {
+    prompt += `PRICING INFORMATION: For each resource, indicate whether it's free, freemium, one-time purchase, or subscription-based. Include approximate cost ranges where applicable.\n\n`;
+  }
+
+  if (includeDifficultyLevels) {
+    prompt += `DIFFICULTY LEVELS: Indicate whether each resource is suitable for beginners, intermediate users, or advanced practitioners.\n\n`;
+  }
+
+  // Add conclusion instructions
+  prompt += `CONCLUSION: Provide guidance on how to best utilize these resources together. Suggest potential learning paths or resource combinations for different goals related to ${topic}.\n\n`;
+
+  // Add formatting guidelines
+  prompt += `FORMAT: Structure this as a well-organized resource guide with clear category headings, visually distinct resource listings, and easy-to-scan descriptions. Include a table of contents for navigation. Use a ${tone} tone with a ${personality} personality. Optimize for ${platform} format.`;
+
+  return prompt;
+}
+
+/**
+ * Generate structured prompt for Buyer's Guide template - purchasing decisions
+ */
+export function generateBuyersGuidePrompt({
+  templateData,
+  tone = 'professional',
+  personality = 'analytical',
+  platform = 'blog'
+}: TemplateHandlerOptions): string {
+  const {
+    topic,
+    industry,
+    criteria = [],
+    includeComparisons = true,
+    includePriceRanges = true,
+    includeExpertTips = true
+  } = templateData;
+
+  if (!topic) {
+    throw new Error('Missing required field for Buyer\'s Guide template: topic');
+  }
+
+  // Build the structured prompt
+  let prompt = `Create a comprehensive "Buyer's Guide" for ${topic}`;
+  
+  if (industry) {
+    prompt += ` within the ${industry} industry`;
+  }
+  
+  prompt += `.\n\n`;
+
+  // Add introduction instructions
+  prompt += `INTRODUCTION: Explain why purchasing decisions for ${topic} are important and potentially challenging. Establish the purpose of this guide as helping readers make informed decisions that align with their specific needs and budget.\n\n`;
+
+  // Add content structure for evaluation criteria
+  prompt += `CORE STRUCTURE: Organize the guide around key decision criteria. For each criterion:\n`;
+  prompt += `1. Explain why this factor matters when purchasing ${topic}\n`;
+  prompt += `2. Describe what to look for and what to avoid\n`;
+  prompt += `3. Provide specific examples or benchmarks that illustrate quality differences\n`;
+  prompt += `4. Include questions buyers should ask sellers or manufacturers about this criterion\n\n`;
+
+  // Add specific criteria if provided
+  if (criteria && criteria.length > 0) {
+    prompt += `INCLUDE THESE SPECIFIC EVALUATION CRITERIA:\n`;
+    criteria.forEach((criterion: string, index: number) => {
+      prompt += `CRITERION ${index + 1}: ${criterion}\n`;
+    });
+    prompt += `\n`;
+  } else {
+    prompt += `INCLUDE THESE STANDARD EVALUATION CRITERIA:\n`;
+    prompt += `1. Quality & Performance\n`;
+    prompt += `2. Cost Considerations (initial and long-term)\n`;
+    prompt += `3. Reliability & Durability\n`;
+    prompt += `4. Features & Specifications\n`;
+    prompt += `5. Support & Warranty\n`;
+    prompt += `6. Compatibility & Integration\n\n`;
+  }
+
+  // Add optional sections based on preferences
+  if (includeComparisons) {
+    prompt += `PRODUCT COMPARISONS: Include a section comparing representative examples from different categories or price points. Create a comparison table highlighting how they rate on the key criteria.\n\n`;
+  }
+
+  if (includePriceRanges) {
+    prompt += `PRICE RANGE BREAKDOWN: Include a section that breaks down what buyers can expect at different price ranges (budget, mid-range, premium) and when it makes sense to spend more or less.\n\n`;
+  }
+
+  if (includeExpertTips) {
+    prompt += `EXPERT BUYING TIPS: Include a section with insider knowledge and expert tips for getting the best value, avoiding common pitfalls, and negotiating effectively when purchasing ${topic}.\n\n`;
+  }
+
+  // Add needs assessment section
+  prompt += `NEEDS ASSESSMENT: Provide guidance for readers to evaluate their specific requirements before making a purchase. Include questions they should ask themselves to clarify their needs and priorities.\n\n`;
+
+  // Add conclusion instructions
+  prompt += `CONCLUSION: Summarize the key considerations for making an informed purchase of ${topic}. Provide a simple decision framework or checklist readers can use during their buying process.\n\n`;
+
+  // Add formatting guidelines
+  prompt += `FORMAT: Structure this as a practical buying guide with clear sections, comparison tables, visual callouts for important warnings or tips, and a reader-friendly organization. Use a ${tone} tone with a ${personality} personality. Optimize for ${platform} format.`;
+
+  return prompt;
+}
+
+/**
+ * Generate structured prompt for Glossary template - key terms and definitions
+ */
+export function generateGlossaryPrompt({
+  templateData,
+  tone = 'professional',
+  personality = 'analytical',
+  platform = 'blog'
+}: TemplateHandlerOptions): string {
+  const {
+    topic,
+    industry,
+    terms = [],
+    includeCategories = true,
+    includeRelatedTerms = true,
+    includeRealWorldExamples = true
+  } = templateData;
+
+  if (!topic) {
+    throw new Error('Missing required field for Glossary template: topic');
+  }
+
+  // Build the structured prompt
+  let prompt = `Create a comprehensive glossary of key terms and definitions related to ${topic}`;
+  
+  if (industry) {
+    prompt += ` in the ${industry} industry`;
+  }
+  
+  prompt += `.\n\n`;
+
+  // Add introduction instructions
+  prompt += `INTRODUCTION: Explain why understanding the terminology of ${topic} is important for professionals or enthusiasts. Establish the purpose of this glossary as demystifying technical language and creating a shared vocabulary.\n\n`;
+
+  // Add content structure for terms
+  prompt += `CORE STRUCTURE: For each term in the glossary:\n`;
+  prompt += `1. Provide the term in bold, followed by its pronunciation if relevant\n`;
+  prompt += `2. Write a clear, concise definition that explains the concept in accessible language\n`;
+  prompt += `3. Add depth with additional context on how the term is used in practice\n\n`;
+
+  // Add specific terms if provided
+  if (terms && terms.length > 0) {
+    prompt += `INCLUDE THESE SPECIFIC TERMS:\n`;
+    terms.forEach((term: any, index: number) => {
+      const termName = typeof term === 'string' ? term : term.name;
+      prompt += `TERM ${index + 1}: ${termName}\n`;
+      
+      if (typeof term !== 'string' && term.definition) {
+        prompt += `Definition: ${term.definition}\n`;
+      }
+      
+      prompt += `\n`;
+    });
+  } else {
+    prompt += `RESEARCH AND INCLUDE: Identify 25-30 of the most important terms related to ${topic} that someone would need to understand to be conversant in the subject. Include a mix of fundamental concepts, technical terminology, industry jargon, and emerging terms.\n\n`;
+  }
+
+  // Add optional sections based on preferences
+  if (includeCategories) {
+    prompt += `TERM CATEGORIES: Organize the terms into logical categories or themes. Provide a brief introduction to each category explaining how these terms relate to each other.\n\n`;
+  }
+
+  if (includeRelatedTerms) {
+    prompt += `RELATED TERMS: For each entry, include cross-references to 2-3 related terms in the glossary that would deepen understanding of the concept.\n\n`;
+  }
+
+  if (includeRealWorldExamples) {
+    prompt += `REAL-WORLD EXAMPLES: For key terms, include a brief real-world example or use case that illustrates the concept in action.\n\n`;
+  }
+
+  // Add additional sections
+  prompt += `VISUAL NAVIGATION: Include an alphabetical index at the beginning of the glossary and/or navigation by category to help readers quickly find terms.\n\n`;
+
+  // Add conclusion instructions
+  prompt += `CONCLUSION: Provide guidance on how to best use this glossary and suggestions for further resources where readers can deepen their understanding of these terms and ${topic} more broadly.\n\n`;
+
+  // Add formatting guidelines
+  prompt += `FORMAT: Structure this as an accessible reference document with clear alphabetical organization, visually distinct term entries, and easy-to-scan definitions. Use a ${tone} tone with a ${personality} personality. Optimize for ${platform} format while maintaining technical accuracy.`;
+
+  return prompt;
+}
+
+/**
+ * Generate structured prompt for White Paper template - authoritative report
+ */
+export function generateWhitePaperPrompt({
+  templateData,
+  tone = 'professional',
+  personality = 'analytical',
+  platform = 'blog'
+}: TemplateHandlerOptions): string {
+  const {
+    topic,
+    industry,
+    problem = "",
+    sections = [],
+    includeExecutiveSummary = true,
+    includeMarketAnalysis = true,
+    includeCaseStudies = true
+  } = templateData;
+
+  if (!topic) {
+    throw new Error('Missing required field for White Paper template: topic');
+  }
+
+  // Build the structured prompt
+  let prompt = `Create a comprehensive and authoritative white paper on ${topic}`;
+  
+  if (industry) {
+    prompt += ` for the ${industry} industry`;
+  }
+  
+  prompt += `.\n\n`;
+
+  // Add introduction instructions
+  prompt += `EXECUTIVE SUMMARY: ${includeExecutiveSummary ? `Provide a concise overview of the entire white paper, highlighting the problem, key findings, and recommended solutions. This should be a standalone section that gives busy readers the essential takeaways in 1-2 paragraphs.` : `Omit the executive summary.`}\n\n`;
+
+  // Add problem statement
+  prompt += `PROBLEM STATEMENT: ${problem || `Clearly articulate the significant challenge, issue, or opportunity related to ${topic} that this white paper addresses. Establish urgency by describing the consequences of not addressing this problem and the potential benefits of resolving it.`}\n\n`;
+
+  // Add content structure for the main sections
+  prompt += `CORE STRUCTURE: Develop a thorough analysis of ${topic} with these components:\n`;
+  prompt += `1. Background and context\n`;
+  prompt += `2. Detailed analysis of the problem and its causes\n`;
+  prompt += `3. Exploration of potential solutions with evidence-based evaluation\n`;
+  prompt += `4. Recommended approach with implementation considerations\n\n`;
+
+  // Add specific sections if provided
+  if (sections && sections.length > 0) {
+    prompt += `INCLUDE THESE SPECIFIC SECTIONS:\n`;
+    sections.forEach((section: any, index: number) => {
+      const sectionTitle = typeof section === 'string' ? section : section.title;
+      prompt += `SECTION ${index + 1}: ${sectionTitle}\n`;
+      
+      if (typeof section !== 'string' && section.content) {
+        prompt += `Content focus: ${section.content}\n`;
+      }
+      
+      prompt += `\n`;
+    });
+  }
+
+  // Add optional sections based on preferences
+  if (includeMarketAnalysis) {
+    prompt += `MARKET ANALYSIS: Include relevant data, statistics, and market trends that illustrate the scope and impact of the problem. Cite specific research findings and industry reports to establish credibility.\n\n`;
+  }
+
+  if (includeCaseStudies) {
+    prompt += `CASE STUDIES: Include 1-2 real-world examples that demonstrate either the problem in action or the successful implementation of solutions similar to those being recommended.\n\n`;
+  }
+
+  // Add conclusion and recommendations
+  prompt += `CONCLUSION AND RECOMMENDATIONS: Provide a clear summary of the key points and insights from the white paper. Offer specific, actionable recommendations for addressing the problem, including implementation steps, resource requirements, and expected outcomes.\n\n`;
+
+  // Add references section
+  prompt += `REFERENCES AND RESOURCES: Include a section listing credible sources cited throughout the paper. Organize these by type (academic research, industry reports, case studies, etc.).\n\n`;
+
+  // Add formatting guidelines
+  prompt += `FORMAT: Structure this as a professional white paper with clear section headings, executive summary, data visualizations (described rather than created), pull quotes for important insights, and a logical flow from problem to solution. Use a ${tone} tone with a ${personality} personality. Include appropriate citations throughout.`;
+
+  return prompt;
+}
+
 export function generateTemplatePrompt(
   template: string,
   templateData: any,
@@ -498,6 +969,24 @@ export function generateTemplatePrompt(
       
     case 'checklist':
       return generateChecklistPrompt({ templateData, tone, personality, platform });
+    
+    case 'deep-dive':
+      return generateDeepDivePrompt({ templateData, tone, personality, platform });
+    
+    case 'rookie-or-pro':
+      return generateRookieOrProPrompt({ templateData, tone, personality, platform });
+    
+    case 'resource-roundup':
+      return generateResourceRoundupPrompt({ templateData, tone, personality, platform });
+    
+    case 'buyers-guide':
+      return generateBuyersGuidePrompt({ templateData, tone, personality, platform });
+    
+    case 'glossary':
+      return generateGlossaryPrompt({ templateData, tone, personality, platform });
+    
+    case 'white-paper':
+      return generateWhitePaperPrompt({ templateData, tone, personality, platform });
     
     // Default - just use the template name as context
     default:

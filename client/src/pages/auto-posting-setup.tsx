@@ -88,7 +88,7 @@ export default function AutoPostingSetup() {
     }
   }, [user]);
 
-  // Mock templates
+  // Content templates
   const templates: Template[] = [
     { id: "standard", name: "Standard Article", description: "Balanced informational content" },
     { id: "battle-royale", name: "Battle Royale", description: "Compare competing options/solutions" },
@@ -97,6 +97,12 @@ export default function AutoPostingSetup() {
     { id: "technical-guide", name: "Technical Guide", description: "Detailed how-to content" },
     { id: "case-against", name: "Case Against", description: "Contrarian viewpoint on a topic" },
     { id: "checklist", name: "Checklist", description: "Step-by-step guidelines or checklists" },
+    { id: "deep-dive", name: "Deep Dive (5 Whys)", description: "Break concepts into areas with root cause analysis" },
+    { id: "rookie-or-pro", name: "Rookie or Pro?", description: "Evaluate solutions as rookie or professional approaches" },
+    { id: "resource-roundup", name: "Resource Roundup", description: "Curated compilation of helpful tools and references" },
+    { id: "buyers-guide", name: "Buyer's Guide", description: "Structured outline for informed purchasing decisions" },
+    { id: "glossary", name: "Glossary", description: "List of key terms and definitions in a specialized field" },
+    { id: "white-paper", name: "White Paper", description: "Comprehensive report on complex issues with solutions" },
   ];
 
   // Content types with word count options
