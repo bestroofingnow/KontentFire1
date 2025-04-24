@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Create a hook for sidebar state that uses localStorage
 export function useSidebarState() {
@@ -61,8 +62,20 @@ export default function Sidebar() {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Content', href: '/content', icon: PenTool },
     { name: 'Auto Posting', href: '/auto-posting-setup', icon: Flame },
-    { name: 'PR Kreation', href: '/pr-kreation', icon: FileText },
-    { name: 'Pipelines', href: '/pipelines', icon: GitBranch },
+    { 
+      name: 'PR Kreation', 
+      href: '/pr-kreation', 
+      icon: FileText,
+      premiumOnly: true,
+      premiumPlan: 'inferno'
+    },
+    { 
+      name: 'Pipelines', 
+      href: '/pipelines', 
+      icon: GitBranch,
+      premiumOnly: true,
+      premiumPlan: 'inferno'
+    },
     { name: 'Schedule', href: '/schedule', icon: Calendar },
     { name: 'Fact Check', href: '/fact-check', icon: SearchCheck },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
@@ -104,24 +117,96 @@ export default function Sidebar() {
           <ul className="space-y-2">
             {navigation.map((item) => (
               <li key={item.name}>
-                <a 
-                  href={item.href}
-                  className={cn(
-                    "flex items-center space-x-3 rounded-lg p-3 px-4 cursor-pointer",
-                    location === item.href 
-                      ? "text-white bg-primary" 
-                      : "text-gray-300 hover:bg-dark-lighter"
-                  )}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.location.href = item.href;
-                  }}
-                >
-                  <item.icon className="h-6 w-6 flex-shrink-0" />
-                  {!isCollapsed && (
-                    <span className="font-medium truncate">{item.name}</span>
-                  )}
-                </a>
+                {isCollapsed ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a 
+                          href={item.premiumOnly && user?.plan !== item.premiumPlan ? '#' : item.href}
+                          className={cn(
+                            "flex items-center justify-center rounded-lg p-3",
+                            location === item.href 
+                              ? "text-white bg-primary" 
+                              : "text-gray-300 hover:bg-dark-lighter",
+                            item.premiumOnly && user?.plan !== item.premiumPlan 
+                              ? "opacity-70 cursor-not-allowed" 
+                              : "cursor-pointer"
+                          )}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (item.premiumOnly && user?.plan !== item.premiumPlan) {
+                              window.location.href = '/subscription';
+                            } else {
+                              window.location.href = item.href;
+                            }
+                          }}
+                        >
+                          <div className="relative">
+                            <item.icon className="h-6 w-6" />
+                            {item.premiumOnly && user?.plan !== item.premiumPlan && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gray-500 flex items-center justify-center">
+                                <Flame className="h-2 w-2 text-white" />
+                              </div>
+                            )}
+                          </div>
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="flex flex-col">
+                        <span>{item.name}</span>
+                        {item.premiumOnly && user?.plan !== item.premiumPlan && (
+                          <span className="text-xs text-gray-400 flex items-center mt-1">
+                            <Flame className="h-3 w-3 mr-1 text-primary" />
+                            Inferno Plan Only
+                          </span>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <a 
+                    href={item.premiumOnly && user?.plan !== item.premiumPlan ? '#' : item.href}
+                    className={cn(
+                      "flex items-center justify-between rounded-lg p-3 px-4",
+                      location === item.href 
+                        ? "text-white bg-primary" 
+                        : "text-gray-300 hover:bg-dark-lighter",
+                      item.premiumOnly && user?.plan !== item.premiumPlan 
+                        ? "opacity-70 cursor-not-allowed" 
+                        : "cursor-pointer"
+                    )}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (item.premiumOnly && user?.plan !== item.premiumPlan) {
+                        window.location.href = '/subscription';
+                      } else {
+                        window.location.href = item.href;
+                      }
+                    }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <item.icon className="h-6 w-6 flex-shrink-0" />
+                      {!isCollapsed && (
+                        <span className="font-medium truncate">{item.name}</span>
+                      )}
+                    </div>
+                    
+                    {!isCollapsed && item.premiumOnly && (
+                      <div className="ml-2 flex-shrink-0">
+                        {user?.plan === item.premiumPlan ? (
+                          <div className="flex text-xs px-1.5 py-0.5 rounded bg-primary/30 text-white">
+                            <Flame className="h-3.5 w-3.5 mr-1" />
+                            <span>Inferno</span>
+                          </div>
+                        ) : (
+                          <div className="flex text-xs px-1.5 py-0.5 rounded bg-gray-500/20 text-gray-400">
+                            <Flame className="h-3.5 w-3.5 mr-1" />
+                            <span>Inferno Only</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </a>
+                )}
               </li>
             ))}
           </ul>
