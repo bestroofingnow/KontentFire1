@@ -28,6 +28,8 @@ type ContentType = {
   id: string;
   name: string;
   description: string;
+  premiumOnly?: boolean;
+  premiumPlan?: string;
 };
 
 // Author profiles
@@ -73,6 +75,8 @@ export default function AutoPostingSetup() {
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
   const [selectedPlatform, setSelectedPlatform] = useState<string>("");
   const [duration, setDuration] = useState<string>("30-days");
+  const [customTemplateInstructions, setCustomTemplateInstructions] = useState<string>("");
+  const [showCustomTemplateModal, setShowCustomTemplateModal] = useState<boolean>(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
@@ -103,14 +107,37 @@ export default function AutoPostingSetup() {
     { id: "buyers-guide", name: "Buyer's Guide", description: "Structured outline for informed purchasing decisions" },
     { id: "glossary", name: "Glossary", description: "List of key terms and definitions in a specialized field" },
     { id: "white-paper", name: "White Paper", description: "Comprehensive report on complex issues with solutions" },
+    { id: "custom", name: "Custom Template", description: "Create your own template with specific instructions" },
   ];
 
-  // Content types with word count options
+  // Content types with word count options and plan restrictions
   const contentTypes: ContentType[] = [
-    { id: "article-short", name: "Blog Article - Short", description: "600 words of focused content" },
-    { id: "article-medium", name: "Blog Article - Medium", description: "1000 words with detailed insights" },
-    { id: "article-long", name: "Blog Article - Long", description: "2000 words comprehensive coverage" },
-    { id: "social", name: "Social Media Post", description: "Platform-optimized with 3 hashtags" },
+    { 
+      id: "article-short", 
+      name: "Blog Article - Short", 
+      description: "600 words of focused content",
+      premiumOnly: true,
+      premiumPlan: "inferno"
+    },
+    { 
+      id: "article-medium", 
+      name: "Blog Article - Medium", 
+      description: "1000 words with detailed insights",
+      premiumOnly: true,
+      premiumPlan: "inferno"
+    },
+    { 
+      id: "article-long", 
+      name: "Blog Article - Long", 
+      description: "2000 words comprehensive coverage",
+      premiumOnly: true,
+      premiumPlan: "inferno"
+    },
+    { 
+      id: "social", 
+      name: "Social Media Post", 
+      description: "Platform-optimized with 3 hashtags" 
+    },
   ];
 
   // Real authors with their distinct tones
@@ -155,10 +182,21 @@ export default function AutoPostingSetup() {
 
   // Toggle template selection
   const toggleTemplate = (id: string) => {
-    if (selectedTemplates.includes(id)) {
-      setSelectedTemplates(selectedTemplates.filter(t => t !== id));
+    if (id === "custom") {
+      if (selectedTemplates.includes(id)) {
+        // Remove custom template
+        setSelectedTemplates(selectedTemplates.filter(t => t !== id));
+        setCustomTemplateInstructions("");
+      } else {
+        // Show custom template modal
+        setShowCustomTemplateModal(true);
+      }
     } else {
-      setSelectedTemplates([...selectedTemplates, id]);
+      if (selectedTemplates.includes(id)) {
+        setSelectedTemplates(selectedTemplates.filter(t => t !== id));
+      } else {
+        setSelectedTemplates([...selectedTemplates, id]);
+      }
     }
   };
 
@@ -408,7 +446,15 @@ export default function AutoPostingSetup() {
                           onCheckedChange={() => toggleContentType(type.id)}
                         />
                         <Label htmlFor={`content-${type.id}`} className="flex-1 cursor-pointer">
-                          <div>{type.name}</div>
+                          <div className="flex items-center">
+                            <span>{type.name}</span>
+                            {type.premiumOnly && type.premiumPlan && (
+                              <div className="ml-2 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium flex items-center">
+                                <Flame className="h-3 w-3 mr-1" />
+                                {type.premiumPlan === 'inferno' ? 'Inferno' : 'Premium'} Plan
+                              </div>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500">{type.description}</div>
                         </Label>
                       </div>
