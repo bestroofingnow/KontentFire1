@@ -5,6 +5,17 @@ import { db } from "./db";
 import { setupAuth } from "./auth";
 import { contentPipelineService } from "./cds-integration";
 import {
+  getFacebookAuthUrl,
+  exchangeCodeForToken,
+  getFacebookUserInfo,
+  getFacebookPages,
+  storeFacebookIntegration,
+  getUserFacebookIntegrations,
+  disconnectFacebookIntegration,
+  postToFacebookPage,
+  isFacebookConfigured
+} from './integrations/facebook';
+import {
   users,
   contents,
   schedules,
@@ -3376,6 +3387,142 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error("Error deactivating automation:", error);
       res.status(500).json({ message: "Failed to deactivate automation" });
+    }
+  });
+
+  // Facebook Integration Routes
+
+  // API route to start Facebook OAuth flow
+  app.get('/api/integrations/facebook/auth', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    if (!isFacebookConfigured()) {
+      return res.status(503).json({ 
+        message: 'Facebook integration not properly configured. Contact administrator.' 
+      });
+    }
+
+    try {
+      const authUrl = getFacebookAuthUrl(req.user.id);
+      res.json({ url: authUrl });
+    } catch (error: any) {
+      console.error('Error generating Facebook auth URL:', error);
+      res.status(500).json({ message: 'Failed to generate authentication URL' });
+    }
+  });
+
+  // OAuth callback endpoint
+  app.get('/api/integrations/facebook/callback', async (req: Request, res: Response) => {
+    const { code, state } = req.query;
+
+    if (!code || !state) {
+      return res.redirect('/settings?error=Facebook+authentication+failed');
+    }
+
+    try {
+      // Decode state parameter which contains userId
+      const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
+      
+      if (!stateData.userId) {
+        throw new Error('Invalid state parameter');
+      }
+
+      // Exchange the code for an access token
+      const tokenData = await exchangeCodeForToken(code as string);
+      
+      // Get user information
+      const userInfo = await getFacebookUserInfo(tokenData.access_token);
+      
+      // Get the list of pages the user has access to
+      const pages = await getFacebookPages(tokenData.access_token);
+      
+      if (pages.length === 0) {
+        return res.redirect('/settings?error=No+Facebook+pages+found');
+      }
+
+      // Store each page as a separate integration
+      for (const page of pages) {
+        await storeFacebookIntegration(
+          stateData.userId,
+          page.access_token,
+          new Date(Date.now() + tokenData.expires_in * 1000),
+          page.id,
+          page.name,
+          'page',
+          page.picture?.data.url,
+          { 
+            category: page.category,
+            user_token: tokenData.access_token,
+            user_id: userInfo.id
+          }
+        );
+      }
+
+      // Redirect back to the settings page with success message
+      res.redirect('/settings?success=Facebook+pages+connected');
+    } catch (error: any) {
+      console.error('Facebook OAuth callback error:', error);
+      res.redirect('/settings?error=' + encodeURIComponent(error.message || 'Facebook authentication failed'));
+    }
+  });
+
+  // Get user's Facebook integrations
+  app.get('/api/integrations/facebook', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    try {
+      const integrations = await getUserFacebookIntegrations(req.user.id);
+      res.json(integrations);
+    } catch (error: any) {
+      console.error('Error fetching Facebook integrations:', error);
+      res.status(500).json({ message: 'Failed to fetch Facebook integrations' });
+    }
+  });
+
+  // Disconnect a Facebook integration
+  app.delete('/api/integrations/facebook/:id', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const integrationId = parseInt(req.params.id);
+
+    if (isNaN(integrationId)) {
+      return res.status(400).json({ message: 'Invalid integration ID' });
+    }
+
+    try {
+      await disconnectFacebookIntegration(req.user.id, integrationId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error disconnecting Facebook integration:', error);
+      res.status(500).json({ message: 'Failed to disconnect Facebook integration' });
+    }
+  });
+
+  // Post to Facebook
+  app.post('/api/integrations/facebook/:pageId/post', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const { pageId } = req.params;
+    const { message, link, imageUrl } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ message: 'Message is required' });
+    }
+
+    try {
+      const result = await postToFacebookPage(req.user.id, pageId, message, link, imageUrl);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error posting to Facebook:', error);
+      res.status(500).json({ message: 'Failed to post to Facebook: ' + error.message });
     }
   });
 
