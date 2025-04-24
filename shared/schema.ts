@@ -218,6 +218,12 @@ export const platformIntegrations = pgTable('platform_integrations', {
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
   tokenExpiry: timestamp('token_expiry'),
+  accountId: text('account_id'),
+  accountName: text('account_name'),
+  accountType: text('account_type'), // 'page', 'group', 'profile', etc.
+  profileImageUrl: text('profile_image_url'),
+  isActive: boolean('is_active').default(true),
+  lastUsed: timestamp('last_used'),
   metadata: json('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -382,7 +388,12 @@ export type InsertCompanyProfile = z.infer<typeof insertCompanyProfileSchema>;
 export type CompanyProfile = typeof companyProfiles.$inferSelect;
 
 // Platform integration schemas
-export const insertPlatformIntegrationSchema = createInsertSchema(platformIntegrations).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPlatformIntegrationSchema = createInsertSchema(platformIntegrations).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true, 
+  lastUsed: true 
+});
 export type InsertPlatformIntegration = z.infer<typeof insertPlatformIntegrationSchema>;
 export type PlatformIntegration = typeof platformIntegrations.$inferSelect;
 
