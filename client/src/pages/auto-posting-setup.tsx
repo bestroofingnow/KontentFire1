@@ -99,12 +99,12 @@ export default function AutoPostingSetup() {
     { id: "checklist", name: "Checklist", description: "Step-by-step guidelines or checklists" },
   ];
 
-  // Mock content types
+  // Content types with word count options
   const contentTypes: ContentType[] = [
-    { id: "article", name: "Article", description: "Longer-form written content" },
-    { id: "social", name: "Social Post", description: "Short-form social media content" },
-    { id: "video", name: "Video Script", description: "Script for video content" },
-    { id: "newsletter", name: "Newsletter", description: "Email-friendly format" },
+    { id: "article-short", name: "Blog Article - Short", description: "600 words of focused content" },
+    { id: "article-medium", name: "Blog Article - Medium", description: "1000 words with detailed insights" },
+    { id: "article-long", name: "Blog Article - Long", description: "2000 words comprehensive coverage" },
+    { id: "social", name: "Social Media Post", description: "Platform-optimized with 3 hashtags" },
   ];
 
   // Real authors with their distinct tones
@@ -242,7 +242,17 @@ export default function AutoPostingSetup() {
           authors: selectedAuthors,
           platform: selectedPlatform,
           duration: duration,
-          postingTime: "09:00" // Default to 9 AM posting time
+          postingTime: "09:00", // Default to 9 AM posting time
+          useCompanyInfo: true, // Ensure company profile information is used in content
+          includeHashtags: true, // Always include 3 hashtags for social media posts
+          optimization: {
+            socialFormats: true, // Use platform-specific formatting
+            wordCounts: {
+              "article-short": 600,
+              "article-medium": 1000,
+              "article-long": 2000
+            }
+          }
         }),
       });
       

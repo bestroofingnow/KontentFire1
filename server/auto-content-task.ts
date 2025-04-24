@@ -21,7 +21,12 @@ import * as openai from './openai';
 */
 
 // Placeholder to prevent errors
-const PLATFORMS = ['facebook', 'twitter', 'instagram', 'linkedin'];
+const PLATFORMS = ['linkedin', 'facebook', 'instagram', 'twitter', 'gmb', 'pinterest'];
+const ARTICLE_WORD_COUNTS = {
+  'article-short': 600,
+  'article-medium': 1000,
+  'article-long': 2000
+};
 
 /**
  * Process automatic content generation for all eligible users
@@ -151,13 +156,52 @@ export async function processAutoContentGeneration() {
           prompt += ` ${config.customNotes}`;
         }
         
+        // Determine content type and length requirements
+        const contentSettings = config.contentTypes && config.contentTypes[0];
+        let length = 'medium';
+        let wordCount = 1000;
+        let includeHashtags = false;
+        
+        // Set word count based on content type
+        if (contentSettings && contentSettings.startsWith('article-')) {
+          // Get word count for article type
+          wordCount = ARTICLE_WORD_COUNTS[contentSettings] || 1000;
+          
+          // Update prompt with specific word count
+          prompt += `. Content should be approximately ${wordCount} words in length.`;
+          
+          // Set length parameter
+          if (wordCount <= 600) length = 'short';
+          else if (wordCount <= 1000) length = 'medium';
+          else length = 'long';
+        } else if (contentSettings === 'social') {
+          // Social media post
+          length = 'short';
+          includeHashtags = true;
+          prompt += `. For social posts, include exactly 3 hashtags at the end that are relevant to the content and industry.`;
+          
+          // Add platform-specific requirements
+          if (platform === 'twitter') {
+            prompt += ` Keep Twitter posts under 280 characters including hashtags.`;
+          } else if (platform === 'instagram') {
+            prompt += ` Instagram captions should be engaging and include line breaks for readability.`;
+          } else if (platform === 'linkedin') {
+            prompt += ` LinkedIn posts should be professional with a call to action.`;
+          }
+        }
+        
+        // Add company branding requirement
+        prompt += ` Always incorporate the company's brand voice and messaging.`;
+        
         // Generate content
         console.log(`Generating content with prompt: ${prompt}`);
         const content = await openai.generateContent({
           prompt,
           contentType: contentType as 'text' | 'image' | 'both',
           tone: config.contentTone,
-          length: 'medium'
+          length,
+          wordCount,
+          includeHashtags
         });
         
         // Schedule the content for the target platforms

@@ -3204,11 +3204,21 @@ export function registerRoutes(app: Express): Server {
           duration,
           postingTime,
           startDate: new Date().toISOString(),
+          useCompanyInfo: req.body.useCompanyInfo ?? true,
+          includeHashtags: req.body.includeHashtags ?? true
         },
         metadata: {
           automationType: "social",
           platform,
-          frequency: "daily"
+          frequency: "daily",
+          optimization: req.body.optimization ?? {
+            socialFormats: true,
+            wordCounts: {
+              "article-short": 600,
+              "article-medium": 1000,
+              "article-long": 2000
+            }
+          }
         }
       }).returning();
 
