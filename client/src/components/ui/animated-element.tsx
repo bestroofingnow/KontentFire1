@@ -1,142 +1,160 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion, Variant } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface AnimatedElementProps {
   children: React.ReactNode;
-  animation?: 'bounce' | 'pulse' | 'pop' | 'slide-in' | 'fade' | 'scale' | 'wiggle';
-  duration?: number;
+  animation?: 'fade' | 'slide-in' | 'pop' | 'bounce' | 'pulse' | 'scale' | 'wiggle';
   delay?: number;
-  onClick?: () => void;
+  duration?: number;
   className?: string;
   repeat?: boolean | number;
+  custom?: any;
   whileHover?: boolean;
   whileTap?: boolean;
-  initial?: boolean;
+  onAnimationComplete?: () => void;
 }
 
 /**
- * AnimatedElement - A reusable component for adding micro-interactions
- * 
- * @param children - Content to be animated
- * @param animation - Type of animation
- * @param duration - Duration of animation in seconds
- * @param delay - Delay before animation starts in seconds
- * @param onClick - Click handler
- * @param className - Additional CSS classes
- * @param repeat - Number of times to repeat (true for infinite)
- * @param whileHover - Apply animation on hover
- * @param whileTap - Apply animation on tap/click
- * @param initial - Apply animation on initial render
+ * AnimatedElement - A general purpose animated container 
  */
 export const AnimatedElement: React.FC<AnimatedElementProps> = ({
   children,
-  animation = 'pop',
-  duration = 0.3,
+  animation = 'fade',
   delay = 0,
-  onClick,
+  duration = 0.5,
   className = '',
   repeat = false,
+  custom,
   whileHover = false,
   whileTap = false,
-  initial = true,
+  onAnimationComplete,
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  
-  useEffect(() => {
-    // Delay visibility to allow for entrance animations
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 10);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Animation variants
-  const animations = {
-    bounce: {
-      initial: initial ? { y: -10, opacity: 0 } : {},
-      animate: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 400, damping: 10 } },
-      whileHover: whileHover ? { y: -5, scale: 1.05 } : {},
-      whileTap: whileTap ? { y: 2 } : {},
-    },
-    pulse: {
-      initial: initial ? { scale: 0.95, opacity: 0.8 } : {},
-      animate: { 
-        scale: [0.95, 1.05, 1], 
-        opacity: 1, 
+  // Animation variants for different effects
+  const variants = {
+    fade: {
+      hidden: { opacity: 0 },
+      visible: { 
+        opacity: 1,
         transition: { 
-          repeat: repeat === true ? Infinity : (repeat || 0), 
-          repeatType: 'reverse',
-          duration 
+          duration,
+          delay 
         } 
       },
-      whileHover: whileHover ? { scale: 1.05 } : {},
-      whileTap: whileTap ? { scale: 0.95 } : {},
-    },
-    pop: {
-      initial: initial ? { scale: 0, opacity: 0 } : {},
-      animate: { scale: 1, opacity: 1 },
-      whileHover: whileHover ? { scale: 1.05 } : {},
-      whileTap: whileTap ? { scale: 0.95 } : {},
     },
     'slide-in': {
-      initial: initial ? { x: -20, opacity: 0 } : {},
-      animate: { x: 0, opacity: 1 },
-      whileHover: whileHover ? { x: 5 } : {},
-      whileTap: whileTap ? { x: -2 } : {},
-    },
-    fade: {
-      initial: initial ? { opacity: 0 } : {},
-      animate: { opacity: 1 },
-      whileHover: whileHover ? { opacity: 0.8 } : {},
-      whileTap: whileTap ? { opacity: 0.6 } : {},
-    },
-    scale: {
-      initial: initial ? { scale: 0.8, opacity: 0 } : {},
-      animate: { scale: 1, opacity: 1 },
-      whileHover: whileHover ? { scale: 1.1 } : {},
-      whileTap: whileTap ? { scale: 0.9 } : {},
-    },
-    wiggle: {
-      initial: initial ? { rotate: -5, opacity: 0 } : {},
-      animate: { 
-        rotate: [0, -5, 5, -5, 0], 
-        opacity: 1, 
+      hidden: { x: -30, opacity: 0 },
+      visible: { 
+        x: 0, 
+        opacity: 1,
         transition: { 
-          repeat: repeat === true ? Infinity : (repeat || 0), 
-          repeatDelay: 1,
-          duration: 0.5 
+          type: 'spring',
+          stiffness: 300,
+          damping: 24,
+          delay 
         } 
       },
-      whileHover: whileHover ? { rotate: 5 } : {},
-      whileTap: whileTap ? { scale: 0.95, rotate: 0 } : {},
+    },
+    pop: {
+      hidden: { scale: 0.8, opacity: 0 },
+      visible: { 
+        scale: 1, 
+        opacity: 1,
+        transition: { 
+          type: 'spring',
+          stiffness: 300,
+          damping: 10,
+          delay 
+        } 
+      },
+    },
+    bounce: {
+      hidden: { y: -20, opacity: 0 },
+      visible: { 
+        y: 0, 
+        opacity: 1,
+        transition: { 
+          type: 'spring',
+          stiffness: 300,
+          damping: 10,
+          delay 
+        } 
+      },
+    },
+    pulse: {
+      hidden: { scale: 1 },
+      visible: { 
+        scale: [1, 1.05, 1],
+        transition: { 
+          duration: duration,
+          delay,
+          repeat: typeof repeat === 'number' ? repeat : repeat ? Infinity : 0,
+          repeatType: "mirror" as "mirror" | "loop" | "reverse" | undefined
+        } 
+      },
+    },
+    scale: {
+      hidden: { scale: 0 },
+      visible: { 
+        scale: 1,
+        transition: { 
+          type: 'spring',
+          stiffness: 300,
+          damping: 20,
+          delay 
+        } 
+      },
+    },
+    wiggle: {
+      hidden: { rotate: 0 },
+      visible: { 
+        rotate: [0, -5, 5, -5, 0],
+        transition: { 
+          duration: duration,
+          delay,
+          repeat: typeof repeat === 'number' ? repeat : repeat ? Infinity : 0,
+          repeatType: "mirror" as "mirror" | "loop" | "reverse" | undefined,
+          repeatDelay: 1,
+        } 
+      },
     },
   };
 
-  const selectedAnimation = animations[animation];
+  // Hover animations
+  const hoverAnimations = {
+    fade: { opacity: 0.8 },
+    'slide-in': { x: 5 },
+    pop: { scale: 1.05 },
+    bounce: { y: -5 },
+    pulse: { scale: 1.05 },
+    scale: { scale: 1.05 },
+    wiggle: { rotate: 5 },
+  };
 
-  const transitionConfig = {
-    duration,
-    delay,
+  // Tap animations
+  const tapAnimations = {
+    fade: { opacity: 0.6 },
+    'slide-in': { x: -2 },
+    pop: { scale: 0.95 },
+    bounce: { y: 2 },
+    pulse: { scale: 0.95 },
+    scale: { scale: 0.95 },
+    wiggle: { rotate: -5 },
   };
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          className={className}
-          initial={selectedAnimation.initial}
-          animate={selectedAnimation.animate}
-          whileHover={selectedAnimation.whileHover}
-          whileTap={selectedAnimation.whileTap}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={transitionConfig}
-          onClick={onClick}
-        >
-          {children}
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={variants[animation]}
+      whileHover={whileHover ? hoverAnimations[animation] : undefined}
+      whileTap={whileTap ? tapAnimations[animation] : undefined}
+      custom={custom}
+      onAnimationComplete={onAnimationComplete}
+      className={cn(className)}
+    >
+      {children}
+    </motion.div>
   );
 };
 

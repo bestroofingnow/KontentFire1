@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardProps } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+
+// Define a CardProps interface since it's not exported from the Card component
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
+}
 
 interface AnimatedCardProps extends CardProps {
   hoverEffect?: 'lift' | 'glow' | 'border' | 'scale' | 'rotate' | 'none';

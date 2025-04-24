@@ -17,6 +17,7 @@ import PRKreationPage from "@/pages/pr-kreation-page";
 import PipelinesPage from "@/pages/pipelines-page";
 import PipelineRunPage from "@/pages/pipeline-run-page";
 import TestAuthPage from "@/pages/test-auth-page";
+import AnimationDemoPage from "@/pages/animation-demo-page";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -112,6 +113,9 @@ function App() {
       {/* Test auth route - not protected for debugging */}
       <Route path="/test-auth">
         <TestAuthPage />
+      </Route>
+      <Route path="/animation-demo">
+        <ProtectedRoute path="/animation-demo" component={AnimationDemoPage} />
       </Route>
       <Route>
         <NotFound />
