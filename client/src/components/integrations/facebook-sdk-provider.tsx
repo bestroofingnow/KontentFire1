@@ -1,18 +1,39 @@
 import React, { useEffect, createContext, useContext, useState } from 'react';
 
+// Auth response type from Facebook
+interface FacebookAuthResponse {
+  accessToken: string;
+  expiresIn: number;
+  signedRequest: string;
+  userID: string;
+}
+
+// Login status response from Facebook
+interface FacebookLoginStatusResponse {
+  status: 'connected' | 'not_authorized' | 'unknown';
+  authResponse: FacebookAuthResponse | null;
+}
+
 interface FacebookSDKContextType {
   isLoaded: boolean;
   FB: any | null;
+  loginStatus: FacebookLoginStatusResponse | null;
+  checkLoginStatus: () => Promise<FacebookLoginStatusResponse>;
 }
 
 const defaultContextValue: FacebookSDKContextType = {
   isLoaded: false,
   FB: null,
+  loginStatus: null,
+  checkLoginStatus: async () => ({ status: 'unknown', authResponse: null }),
 };
 
 const FacebookSDKContext = createContext<FacebookSDKContextType>(defaultContextValue);
 
-export const useFacebookSDK = () => useContext(FacebookSDKContext);
+// Export as a named function for consistency
+export function useFacebookSDK() {
+  return useContext(FacebookSDKContext);
+}
 
 interface FacebookSDKProviderProps {
   appId: string;
@@ -34,6 +55,22 @@ export const FacebookSDKProvider: React.FC<FacebookSDKProviderProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [FB, setFB] = useState<any | null>(null);
+  const [loginStatus, setLoginStatus] = useState<FacebookLoginStatusResponse | null>(null);
+
+  // Function to check login status
+  const checkLoginStatus = async (): Promise<FacebookLoginStatusResponse> => {
+    return new Promise((resolve) => {
+      if (!window.FB) {
+        resolve({ status: 'unknown', authResponse: null });
+        return;
+      }
+      
+      window.FB.getLoginStatus((response: FacebookLoginStatusResponse) => {
+        setLoginStatus(response);
+        resolve(response);
+      });
+    });
+  };
 
   useEffect(() => {
     // Only load the SDK once
@@ -52,6 +89,12 @@ export const FacebookSDKProvider: React.FC<FacebookSDKProviderProps> = ({
       
       setIsLoaded(true);
       setFB(window.FB);
+      
+      // Check the login status when SDK loads
+      window.FB.getLoginStatus((response: FacebookLoginStatusResponse) => {
+        console.log('Facebook login status:', response);
+        setLoginStatus(response);
+      });
     };
 
     // Load the SDK asynchronously
@@ -77,7 +120,7 @@ export const FacebookSDKProvider: React.FC<FacebookSDKProviderProps> = ({
   }, [appId, version]);
 
   return (
-    <FacebookSDKContext.Provider value={{ isLoaded, FB }}>
+    <FacebookSDKContext.Provider value={{ isLoaded, FB, loginStatus, checkLoginStatus }}>
       {children}
     </FacebookSDKContext.Provider>
   );
