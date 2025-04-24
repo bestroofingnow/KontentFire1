@@ -25,6 +25,7 @@ import AdminAuthPage from "@/pages/admin/admin-auth-page";
 
 // Components
 import { AIAssistant } from "@/components/assistant/ai-assistant";
+import FacebookSDKProvider from "@/components/integrations/facebook-sdk-provider";
 
 // Route protection components
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -43,8 +44,11 @@ function App() {
     );
   }
   
+  // Facebook App ID from env
+  const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID || '';
+  
   return (
-    <>
+    <FacebookSDKProvider appId={facebookAppId} version="v18.0">
       {/* AI Assistant always visible for authenticated users */}
       {user && !user.isAdmin && <AIAssistant />}
       
@@ -113,7 +117,7 @@ function App() {
         <NotFound />
       </Route>
     </Switch>
-    </>
+    </FacebookSDKProvider>
   );
 }
 
