@@ -45,10 +45,10 @@ function App() {
   }
   
   // Facebook App ID from env
-  const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID || '1420191842748498';
+  const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID || '1596896931218573';
   
   return (
-    <FacebookSDKProvider appId={facebookAppId} version="v18.0">
+    <FacebookSDKProvider appId={facebookAppId} version="v22.0">
       {/* AI Assistant always visible for authenticated users */}
       {user && !user.isAdmin && <AIAssistant />}
       

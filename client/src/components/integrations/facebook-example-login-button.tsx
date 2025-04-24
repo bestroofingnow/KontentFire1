@@ -66,14 +66,14 @@ const FacebookExampleLoginButton = ({ onLoginSuccess, onLoginFailure }: Facebook
       });
     }
 
-    // Render the fb:login-button
+    // Render the fb:login-button with smaller size
     const fbLoginButton = document.createElement('fb:login-button');
     fbLoginButton.setAttribute('scope', 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts');
     fbLoginButton.setAttribute('onlogin', 'checkLoginState();');
-    fbLoginButton.setAttribute('data-size', 'large');
-    fbLoginButton.setAttribute('data-button-type', 'continue_with');
+    fbLoginButton.setAttribute('data-size', ''); // Use default (smaller) size
+    fbLoginButton.setAttribute('data-button-type', ''); // Use default button type
     fbLoginButton.setAttribute('data-layout', '');
-    fbLoginButton.setAttribute('data-auto-logout-link', 'false');
+    fbLoginButton.setAttribute('data-auto-logout-link', 'true');
     fbLoginButton.setAttribute('data-use-continue-as', 'true');
     
     buttonContainerRef.current.innerHTML = '';

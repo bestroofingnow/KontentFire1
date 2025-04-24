@@ -50,7 +50,7 @@ declare global {
 
 export const FacebookSDKProvider: React.FC<FacebookSDKProviderProps> = ({
   appId,
-  version = 'v18.0',
+  version = 'v22.0',
   children,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
