@@ -103,7 +103,8 @@ export const FacebookSDKProvider: React.FC<FacebookSDKProviderProps> = ({
       if (d.getElementById(id)) return;
       js = d.createElement(s) as HTMLScriptElement;
       js.id = id;
-      js.src = `https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=${version}&appId=${appId}`;
+      // Add xfbml=1 and jssdk=1 to enable JSSDK Option
+      js.src = `https://connect.facebook.net/en_US/sdk.js?xfbml=1&version=${version}&appId=${appId}&jssdk=1`;
       if (fjs.parentNode) {
         fjs.parentNode.insertBefore(js, fjs);
       }

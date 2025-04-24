@@ -234,45 +234,6 @@ export default function IntegrationsPage() {
                                 });
                               }}
                             />
-                            
-                            <p className="text-sm text-gray-500 my-2">Or use our official button:</p>
-                            <FacebookOfficialLoginButton 
-                              onLoginSuccess={(response) => {
-                                toast({
-                                  title: "Facebook Connected",
-                                  description: "Successfully connected your Facebook account.",
-                                });
-                                // Refresh social accounts data
-                                queryClient.invalidateQueries({ queryKey: ['/api/social-accounts'] });
-                              }}
-                              onLoginFailure={(error) => {
-                                toast({
-                                  title: "Connection Failed",
-                                  description: error.message,
-                                  variant: "destructive"
-                                });
-                              }}
-                            />
-                            
-                            <p className="text-sm text-gray-500 my-2">Or use our custom button:</p>
-                            <FacebookLoginButton 
-                              className="w-full bg-blue-600 hover:bg-blue-700"
-                              onLoginSuccess={(response) => {
-                                toast({
-                                  title: "Facebook Connected",
-                                  description: "Successfully connected your Facebook account.",
-                                });
-                                // Refresh social accounts data
-                                queryClient.invalidateQueries({ queryKey: ['/api/social-accounts'] });
-                              }}
-                              onLoginFailure={(error) => {
-                                toast({
-                                  title: "Connection Failed",
-                                  description: error.message,
-                                  variant: "destructive"
-                                });
-                              }}
-                            />
                           </div>
                         ) : (
                           <Button 
