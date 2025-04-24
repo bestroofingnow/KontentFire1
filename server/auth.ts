@@ -103,7 +103,7 @@ export function setupAuth(app: Express) {
         username,
         email,
         password: await hashPassword(password),
-        plan: 'blaze' // Default plan
+        plan: 'ember' // Default plan set to Ember
       });
 
       // Remove password from response
