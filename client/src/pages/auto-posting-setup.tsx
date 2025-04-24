@@ -107,13 +107,19 @@ export default function AutoPostingSetup() {
     { id: "newsletter", name: "Newsletter", description: "Email-friendly format" },
   ];
 
-  // Mock authors
+  // Real authors with their distinct tones
   const authors: Author[] = [
-    { id: "expert", name: "Industry Expert", avatar: "👨‍💼", bio: "Authoritative, fact-driven approach" },
-    { id: "storyteller", name: "Storyteller", avatar: "📚", bio: "Engaging narrative style" },
-    { id: "analyst", name: "Data Analyst", avatar: "📊", bio: "Data-driven insights and trends" },
-    { id: "enthusiast", name: "Enthusiast", avatar: "🔥", bio: "Passionate and energetic tone" },
-    { id: "educator", name: "Educator", avatar: "👩‍🏫", bio: "Clear explanations and teaching style" },
+    { id: "parker", name: "Parker Cohn", avatar: "🎓", bio: "Professional: Authoritative and analytical, with precise language and evidence-based statements" },
+    { id: "kay", name: "Kay Warner", avatar: "👩‍🏫", bio: "Approachable: Friendly and explanatory, using relatable analogies and clear examples" },
+    { id: "wallace", name: "Wallace Valdez", avatar: "🌟", bio: "Optimistic: Constructively hopeful, identifying genuine opportunities with concrete examples" },
+    { id: "maurice", name: "Maurice Salas", avatar: "📋", bio: "Matter-of-Fact: Clear and unembellished, presenting information in a straightforward, logical sequence" },
+    { id: "irene", name: "Irene Burke", avatar: "🕰️", bio: "Nostalgic: Contemplatively historical, connecting past experiences with present insights" },
+    { id: "alanna", name: "Alanna Santiago", avatar: "✨", bio: "Witty: Intellectually playful, with subtle wordplay and clever observations" },
+    { id: "jermell", name: "Jermell Hasen", avatar: "🔥", bio: "Ardent: Intensely committed, conveying genuine enthusiasm and deep expertise" },
+    { id: "ken", name: "Ken Uchiyama", avatar: "🌱", bio: "Altruistic: Community-minded, focusing on collective benefit and positive impact" },
+    { id: "dinesh", name: "Dinesh Saraf", avatar: "🤝", bio: "Sincere: Authentically direct, building credibility through transparent communication" },
+    { id: "enrique", name: "Enrique Casillas", avatar: "😏", bio: "Irreverent: Boldly mocks industry hype and overblown marketing claims with edgy humor" },
+    { id: "jade", name: "Jade Strom", avatar: "🎭", bio: "Playful: Energetically engaging, using creativity to keep readers invested and entertained" },
   ];
 
   // Available platforms (with availability based on plan)
