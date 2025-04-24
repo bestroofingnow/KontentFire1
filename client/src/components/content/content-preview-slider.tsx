@@ -87,20 +87,21 @@ export function ContentPreviewSlider({
     return styles[type as keyof typeof styles] || 'bg-gray-500';
   };
   
-  const getPlatformStyle = (platform: string) => {
-    const styles = {
-      'blog': 'bg-primary',
-      'facebook': 'bg-blue-600',
-      'instagram': 'bg-pink-500',
-      'twitter': 'bg-sky-500',
-      'linkedin': 'bg-blue-500',
-      'youtube': 'bg-red-600',
-      'tiktok': 'bg-black',
-      'pinterest': 'bg-red-500',
-    };
+  // Will be used when the Content type includes platform
+  // const getPlatformStyle = (platform: string) => {
+  //   const styles = {
+  //     'blog': 'bg-primary',
+  //     'facebook': 'bg-blue-600',
+  //     'instagram': 'bg-pink-500',
+  //     'twitter': 'bg-sky-500',
+  //     'linkedin': 'bg-blue-500',
+  //     'youtube': 'bg-red-600',
+  //     'tiktok': 'bg-black',
+  //     'pinterest': 'bg-red-500',
+  //   };
     
-    return styles[platform as keyof typeof styles] || 'bg-gray-500';
-  };
+  //   return styles[platform as keyof typeof styles] || 'bg-gray-500';
+  // };
 
   return (
     <div className={cn("bg-white rounded-xl shadow-sm overflow-hidden", className)}>
@@ -147,13 +148,7 @@ export function ContentPreviewSlider({
                         )}>
                           {content.contentType.charAt(0).toUpperCase() + content.contentType.slice(1)}
                         </Badge>
-                        {content.platform && (
-                          <Badge className={cn(
-                            getPlatformStyle(content.platform)
-                          )}>
-                            {content.platform.charAt(0).toUpperCase() + content.platform.slice(1)}
-                          </Badge>
-                        )}
+                        {/* Platform badges will be added once the schema includes platform */}
                       </div>
                       <span className="text-gray-500 text-sm">
                         {formatDistanceToNow(new Date(content.createdAt), { addSuffix: true })}
@@ -263,7 +258,7 @@ export function ContentPreviewSlider({
             </CarouselContent>
             
             <div className="absolute -bottom-4 left-0 right-0 flex justify-center space-x-2 pb-4">
-              {contents.map((_, index) => (
+              {contents.map((_: Content, index: number) => (
                 <button
                   key={index}
                   className={cn(
