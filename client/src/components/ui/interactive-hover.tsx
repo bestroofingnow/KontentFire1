@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import { motion, MotionProps, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { primaryRgba } from '@/lib/color-utils';
