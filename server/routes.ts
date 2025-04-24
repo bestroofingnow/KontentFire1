@@ -3525,6 +3525,97 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: 'Failed to post to Facebook: ' + error.message });
     }
   });
+  
+  // Handle client-side Facebook SDK authentication
+  app.post('/api/integrations/facebook/sdk-auth', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    const { accessToken, userID } = req.body;
+    
+    if (!accessToken || !userID) {
+      return res.status(400).json({ message: 'Access token and user ID are required' });
+    }
+    
+    try {
+      // Verify the access token with Facebook
+      const verifyResponse = await axios.get(`https://graph.facebook.com/debug_token`, {
+        params: {
+          input_token: accessToken,
+          access_token: `${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`,
+        },
+      });
+      
+      const tokenData = verifyResponse.data.data;
+      
+      // Verify the token is valid and for the correct user
+      if (!tokenData.is_valid || tokenData.user_id !== userID) {
+        throw new Error('Invalid Facebook access token');
+      }
+      
+      // Get user information
+      const userResponse = await axios.get(`https://graph.facebook.com/v18.0/${userID}`, {
+        params: {
+          fields: 'id,name,email',
+          access_token: accessToken,
+        },
+      });
+      
+      const userData = userResponse.data;
+      
+      // Get pages the user has access to
+      const pagesResponse = await axios.get(`https://graph.facebook.com/v18.0/${userID}/accounts`, {
+        params: {
+          access_token: accessToken,
+        },
+      });
+      
+      const pages = pagesResponse.data.data || [];
+      
+      if (pages.length === 0) {
+        return res.status(400).json({ message: 'No Facebook pages found for this user' });
+      }
+      
+      // Store each page as an integration
+      const integrations = [];
+      
+      for (const page of pages) {
+        const integrationId = await storeFacebookIntegration(
+          req.user.id,
+          page.access_token,
+          new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days expiry as page tokens are long-lived
+          page.id,
+          page.name,
+          'page',
+          null, // Profile image URL (will be fetched in a separate request if needed)
+          { 
+            category: page.category,
+            user_token: accessToken,
+            user_id: userID
+          }
+        );
+        
+        integrations.push({
+          id: integrationId,
+          name: page.name,
+          type: 'page',
+        });
+      }
+      
+      return res.json({
+        success: true,
+        integrations,
+        user: {
+          id: userData.id,
+          name: userData.name,
+        },
+      });
+    } catch (error: any) {
+      console.error('Facebook SDK auth error:', error);
+      return res.status(500).json({ message: 'Failed to authenticate with Facebook: ' + error.message });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
