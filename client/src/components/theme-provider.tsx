@@ -1,6 +1,5 @@
 import { ReactNode, useEffect } from 'react';
 import { hexToRgb } from '@/lib/color-utils';
-import themeConfig from '../../theme.json';
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -8,8 +7,9 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
-    // Initialize RGB variables from theme
-    const primaryColor = themeConfig.primary;
+    // Initialize RGB variables from theme - this could be fetched from API or config
+    // For now, we'll use a default primary color
+    const primaryColor = 'hsl(14, 100%, 57%)'; // Same as in theme.json
     
     // Convert HSL or hex to RGB
     if (primaryColor.startsWith('hsl')) {
