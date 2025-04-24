@@ -3,6 +3,13 @@ import { relations } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
+// Plan type enum
+export const planTypeEnum = pgEnum('plan_type', [
+  'blaze',
+  'inferno', 
+  'ember'
+]);
+
 // Users table
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -10,7 +17,7 @@ export const users = pgTable('users', {
   email: text('email').notNull(),
   password: text('password').notNull(),
   isAdmin: boolean('is_admin').default(false),
-  plan: text('plan').default('free'),
+  plan: planTypeEnum('plan').default('blaze'),
   planStatus: text('plan_status').default('active'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   wpIntegrationActive: boolean('wp_integration_active').default(false),
