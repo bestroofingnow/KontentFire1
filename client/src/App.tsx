@@ -26,9 +26,9 @@ import AdminAuthPage from "@/pages/admin/admin-auth-page";
 // Components
 import { AIAssistant } from "@/components/assistant/ai-assistant";
 
-// Regular protected route component
+// Route protection components
 import { ProtectedRoute } from "@/lib/protected-route";
-// Admin-specific protected route
+import { PremiumProtectedRoute } from "@/lib/premium-protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 
 function App() {
@@ -67,7 +67,7 @@ function App() {
         <ProtectedRoute path="/" component={HomePage} />
       </Route>
       <Route path="/content">
-        <ProtectedRoute path="/content" component={ContentPage} />
+        <PremiumProtectedRoute path="/content" component={ContentPage} requiredPlan="inferno" />
       </Route>
       <Route path="/schedule">
         <ProtectedRoute path="/schedule" component={SchedulePage} />
@@ -97,13 +97,13 @@ function App() {
         <ProtectedRoute path="/fact-check" component={FactCheckPage} />
       </Route>
       <Route path="/pr-kreation">
-        <ProtectedRoute path="/pr-kreation" component={PRKreationPage} />
+        <PremiumProtectedRoute path="/pr-kreation" component={PRKreationPage} requiredPlan="inferno" />
       </Route>
       <Route path="/pipelines">
-        <ProtectedRoute path="/pipelines" component={PipelinesPage} />
+        <PremiumProtectedRoute path="/pipelines" component={PipelinesPage} requiredPlan="inferno" />
       </Route>
       <Route path="/pipeline-runs/:runId">
-        <ProtectedRoute path="/pipeline-runs/:runId" component={PipelineRunPage} />
+        <PremiumProtectedRoute path="/pipeline-runs/:runId" component={PipelineRunPage} requiredPlan="inferno" />
       </Route>
       {/* Test auth route - not protected for debugging */}
       <Route path="/test-auth">

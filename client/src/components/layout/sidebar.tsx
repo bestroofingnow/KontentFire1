@@ -60,7 +60,13 @@ export default function Sidebar() {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Content', href: '/content', icon: PenTool },
+    { 
+      name: 'Content', 
+      href: '/content', 
+      icon: PenTool,
+      premiumOnly: true,
+      premiumPlan: 'inferno'
+    },
     { name: 'Auto Posting', href: '/auto-posting-setup', icon: Flame },
     { 
       name: 'PR Kreation', 
