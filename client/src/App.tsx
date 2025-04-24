@@ -45,7 +45,7 @@ function App() {
   }
   
   // Facebook App ID from env
-  const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID || '';
+  const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID || '1420191842748498';
   
   return (
     <FacebookSDKProvider appId={facebookAppId} version="v18.0">

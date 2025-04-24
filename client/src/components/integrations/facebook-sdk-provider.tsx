@@ -103,7 +103,7 @@ export const FacebookSDKProvider: React.FC<FacebookSDKProviderProps> = ({
       if (d.getElementById(id)) return;
       js = d.createElement(s) as HTMLScriptElement;
       js.id = id;
-      js.src = `https://connect.facebook.net/en_US/sdk.js`;
+      js.src = `https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=${version}&appId=${appId}`;
       if (fjs.parentNode) {
         fjs.parentNode.insertBefore(js, fjs);
       }
@@ -121,6 +121,8 @@ export const FacebookSDKProvider: React.FC<FacebookSDKProviderProps> = ({
 
   return (
     <FacebookSDKContext.Provider value={{ isLoaded, FB, loginStatus, checkLoginStatus }}>
+      {/* This div is required for the Facebook SDK to work */}
+      <div id="fb-root"></div>
       {children}
     </FacebookSDKContext.Provider>
   );
