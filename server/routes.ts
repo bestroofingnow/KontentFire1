@@ -3164,6 +3164,211 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  // Auto-posting automation endpoints
+  app.post("/api/automations", async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const user = req.user;
+      const { 
+        templates, 
+        contentTypes, 
+        authors, 
+        platform, 
+        duration, 
+        postingTime 
+      } = req.body;
+
+      // Validate user plan for automation
+      if (!user.plan) {
+        return res.status(403).json({ 
+          message: "No subscription plan found. Please subscribe to create automations." 
+        });
+      }
+
+      // Create pipeline for automation
+      const [pipeline] = await db.insert(contentPipelines).values({
+        name: `Automated posting to ${platform}`,
+        userId: user.id,
+        description: `Daily content creation and posting to ${platform}`,
+        isActive: true,
+        isAutomated: true,
+        triggerSchedule: "0 0 * * *", // Daily at midnight
+        stages: {
+          templates,
+          contentTypes,
+          authors,
+          platform,
+          duration,
+          postingTime,
+          startDate: new Date().toISOString(),
+        },
+        metadata: {
+          automationType: "social",
+          platform,
+          frequency: "daily"
+        }
+      }).returning();
+
+      res.status(201).json({ 
+        message: "Automation created successfully", 
+        automation: pipeline 
+      });
+    } catch (error: any) {
+      console.error("Error creating automation:", error);
+      res.status(500).json({ message: "Failed to create automation" });
+    }
+  });
+
+  // Get all automations for the current user
+  app.get("/api/automations", async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const user = req.user;
+      
+      const automations = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.userId, user.id),
+          eq(contentPipelines.isAutomated, true)
+        ));
+      
+      res.json(automations);
+    } catch (error: any) {
+      console.error("Error retrieving automations:", error);
+      res.status(500).json({ message: "Failed to retrieve automations" });
+    }
+  });
+
+  // Get a specific automation
+  app.get("/api/automations/:id", async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const user = req.user;
+      const automationId = parseInt(req.params.id);
+      
+      const [automation] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, automationId),
+          eq(contentPipelines.userId, user.id),
+          eq(contentPipelines.isAutomated, true)
+        ));
+      
+      if (!automation) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      res.json(automation);
+    } catch (error: any) {
+      console.error("Error retrieving automation:", error);
+      res.status(500).json({ message: "Failed to retrieve automation" });
+    }
+  });
+  
+  // Update an automation
+  app.put("/api/automations/:id", async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const user = req.user;
+      const automationId = parseInt(req.params.id);
+      const { 
+        templates, 
+        contentTypes, 
+        authors, 
+        platform, 
+        duration, 
+        postingTime,
+        isActive
+      } = req.body;
+      
+      // Verify automation exists and belongs to user
+      const [existing] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, automationId),
+          eq(contentPipelines.userId, user.id),
+          eq(contentPipelines.isAutomated, true)
+        ));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      // Update automation
+      const [updated] = await db.update(contentPipelines)
+        .set({
+          isActive: isActive !== undefined ? isActive : existing.isActive,
+          stages: {
+            ...existing.stages,
+            ...(templates && { templates }),
+            ...(contentTypes && { contentTypes }),
+            ...(authors && { authors }),
+            ...(platform && { platform }),
+            ...(duration && { duration }),
+            ...(postingTime && { postingTime }),
+          },
+          updatedAt: new Date()
+        })
+        .where(eq(contentPipelines.id, automationId))
+        .returning();
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating automation:", error);
+      res.status(500).json({ message: "Failed to update automation" });
+    }
+  });
+  
+  // Delete (deactivate) an automation
+  app.delete("/api/automations/:id", async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const user = req.user;
+      const automationId = parseInt(req.params.id);
+      
+      // Verify automation exists and belongs to user
+      const [existing] = await db.select()
+        .from(contentPipelines)
+        .where(and(
+          eq(contentPipelines.id, automationId),
+          eq(contentPipelines.userId, user.id),
+          eq(contentPipelines.isAutomated, true)
+        ));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      // Deactivate automation instead of deleting
+      await db.update(contentPipelines)
+        .set({
+          isActive: false,
+          updatedAt: new Date()
+        })
+        .where(eq(contentPipelines.id, automationId));
+      
+      res.status(200).json({ message: "Automation deactivated successfully" });
+    } catch (error: any) {
+      console.error("Error deactivating automation:", error);
+      res.status(500).json({ message: "Failed to deactivate automation" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

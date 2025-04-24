@@ -77,7 +77,7 @@ export default function AutoPostingSetup() {
   const [isSuccess, setIsSuccess] = useState(false);
   
   // Fetch user data to get plan information
-  const { data: user } = useQuery<any>({
+  const { data: user } = useQuery<UserData>({
     queryKey: ['/api/user'],
     retry: false,
   });
@@ -224,8 +224,25 @@ export default function AutoPostingSetup() {
   // Create automation
   const createAutomation = async () => {
     try {
-      // Mock API call - would be replaced with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Real API call to create the automation
+      const response = await fetch('/api/automations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templates: selectedTemplates,
+          contentTypes: selectedContentTypes,
+          authors: selectedAuthors,
+          platform: selectedPlatform,
+          duration: duration,
+          postingTime: "09:00" // Default to 9 AM posting time
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create automation');
+      }
       
       // Success state
       setIsSuccess(true);
@@ -244,7 +261,7 @@ export default function AutoPostingSetup() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "There was a problem setting up your automation.",
+        description: error instanceof Error ? error.message : "There was a problem setting up your automation.",
         variant: "destructive",
       });
     }
