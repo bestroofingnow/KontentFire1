@@ -6,11 +6,13 @@ import MobileNav from "@/components/layout/mobile-nav";
 import StatCard from "@/components/content/stat-card";
 import UpcomingContent from "@/components/content/upcoming-content";
 import RecentlyCreated from "@/components/content/recently-created";
+import ContentPreviewSlider from "@/components/content/content-preview-slider";
 import ProcessSteps from "@/components/content/process-steps";
 import CreateContentModal from "@/components/content/create-content-modal";
 import { Button } from "@/components/ui/button";
 import { PenTool, Calendar, ImageIcon, ThumbsUp, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Content } from "@shared/schema";
 
 export default function HomePage() {
   const { toast } = useToast();
@@ -103,6 +105,27 @@ export default function HomePage() {
                 <Plus className="h-5 w-5" />
                 <span>Create New Content</span>
               </Button>
+            </div>
+            
+            {/* Featured Content Slider */}
+            <div className="mb-8">
+              <ContentPreviewSlider 
+                title="Featured Content" 
+                description="Browse through your best content"
+                limit={5}
+                onSchedule={(content) => {
+                  toast({
+                    title: "Scheduling Content",
+                    description: `Scheduling "${content.title}" for publishing`,
+                  });
+                }}
+                onEdit={(content) => {
+                  toast({
+                    title: "Editing Content",
+                    description: `Opening editor for "${content.title}"`,
+                  });
+                }}
+              />
             </div>
             
             {/* Content Sections */}
