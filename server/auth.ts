@@ -5,7 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, planTypeEnum } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -103,7 +103,7 @@ export function setupAuth(app: Express) {
         username,
         email,
         password: await hashPassword(password),
-        plan: 'ember' // Default plan set to Ember
+        plan: 'ember' as any // Default plan set to Ember (using type assertion to match enum)
       });
 
       // Remove password from response

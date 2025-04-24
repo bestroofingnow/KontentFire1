@@ -17,7 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 type SubscriptionData = {
   status: string;
-  plan: 'free' | 'ember' | 'inferno';
+  plan: 'blaze' | 'ember' | 'inferno';
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
 };
@@ -254,12 +254,12 @@ export default function SubscriptionPage() {
                       <div className="flex items-center">
                         <Badge 
                           className={
-                            subscription?.plan === 'free' ? 'bg-gray-200 text-dark' : 
+                            subscription?.plan === 'blaze' ? 'bg-gray-200 text-dark' : 
                             subscription?.plan === 'ember' ? 'bg-secondary text-dark' : 
                             'bg-primary text-white'
                           }
                         >
-                          {subscription?.plan === 'free' ? 'Free Plan' : 
+                          {subscription?.plan === 'blaze' ? 'Blaze Plan' : 
                            subscription?.plan === 'ember' ? 'Ember Plan' : 
                            'Inferno Plan'}
                         </Badge>
@@ -280,8 +280,8 @@ export default function SubscriptionPage() {
                       {subscription?.status === 'active' && (
                         <div className="mt-4">
                           <p className="text-gray-600">
-                            {subscription?.plan === 'free' ? (
-                              <>You are currently on the Free plan.</>
+                            {subscription?.plan === 'blaze' ? (
+                              <>You are currently on the Blaze plan.</>
                             ) : subscription?.plan === 'ember' ? (
                               <>You are currently on the Ember plan at $99/month.</>
                             ) : (
@@ -395,7 +395,7 @@ export default function SubscriptionPage() {
                             className="w-full"
                             disabled={subscribeMutation.isPending}
                           >
-                            {subscription?.plan === 'free' ? 'Upgrade to Ember' : 'Downgrade to Ember'}
+                            {subscription?.plan === 'blaze' ? 'Upgrade to Ember' : 'Downgrade to Ember'}
                           </Button>
                         )}
                       </CardFooter>
@@ -587,13 +587,14 @@ export default function SubscriptionPage() {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <Badge 
-                                    className={subscription?.plan === 'ember' ? 'bg-secondary text-dark' : 'bg-primary text-white'}
+                                    className={subscription?.plan === 'ember' ? 'bg-secondary text-dark' : 
+                                              subscription?.plan === 'blaze' ? 'bg-gray-200 text-dark' : 'bg-primary text-white'}
                                   >
-                                    {subscription?.plan === 'free' ? 'Free Plan' : 
+                                    {subscription?.plan === 'blaze' ? 'Blaze Plan' : 
                                       subscription?.plan === 'ember' ? 'Ember Plan' : 'Inferno Plan'}
                                   </Badge>
                                   <p className="mt-2 text-gray-600">
-                                    {subscription?.plan === 'free' ? 'Free' : 
+                                    {subscription?.plan === 'blaze' ? 'Free' : 
                                       subscription?.plan === 'ember' ? '$99' : '$999'}/month
                                   </p>
                                 </div>
