@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { AlertCircle, Calendar, CheckCircle2, ClockIcon, Edit2, FileText, Flame, Globe, Info, Loader2, Settings, Sparkles, Users } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle2, ClockIcon, Edit2, FileText, Flame, Globe, Info, Loader2, Pencil, Settings, Sparkles, Users } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -271,9 +272,38 @@ export default function AutoPostingSetup() {
     }
   };
 
+  // Handle saving custom template
+  const handleSaveCustomTemplate = () => {
+    if (customTemplateInstructions.trim() === "") {
+      toast({
+        title: "Invalid Input",
+        description: "Please provide instructions for your custom template.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Add custom template to selected templates
+    setSelectedTemplates([...selectedTemplates, "custom"]);
+    setShowCustomTemplateModal(false);
+    
+    toast({
+      title: "Custom Template Added",
+      description: "Your custom template has been added to the selection.",
+    });
+  };
+
   // Create automation
   const createAutomation = async () => {
     try {
+      // Prepare template data including custom template instructions if needed
+      const templateData: Record<string, any> = {};
+      if (selectedTemplates.includes("custom")) {
+        templateData["custom"] = {
+          instructions: customTemplateInstructions
+        };
+      }
+      
       // Real API call to create the automation
       const response = await fetch('/api/automations', {
         method: 'POST',
@@ -296,7 +326,8 @@ export default function AutoPostingSetup() {
               "article-medium": 1000,
               "article-long": 2000
             }
-          }
+          },
+          templateData: templateData // Add custom template data if present
         }),
       });
       
@@ -840,6 +871,156 @@ export default function AutoPostingSetup() {
                 </p>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+        {/* Custom Template Modal */}
+        <Dialog open={showCustomTemplateModal} onOpenChange={setShowCustomTemplateModal}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <Pencil className="mr-2 h-5 w-5" />
+                Create Custom Template
+              </DialogTitle>
+              <DialogDescription>
+                Provide custom instructions for the AI to follow when generating content.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="custom-instructions">Template Instructions</Label>
+                <Textarea
+                  id="custom-instructions"
+                  placeholder="Enter specific format, structure, and tone instructions for the AI to follow..."
+                  className="min-h-[150px]"
+                  value={customTemplateInstructions}
+                  onChange={(e) => setCustomTemplateInstructions(e.target.value)}
+                />
+                <p className="text-xs text-gray-500">
+                  Be specific about the format, tone, and structure you want. For example: "Create a step-by-step tutorial with numbered steps, a materials list at the top, and 3 tips at the end."
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCustomTemplateModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveCustomTemplate}>
+                Add Template
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Review Dialog */}
+        <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
+          <DialogContent className="sm:max-w-[90%] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Review Your Automation Setup</DialogTitle>
+              <DialogDescription>
+                Review the details of your content automation before confirming.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium">Selected Templates</h4>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {selectedTemplates.map(id => {
+                      const template = templates.find(t => t.id === id);
+                      return template ? (
+                        <div key={id} className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center">
+                          {template.name}
+                          {id === "custom" && <Pencil className="ml-1 h-3 w-3" />}
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium">Content Types</h4>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {selectedContentTypes.map(id => {
+                      const type = contentTypes.find(t => t.id === id);
+                      return type ? (
+                        <div key={id} className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center">
+                          {type.name}
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium">Writing Styles</h4>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {selectedAuthors.map(id => {
+                      const author = authors.find(a => a.id === id);
+                      return author ? (
+                        <div key={id} className="bg-gray-100 px-2 py-1 rounded-md text-xs">
+                          {author.avatar} {author.name}
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium">Target Platform</h4>
+                  <div className="mt-1">
+                    {platforms.find(p => p.id === selectedPlatform)?.name || "None selected"}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium">Duration</h4>
+                  <div className="mt-1">
+                    {durationOptions.find(d => d.value === duration)?.label || "Not specified"}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium">Frequency</h4>
+                  <div className="mt-1">
+                    {planType === "ember" ? "1 post per day" : "Up to 3 posts per day"}
+                  </div>
+                </div>
+                
+                {customTemplateInstructions && selectedTemplates.includes("custom") && (
+                  <div>
+                    <h4 className="text-sm font-medium">Custom Template Instructions</h4>
+                    <div className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded-md text-xs">
+                      {customTemplateInstructions}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <DialogFooter className={isSuccess ? "justify-center" : ""}>
+              {isSuccess ? (
+                <div className="text-center py-4">
+                  <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                  <p className="text-lg font-semibold text-green-700">Automation Created Successfully!</p>
+                  <p className="text-sm text-gray-500 mt-1">Redirecting to your schedule...</p>
+                </div>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setReviewOpen(false)}>
+                    Go Back
+                  </Button>
+                  <Button onClick={createAutomation}>
+                    Create Automation
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
