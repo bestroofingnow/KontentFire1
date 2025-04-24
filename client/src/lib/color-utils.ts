@@ -60,5 +60,15 @@ export function rgbaString(r: number, g: number, b: number, alpha: number): stri
  * @returns RGBA string using primary color
  */
 export function primaryRgba(alpha: number): string {
-  return `rgba(var(--primary-rgb), ${alpha})`;
+  // For framer-motion animations, we need actual color values rather than CSS variables
+  // Extract the RGB values from the computed style
+  const rootStyles = getComputedStyle(document.documentElement);
+  const primaryRgb = rootStyles.getPropertyValue('--primary-rgb').trim();
+  
+  if (primaryRgb) {
+    return `rgba(${primaryRgb}, ${alpha})`;
+  }
+  
+  // Fallback to our theme's primary orange if the CSS variable isn't available yet
+  return `rgba(255, 91, 46, ${alpha})`;
 }

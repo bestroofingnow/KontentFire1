@@ -1,6 +1,7 @@
 import React, { ReactNode, useState } from 'react';
 import { motion, MotionProps, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { primaryRgba } from '@/lib/color-utils';
 
 export type HoverEffectType = 
   | 'scale' 
@@ -32,12 +33,24 @@ const InteractiveHover: React.FC<InteractiveHoverProps> = ({
   effect = 'scale',
   intensity = 'medium',
   disabled = false,
-  glowColor = 'rgba(var(--primary-rgb), 0.5)',
-  highlightColor = 'rgba(var(--primary-rgb), 0.1)',
+  glowColor,
+  highlightColor,
   delay = 0,
   onClick,
   ...motionProps
 }) => {
+  // Generate colors from primary color to avoid CSS variable issues
+  const [actualGlowColor, setActualGlowColor] = useState(glowColor || 'rgba(255, 91, 46, 0.5)');
+  const [actualHighlightColor, setActualHighlightColor] = useState(highlightColor || 'rgba(255, 91, 46, 0.1)');
+  
+  // Update colors on client-side to get actual computed values
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setActualGlowColor(glowColor || primaryRgba(0.5));
+      setActualHighlightColor(highlightColor || primaryRgba(0.1));
+    }
+  }, [glowColor, highlightColor]);
+  
   const [isHovered, setIsHovered] = useState(false);
   const [magnetPosition, setMagnetPosition] = useState({ x: 0, y: 0 });
 
@@ -126,18 +139,18 @@ const InteractiveHover: React.FC<InteractiveHoverProps> = ({
     },
     glow: {
       initial: {
-        boxShadow: `0 0 0px transparent`,
+        boxShadow: `0 0 0px rgba(0, 0, 0, 0)`,
         transition: { delay }
       },
       hover: {
-        boxShadow: `0 0 20px ${glowColor}`,
+        boxShadow: `0 0 20px ${actualGlowColor}`,
         transition: { delay }
       }
     },
     lift: {
       initial: {
         y: 0,
-        boxShadow: '0 0 0px transparent',
+        boxShadow: '0 0 0px rgba(0, 0, 0, 0)',
         transition: { 
           type: 'spring', 
           stiffness: 300, 
@@ -239,11 +252,11 @@ const InteractiveHover: React.FC<InteractiveHoverProps> = ({
     },
     highlight: {
       initial: {
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(0, 0, 0, 0)',
         transition: { delay }
       },
       hover: {
-        backgroundColor: highlightColor,
+        backgroundColor: actualHighlightColor,
         transition: { delay }
       }
     },

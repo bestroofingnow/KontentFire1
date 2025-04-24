@@ -10,8 +10,8 @@ import { primaryRgba } from '@/lib/color-utils';
 import { Icons } from '@/components/icons';
 
 const InteractiveDemoPage = () => {
-  const [selectedEffect, setSelectedEffect] = useState<HoverEffectType>('scale');
-  const [intensity, setIntensity] = useState<'light' | 'medium' | 'strong'>('medium');
+  const [selectedEffect, setSelectedEffect] = useState<HoverEffectType>('pulse');
+  const [intensity, setIntensity] = useState<'light' | 'medium' | 'strong'>('strong');
 
   const effectOptions: { value: HoverEffectType; label: string; description: string }[] = [
     { value: 'scale', label: 'Scale', description: 'Smoothly increases the size on hover' },
@@ -124,7 +124,7 @@ const InteractiveDemoPage = () => {
                     <div className="flex flex-col items-center space-y-4">
                       <h3 className="text-lg font-medium">Button</h3>
                       <InteractiveHover effect={selectedEffect} intensity={intensity}>
-                        <Button size="lg" className="w-full">
+                        <Button size="lg" className="w-full bg-primary text-white hover:bg-primary/90">
                           Hover Me
                         </Button>
                       </InteractiveHover>
@@ -149,7 +149,7 @@ const InteractiveDemoPage = () => {
                     <div className="flex flex-col items-center space-y-4">
                       <h3 className="text-lg font-medium">Icon</h3>
                       <InteractiveHover effect={selectedEffect} intensity={intensity}>
-                        <div className="p-6 rounded-full bg-muted">
+                        <div className="p-6 rounded-full bg-neutral-100">
                           <Icons.flame className="h-8 w-8 text-primary" />
                         </div>
                       </InteractiveHover>
@@ -159,7 +159,7 @@ const InteractiveDemoPage = () => {
                     <div className="flex flex-col items-center space-y-4">
                       <h3 className="text-lg font-medium">Image</h3>
                       <InteractiveHover effect={selectedEffect} intensity={intensity}>
-                        <div className="w-full h-32 rounded-md bg-gradient-to-r from-primary/20 to-primary/60 flex items-center justify-center">
+                        <div className="w-full h-32 rounded-md bg-gradient-to-r from-primary/30 to-primary/60 flex items-center justify-center">
                           <span className="text-white font-medium">Image Placeholder</span>
                         </div>
                       </InteractiveHover>
