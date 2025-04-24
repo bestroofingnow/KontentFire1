@@ -3,6 +3,15 @@ import { relations } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
+// Social media platform enum
+export const socialPlatformEnum = pgEnum('social_platform', [
+  'facebook',
+  'instagram',
+  'twitter',
+  'linkedin',
+  'pinterest'
+]);
+
 // Plan type enum
 export const planTypeEnum = pgEnum('plan_type', [
   'blaze',
