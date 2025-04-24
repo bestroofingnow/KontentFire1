@@ -1,266 +1,216 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Facebook, Image, Loader2, X } from 'lucide-react';
+import { useFacebookSDK } from './facebook-sdk-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Facebook, Link, Image } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-import { PlatformIntegration } from '@shared/schema';
-
-// Define the form schema for Facebook post
-const facebookPostSchema = z.object({
-  pageId: z.string().min(1, "Please select a Facebook page"),
-  message: z.string().min(1, "Message is required"),
-  link: z.string().url("Please enter a valid URL").optional().or(z.literal('')),
-  imageUrl: z.string().url("Please enter a valid image URL").optional().or(z.literal('')),
-});
-
-type FacebookPostFormValues = z.infer<typeof facebookPostSchema>;
 
 interface FacebookPostProps {
-  content?: string;
-  onSuccess?: (postUrl: string) => void;
+  initialText?: string;
+  initialImage?: string;
+  onSuccess?: (response: any) => void;
+  onError?: (error: Error) => void;
+  className?: string;
 }
 
-const FacebookPost: React.FC<FacebookPostProps> = ({ content = '', onSuccess }) => {
+const FacebookPost: React.FC<FacebookPostProps> = ({
+  initialText = '',
+  initialImage = '',
+  onSuccess,
+  onError,
+  className = ''
+}) => {
+  const { FB, isLoaded } = useFacebookSDK();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(initialText);
+  const [imageUrl, setImageUrl] = useState(initialImage);
+  const [tempImageUrl, setTempImageUrl] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+  const [showImageInput, setShowImageInput] = useState(false);
 
-  // Fetch Facebook pages
-  const { data: integrations, isLoading } = useQuery<PlatformIntegration[]>({
-    queryKey: ['/api/integrations/facebook'],
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
+  const handleAddImage = () => {
+    if (tempImageUrl) {
+      setImageUrl(tempImageUrl);
+      setTempImageUrl('');
+      setShowImageInput(false);
+    }
+  };
 
-  // Initialize form
-  const form = useForm<FacebookPostFormValues>({
-    resolver: zodResolver(facebookPostSchema),
-    defaultValues: {
-      pageId: '',
-      message: content,
-      link: '',
-      imageUrl: '',
-    },
-  });
+  const handleRemoveImage = () => {
+    setImageUrl('');
+  };
 
-  // Mutation for posting to Facebook
-  const postMutation = useMutation({
-    mutationFn: async (values: FacebookPostFormValues) => {
-      const response = await apiRequest('POST', `/api/integrations/facebook/${values.pageId}/post`, {
-        message: values.message,
-        link: values.link || undefined,
-        imageUrl: values.imageUrl || undefined,
-      });
-      return response.json();
-    },
-    onSuccess: (data) => {
+  const handlePost = async () => {
+    if (!isLoaded || !FB) {
       toast({
-        title: 'Posted to Facebook',
-        description: 'Your content has been successfully posted to Facebook.',
+        title: "Facebook SDK Not Loaded",
+        description: "Please try again later.",
+        variant: "destructive"
       });
-      
-      setOpen(false);
-      
-      if (onSuccess && data.post_url) {
-        onSuccess(data.post_url);
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error posting to Facebook',
-        description: error.message || 'An error occurred while posting to Facebook.',
-        variant: 'destructive',
-      });
-    },
-  });
+      onError?.(new Error('Facebook SDK not loaded'));
+      return;
+    }
 
-  // Form submission handler
-  const onSubmit = (values: FacebookPostFormValues) => {
-    postMutation.mutate(values);
+    if (!text.trim() && !imageUrl) {
+      toast({
+        title: "Empty Post",
+        description: "Please add some text or an image to your post.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsPosting(true);
+
+    try {
+      // Get user's pages
+      FB.api('/me/accounts', async (pagesResponse: any) => {
+        if (pagesResponse.error) {
+          throw new Error(pagesResponse.error.message || 'Failed to get Facebook pages');
+        }
+
+        if (!pagesResponse.data || pagesResponse.data.length === 0) {
+          throw new Error('No Facebook pages found to post to');
+        }
+
+        // For now, use the first page 
+        // In a real app, you would let the user choose which page to post to
+        const page = pagesResponse.data[0];
+        const pageAccessToken = page.access_token;
+        const pageId = page.id;
+
+        try {
+          // Use our backend to make the post to avoid CORS issues and for security
+          const response = await apiRequest('POST', '/api/integrations/facebook/post', {
+            text,
+            imageUrl,
+            pageId,
+            pageAccessToken,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to post to Facebook');
+          }
+
+          const result = await response.json();
+          
+          toast({
+            title: "Posted Successfully",
+            description: "Your content has been posted to Facebook.",
+          });
+          
+          // Reset form
+          setText('');
+          setImageUrl('');
+          
+          onSuccess?.(result);
+        } catch (error) {
+          toast({
+            title: "Post Failed",
+            description: (error as Error).message,
+            variant: "destructive"
+          });
+          onError?.(error as Error);
+        }
+      });
+    } catch (error) {
+      toast({
+        title: "Post Failed",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+      onError?.(error as Error);
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center space-x-2">
-          <Facebook className="h-5 w-5 text-blue-600" />
-          <span>Post to Facebook</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <Facebook className="h-5 w-5 mr-2 text-blue-600" />
-            Post to Facebook
-          </DialogTitle>
-          <DialogDescription>
-            Share your content directly to one of your Facebook pages.
-          </DialogDescription>
-        </DialogHeader>
+    <Card className={`shadow-md ${className}`}>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center text-lg">
+          <Facebook className="h-5 w-5 text-blue-600 mr-2" />
+          Post to Facebook
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Textarea
+          placeholder="What's on your mind?"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="min-h-[120px] border-gray-300 focus:border-blue-500"
+          disabled={isPosting}
+        />
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="pageId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Select Facebook Page</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                    disabled={isLoading || !integrations || integrations.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a Facebook page" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {isLoading ? (
-                        <SelectItem value="loading" disabled>Loading pages...</SelectItem>
-                      ) : integrations && integrations.length > 0 ? (
-                        integrations.map((integration) => (
-                          <SelectItem 
-                            key={integration.accountId} 
-                            value={integration.accountId}
-                          >
-                            {integration.accountName}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="none" disabled>No Facebook pages connected</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    {!integrations || integrations.length === 0 ? (
-                      <span className="text-red-500">
-                        Connect a Facebook page first in the settings.
-                      </span>
-                    ) : "Choose the Facebook page to post to."}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+        {imageUrl && (
+          <div className="relative">
+            <img 
+              src={imageUrl} 
+              alt="Post" 
+              className="w-full h-auto rounded-md mt-3 border border-gray-200" 
             />
-
-            <FormField
-              control={form.control}
-              name="message"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Message</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="What would you like to share on Facebook?"
-                      className="min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute top-2 right-2 h-8 w-8 bg-white rounded-full"
+              onClick={handleRemoveImage}
+              disabled={isPosting}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
+        {showImageInput && !imageUrl && (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Enter image URL"
+              value={tempImageUrl}
+              onChange={(e) => setTempImageUrl(e.target.value)}
+              className="flex-1 px-3 py-2 border rounded-md"
+              disabled={isPosting}
             />
-
-            <FormField
-              control={form.control}
-              name="link"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Link (Optional)</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center space-x-2">
-                      <Link className="h-4 w-4 text-gray-500" />
-                      <Input 
-                        placeholder="https://example.com/your-link"
-                        type="url"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Add a link to your post.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image URL (Optional)</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center space-x-2">
-                      <Image className="h-4 w-4 text-gray-500" />
-                      <Input 
-                        placeholder="https://example.com/your-image.jpg"
-                        type="url"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Add an image to your post.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button 
-                type="submit" 
-                disabled={postMutation.isPending || !integrations || integrations.length === 0}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {postMutation.isPending ? (
-                  <div className="flex items-center">
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                    Posting...
-                  </div>
-                ) : (
-                  'Post to Facebook'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+            <Button 
+              variant="outline" 
+              onClick={handleAddImage}
+              disabled={!tempImageUrl.trim() || isPosting}
+            >
+              Add
+            </Button>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="border-t pt-4 flex justify-between">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowImageInput(!showImageInput)}
+          disabled={isPosting || !!imageUrl}
+        >
+          <Image className="h-4 w-4 mr-2" />
+          {imageUrl ? 'Image Added' : 'Add Image'}
+        </Button>
+        
+        <Button
+          onClick={handlePost}
+          disabled={isPosting || (!text.trim() && !imageUrl)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          {isPosting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Posting...
+            </>
+          ) : (
+            <>Post</>
+          )}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

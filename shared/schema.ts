@@ -397,6 +397,16 @@ export const insertPlatformIntegrationSchema = createInsertSchema(platformIntegr
 export type InsertPlatformIntegration = z.infer<typeof insertPlatformIntegrationSchema>;
 export type PlatformIntegration = typeof platformIntegrations.$inferSelect;
 
+// Social Account type (for client-side display)
+export interface SocialAccount {
+  id: number;
+  platform: string;
+  platformUsername: string;
+  platformImageUrl?: string;
+  isConnected: boolean;
+  lastUsed?: Date;
+}
+
 // Analytics schemas
 export const insertAnalyticsSchema = createInsertSchema(analytics).omit({ id: true, createdAt: true });
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;

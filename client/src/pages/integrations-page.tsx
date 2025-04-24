@@ -12,6 +12,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { SocialAccount } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import FacebookLoginButton from "@/components/integrations/facebook-login-button";
+import { useFacebookSDK } from "@/components/integrations/facebook-sdk-provider";
 
 interface PlatformInfo {
   name: string;
@@ -24,6 +26,7 @@ interface PlatformInfo {
 export default function IntegrationsPage() {
   const { toast } = useToast();
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
+  const { isLoaded: facebookSdkLoaded } = useFacebookSDK();
   
   // Fetch connected social accounts
   const { data: socialAccounts, isLoading: accountsLoading } = useQuery<SocialAccount[]>({
@@ -209,18 +212,33 @@ export default function IntegrationsPage() {
                           </Button>
                         </div>
                       ) : (
-                        <Button 
-                          className="w-full bg-blue-600 hover:bg-blue-700"
-                          onClick={() => handleConnectPlatform('facebook')}
-                          disabled={!!connectingPlatform}
-                        >
-                          {connectingPlatform === 'facebook' ? 'Connecting...' : (
-                            <>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Connect Facebook
-                            </>
-                          )}
-                        </Button>
+                        facebookSdkLoaded ? (
+                          <FacebookLoginButton 
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            onLoginSuccess={(response) => {
+                              toast({
+                                title: "Facebook Connected",
+                                description: "Successfully connected your Facebook account.",
+                              });
+                              // Refresh social accounts data
+                              queryClient.invalidateQueries({ queryKey: ['/api/social-accounts'] });
+                            }}
+                            onLoginFailure={(error) => {
+                              toast({
+                                title: "Connection Failed",
+                                description: error.message,
+                                variant: "destructive"
+                              });
+                            }}
+                          />
+                        ) : (
+                          <Button 
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            disabled={true}
+                          >
+                            <span className="animate-pulse">Loading Facebook SDK...</span>
+                          </Button>
+                        )
                       )}
                     </CardContent>
                   </Card>
