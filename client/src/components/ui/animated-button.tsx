@@ -67,7 +67,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         scale: [1, 1.03, 1], 
         transition: { 
           repeat: Infinity, 
-          repeatType: 'mirror',
+          repeatType: "mirror" as "mirror" | "loop" | "reverse" | undefined,
           duration: 1 
         } 
       },
@@ -86,7 +86,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     },
     bounce: {
       initial: { y: 0 },
-      hover: { y: [-2, 2, -2], transition: { repeat: Infinity, duration: 0.6 } },
+      hover: { y: [-2, 2, -2], transition: { repeat: Infinity, repeatType: "mirror" as "mirror" | "loop" | "reverse" | undefined, duration: 0.6 } },
     },
     slide: {
       initial: { x: 0 },
@@ -106,7 +106,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
           <motion.div
             className="w-4 h-4 bg-current rounded-full"
             animate={{ scale: [1, 1.5, 1], opacity: [0.6, 1, 0.6] }}
-            transition={{ repeat: Infinity, duration: 1 }}
+            transition={{ repeat: Infinity, repeatType: "mirror" as "mirror" | "loop" | "reverse" | undefined, duration: 1 }}
           />
         );
       case 'dots':
@@ -119,6 +119,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
                 animate={{ y: [0, -4, 0] }}
                 transition={{ 
                   repeat: Infinity,
+                  repeatType: "mirror" as "mirror" | "loop" | "reverse" | undefined,
                   duration: 0.6,
                   delay: i * 0.2,
                 }}
@@ -131,7 +132,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
           <motion.div
             className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
             animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
+            transition={{ repeat: Infinity, repeatType: "loop" as "mirror" | "loop" | "reverse" | undefined, duration: 0.8, ease: 'linear' }}
           />
         );
     }

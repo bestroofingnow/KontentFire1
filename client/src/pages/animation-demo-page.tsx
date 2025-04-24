@@ -68,10 +68,14 @@ const AnimationDemoPage: React.FC = () => {
       info: 'Here\'s some information you should know.',
     };
     
+    // Map our custom variants to toast's limited variant options
+    const toastVariant = variant === 'default' ? 'default' : 
+                         variant === 'error' ? 'destructive' : 'default';
+    
     toast({
       title: titles[variant],
       description: descriptions[variant],
-      variant,
+      variant: toastVariant,
       asChild: true,
       children: (
         <AnimatedToast

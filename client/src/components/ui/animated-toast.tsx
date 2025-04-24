@@ -1,12 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Info, AlertTriangle } from 'lucide-react';
-import { Toast, ToastClose } from '@/components/ui/toast';
+import { Toast, ToastClose, ToastProps } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
+
+type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
 
 interface AnimatedToastProps {
   title: string;
   description?: string;
-  variant?: 'default' | 'success' | 'error' | 'warning' | 'info';
+  variant?: ToastVariant;
   onClose?: () => void;
 }
 
