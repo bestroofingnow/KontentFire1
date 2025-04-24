@@ -18,6 +18,7 @@ import PipelinesPage from "@/pages/pipelines-page";
 import PipelineRunPage from "@/pages/pipeline-run-page";
 import TestAuthPage from "@/pages/test-auth-page";
 import AnimationDemoPage from "@/pages/animation-demo-page";
+import InteractiveDemoPage from "@/pages/interactive-demo-page";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -116,6 +117,9 @@ function App() {
       </Route>
       <Route path="/animation-demo">
         <ProtectedRoute path="/animation-demo" component={AnimationDemoPage} />
+      </Route>
+      <Route path="/interactive-demo">
+        <ProtectedRoute path="/interactive-demo" component={InteractiveDemoPage} />
       </Route>
       <Route>
         <NotFound />

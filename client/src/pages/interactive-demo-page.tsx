@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PageLayout } from '@/components/layouts/page-layout';
+import MainLayout from '@/components/layout/main-layout';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
