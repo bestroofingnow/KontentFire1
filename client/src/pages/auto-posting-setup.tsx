@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { AlertCircle, Calendar, CheckCircle2, ClockIcon, Edit2, Flame, Globe, Info, Settings } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle2, ClockIcon, Edit2, FileText, Flame, Globe, Info, Loader2, Settings, Sparkles, Users } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -656,49 +656,110 @@ export default function AutoPostingSetup() {
             {!isSuccess ? (
               <>
                 <div className="space-y-4 my-2">
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium">Templates:</h3>
-                    <p className="text-sm text-gray-500">
-                      {selectedTemplates.map(id => 
-                        templates.find(t => t.id === id)?.name
-                      ).join(", ")}
-                    </p>
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-center mb-2">
+                      <FileText className="h-5 w-5 text-primary mr-2" />
+                      <h3 className="font-medium text-gray-800">Content Settings</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500">Templates</h4>
+                        <ul className="list-disc pl-4 text-sm mt-1 text-gray-700">
+                          {selectedTemplates.map(id => (
+                            <li key={id} className="text-xs">
+                              {templates.find(t => t.id === id)?.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500">Content Types</h4>
+                        <ul className="list-disc pl-4 text-sm mt-1 text-gray-700">
+                          {selectedContentTypes.map(id => (
+                            <li key={id} className="text-xs">
+                              {contentTypes.find(t => t.id === id)?.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium">Content Types:</h3>
-                    <p className="text-sm text-gray-500">
-                      {selectedContentTypes.map(id => 
-                        contentTypes.find(t => t.id === id)?.name
-                      ).join(", ")}
-                    </p>
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-center mb-2">
+                      <Users className="h-5 w-5 text-primary mr-2" />
+                      <h3 className="font-medium text-gray-800">Writing Styles</h3>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedAuthors.map(id => {
+                        const author = authors.find(a => a.id === id);
+                        return (
+                          <div key={id} className="bg-white border border-gray-200 rounded px-1.5 py-0.5 text-xs flex items-center">
+                            <span className="mr-1">{author?.avatar}</span>
+                            <span>{author?.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                   
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium">Writing Styles:</h3>
-                    <p className="text-sm text-gray-500">
-                      {selectedAuthors.map(id => 
-                        authors.find(a => a.id === id)?.name
-                      ).join(", ")}
-                    </p>
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-center mb-2">
+                      <Globe className="h-5 w-5 text-primary mr-2" />
+                      <h3 className="font-medium text-gray-800">Publishing</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mt-1">
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500">Platform</h4>
+                        <p className="text-xs mt-1 text-gray-700">
+                          {platforms.find(p => p.id === selectedPlatform)?.name}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500">Duration</h4>
+                        <p className="text-xs mt-1 text-gray-700">
+                          {durationOptions.find(d => d.value === duration)?.label}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium">Platform:</h3>
-                    <p className="text-sm text-gray-500">
-                      {platforms.find(p => p.id === selectedPlatform)?.name}
-                    </p>
+                  <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-center mb-2">
+                      <Sparkles className="h-5 w-5 text-primary mr-2" />
+                      <h3 className="font-medium text-gray-800">Enhanced Features</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="flex items-center">
+                        <CheckCircle2 className="h-3 w-3 text-green-500 mr-1.5" />
+                        <span className="text-xs text-gray-700">Company info integration</span>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <CheckCircle2 className="h-3 w-3 text-green-500 mr-1.5" />
+                        <span className="text-xs text-gray-700">Platform formatting</span>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <CheckCircle2 className="h-3 w-3 text-green-500 mr-1.5" />
+                        <span className="text-xs text-gray-700">Hashtags for social</span>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <CheckCircle2 className="h-3 w-3 text-green-500 mr-1.5" />
+                        <span className="text-xs text-gray-700">Optimal word counts</span>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium">Duration:</h3>
-                    <p className="text-sm text-gray-500">
-                      {durationOptions.find(d => d.value === duration)?.label}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-700 flex items-start">
-                    <Info className="h-5 w-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-xs text-blue-700 flex items-start">
+                    <Info className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
                     <p>
                       Starting tomorrow, your content will be automatically created and posted once per day
                       at your selected time. You'll be able to review content before it's published and make
