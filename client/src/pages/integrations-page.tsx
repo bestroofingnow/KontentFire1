@@ -14,6 +14,7 @@ import { SocialAccount } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import FacebookLoginButton from "@/components/integrations/facebook-login-button";
 import FacebookOfficialLoginButton from "@/components/integrations/facebook-official-login-button";
+import FacebookExampleLoginButton from "@/components/integrations/facebook-example-login-button";
 import { useFacebookSDK } from "@/components/integrations/facebook-sdk-provider";
 
 interface PlatformInfo {
@@ -215,7 +216,26 @@ export default function IntegrationsPage() {
                       ) : (
                         facebookSdkLoaded ? (
                           <div className="space-y-4">
-                            <p className="text-sm text-gray-500 mb-2">Connect with the official Facebook button:</p>
+                            <p className="text-sm text-gray-500 mb-2">Connect with the official Facebook example button:</p>
+                            <FacebookExampleLoginButton 
+                              onLoginSuccess={(response) => {
+                                toast({
+                                  title: "Facebook Connected",
+                                  description: "Successfully connected your Facebook account.",
+                                });
+                                // Refresh social accounts data
+                                queryClient.invalidateQueries({ queryKey: ['/api/social-accounts'] });
+                              }}
+                              onLoginFailure={(error) => {
+                                toast({
+                                  title: "Connection Failed",
+                                  description: error.message,
+                                  variant: "destructive"
+                                });
+                              }}
+                            />
+                            
+                            <p className="text-sm text-gray-500 my-2">Or use our official button:</p>
                             <FacebookOfficialLoginButton 
                               onLoginSuccess={(response) => {
                                 toast({

@@ -84,7 +84,14 @@ const FacebookOfficialLoginButton: React.FC<FacebookOfficialLoginButtonProps> = 
       buttonContainerRef.current.appendChild(fbLoginButton);
       
       // Make sure our checkLoginState function is available globally
-      window.checkLoginState = checkLoginState;
+      // Need to make it a regular function, not an async function to fix the error
+      window.checkLoginState = function() {
+        if (FB) {
+          FB.getLoginStatus(function(response) {
+            statusChangeCallback(response);
+          });
+        }
+      };
       
       // Parse XFBML to render the button
       if (FB) {
