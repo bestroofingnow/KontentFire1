@@ -26,7 +26,7 @@ const InteractiveDemoPage = () => {
   ];
 
   return (
-    <PageLayout>
+    <MainLayout>
       <div className="container py-10">
         <div className="flex flex-col gap-8">
           <div>
@@ -171,7 +171,7 @@ const InteractiveDemoPage = () => {
           </div>
         </div>
       </div>
-    </PageLayout>
+    </MainLayout>
   );
 };
 
