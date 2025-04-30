@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Facebook, Instagram, Linkedin, Globe, Loader2 } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Globe, Loader2, Info, AlertCircle } from 'lucide-react';
 import { TutorialSection } from './tutorial-guide';
 
 // Content for Company Profile step
@@ -50,177 +50,129 @@ export const CompanyProfileStep: React.FC = () => {
 
 // Content for Company Colors step
 export const CompanyColorsStep: React.FC = () => {
+  const [_, navigate] = useLocation();
+  
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="primary-color">Primary Color</Label>
-          <div className="flex">
-            <Input
-              id="primary-color"
-              type="color"
-              defaultValue="#FF5B2E"
-              className="w-12 h-12 p-1 rounded-l-md border-r-0"
-            />
-            <Input
-              type="text"
-              defaultValue="#FF5B2E"
-              className="rounded-l-none flex-1"
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="secondary-color">Secondary Color (Optional)</Label>
-          <div className="flex">
-            <Input
-              id="secondary-color"
-              type="color"
-              defaultValue="#0070F3"
-              className="w-12 h-12 p-1 rounded-l-md border-r-0"
-            />
-            <Input
-              type="text"
-              defaultValue="#0070F3"
-              className="rounded-l-none flex-1"
-            />
-          </div>
-        </div>
-      </div>
-      
-      <Alert className="bg-muted/30 mt-4">
-        <AlertDescription>
-          Your brand colors will be used to customize your dashboard and generated content.
+      <Alert className="bg-orange-50 border-orange-200">
+        <AlertDescription className="flex items-center text-orange-800">
+          <AlertCircle className="h-5 w-5 mr-2 text-orange-600" />
+          Choose your brand colors in the Brand Settings tab
         </AlertDescription>
       </Alert>
+      
+      <Card className="border border-primary/20">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+              <h3 className="font-medium">Brand Color Setup</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Set your primary and secondary brand colors to personalize your dashboard and generated content.
+            </p>
+            <div className="flex justify-center mt-2">
+              <Button 
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/settings?tab=brand')}
+              >
+                Go to Brand Settings
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
 // Content for Website and Social Links step
 export const SocialLinksStep: React.FC = () => {
+  const [_, navigate] = useLocation();
+  
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="website-url">Website URL</Label>
-          <Input id="website-url" placeholder="https://yourcompany.com" />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="facebook-url" className="flex items-center">
-            <Facebook className="h-4 w-4 mr-2 text-blue-600" />
-            Facebook Page URL
-          </Label>
-          <Input id="facebook-url" placeholder="https://facebook.com/yourcompany" />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="instagram-url" className="flex items-center">
-            <Instagram className="h-4 w-4 mr-2 text-pink-600" />
-            Instagram Profile URL
-          </Label>
-          <Input id="instagram-url" placeholder="https://instagram.com/yourcompany" />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="linkedin-url" className="flex items-center">
-            <Linkedin className="h-4 w-4 mr-2 text-blue-700" />
-            LinkedIn Page URL
-          </Label>
-          <Input id="linkedin-url" placeholder="https://linkedin.com/company/yourcompany" />
-        </div>
-      </div>
+      <Alert className="bg-purple-50 border-purple-200">
+        <AlertDescription className="flex items-center text-purple-800">
+          <Info className="h-5 w-5 mr-2 text-purple-600" />
+          Add your website and social media information in the Integrations page
+        </AlertDescription>
+      </Alert>
+      
+      <Card className="border border-primary/20">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Globe className="h-5 w-5 text-primary" />
+              <h3 className="font-medium">Connect Your Web Presence</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Connect your website and social media accounts to allow Kontent Fire to share your content across multiple platforms.
+            </p>
+            <div className="flex justify-center mt-4 space-x-3">
+              <Facebook className="h-8 w-8 text-blue-600" />
+              <Instagram className="h-8 w-8 text-pink-600" />
+              <Linkedin className="h-8 w-8 text-blue-700" />
+            </div>
+            <div className="flex justify-center mt-2">
+              <Button 
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/integrations')}
+              >
+                Go to Integrations
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
 // Content for First Auto Post step
 export const AutoPostConfigStep: React.FC = () => {
+  const [_, navigate] = useLocation();
+  
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="post-frequency">Posting Frequency</Label>
-          <Select>
-            <SelectTrigger id="post-frequency">
-              <SelectValue placeholder="Select frequency" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="biweekly">Bi-Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="content-topics">Content Topics</Label>
-          <Select>
-            <SelectTrigger id="content-topics">
-              <SelectValue placeholder="Select primary topic" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="industry-news">Industry News</SelectItem>
-              <SelectItem value="product-updates">Product Updates</SelectItem>
-              <SelectItem value="tips-advice">Tips & Advice</SelectItem>
-              <SelectItem value="company-news">Company News</SelectItem>
-              <SelectItem value="customer-stories">Customer Stories</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="content-tone">Content Tone</Label>
-          <Select>
-            <SelectTrigger id="content-tone">
-              <SelectValue placeholder="Select tone" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="professional">Professional</SelectItem>
-              <SelectItem value="casual">Casual</SelectItem>
-              <SelectItem value="friendly">Friendly</SelectItem>
-              <SelectItem value="authoritative">Authoritative</SelectItem>
-              <SelectItem value="humorous">Humorous</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="content-template">Content Template</Label>
-          <Select>
-            <SelectTrigger id="content-template">
-              <SelectValue placeholder="Select template" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="standard">Standard</SelectItem>
-              <SelectItem value="battle-royale">Battle Royale</SelectItem>
-              <SelectItem value="basics-101">Basics 101</SelectItem>
-              <SelectItem value="myth-buster">Myth Buster</SelectItem>
-              <SelectItem value="technical-guide">Technical Guide</SelectItem>
-              <SelectItem value="case-against">Case Against</SelectItem>
-              <SelectItem value="checklist">Checklist</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="author-selection">Author</Label>
-          <Select>
-            <SelectTrigger id="author-selection">
-              <SelectValue placeholder="Select author" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="system">System Default</SelectItem>
-              <SelectItem value="parker-cohn">Parker Cohn</SelectItem>
-              <SelectItem value="michelle-taylor">Michelle Taylor</SelectItem>
-              <SelectItem value="james-peterson">James Peterson</SelectItem>
-              <SelectItem value="add-new">+ Add New Author</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <Alert className="bg-green-50 border-green-200">
+        <AlertDescription className="flex items-center text-green-800">
+          <Info className="h-5 w-5 mr-2 text-green-600" />
+          Create your first automated content schedule in the Content Manager
+        </AlertDescription>
+      </Alert>
+      
+      <Card className="border border-primary/20">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <h3 className="font-medium">Content Automation</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Set up automated content creation with your preferred topics, tone, and posting frequency.
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center mt-3">
+              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">Industry News</span>
+              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">Professional</span>
+              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">Weekly</span>
+              <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">Standard</span>
+            </div>
+            <div className="flex justify-center mt-2">
+              <Button 
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/content')}
+              >
+                Go to Content Manager
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
@@ -269,21 +221,39 @@ export const FacebookConnectStep: React.FC = () => {
 
 // Content for First Post Preview step
 export const FirstPostPreviewStep: React.FC = () => {
+  const [_, navigate] = useLocation();
+  
   return (
     <div className="space-y-4">
-      <Card className="bg-primary/5 border border-primary/20">
+      <Alert className="bg-amber-50 border-amber-200">
+        <AlertDescription className="flex items-center text-amber-800">
+          <Info className="h-5 w-5 mr-2 text-amber-600" />
+          Generate your first AI-powered content in the Content Creation page
+        </AlertDescription>
+      </Alert>
+      
+      <Card className="border border-primary/20">
         <CardContent className="pt-6">
           <div className="space-y-4">
-            <Label htmlFor="post-preview">Your First Post</Label>
-            <Textarea
-              id="post-preview"
-              className="min-h-[120px]"
-              placeholder="AI will generate your post here based on your company profile and settings..."
-              readOnly
-            />
-            <div className="flex justify-end">
-              <Button className="bg-primary text-white hover:bg-primary/90">
-                Generate Sample Post
+            <div className="flex items-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <h3 className="font-medium">AI Content Creation</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Generate optimized content for multiple platforms using our advanced AI engine. 
+              Preview and edit before publishing.
+            </p>
+            <div className="bg-gray-50 p-3 rounded-md mt-2 text-xs text-gray-600 italic">
+              "AI-generated content tailored to your brand voice, industry, and target audience..."
+            </div>
+            <div className="flex justify-center mt-2">
+              <Button 
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/content/create')}
+              >
+                Create Content Now
               </Button>
             </div>
           </div>
@@ -295,33 +265,44 @@ export const FirstPostPreviewStep: React.FC = () => {
 
 // Content for Schedule Setup step
 export const ScheduleSetupStep: React.FC = () => {
+  const [_, navigate] = useLocation();
+  
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4">
-        <div className="space-y-2">
-          <Label>When to Post</Label>
-          <div className="flex items-center space-x-2">
-            <input type="radio" id="best-time" name="posting-time" className="rounded text-primary" />
-            <Label htmlFor="best-time" className="cursor-pointer">Use AI to determine best posting times</Label>
+      <Alert className="bg-indigo-50 border-indigo-200">
+        <AlertDescription className="flex items-center text-indigo-800">
+          <Info className="h-5 w-5 mr-2 text-indigo-600" />
+          Configure your posting schedule in the Scheduler section
+        </AlertDescription>
+      </Alert>
+      
+      <Card className="border border-primary/20">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <h3 className="font-medium">Schedule Setup</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Set up your optimal posting schedule and let AI determine the best times to reach your audience.
+            </p>
+            <div className="flex justify-between items-center p-2 bg-gray-50 rounded-md text-sm mt-3">
+              <span className="text-gray-600">AI-driven posting times</span>
+              <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Recommended</span>
+            </div>
+            <div className="flex justify-center mt-2">
+              <Button 
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/scheduler')}
+              >
+                Go to Scheduler
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <input type="radio" id="specific-time" name="posting-time" className="rounded text-primary" />
-            <Label htmlFor="specific-time" className="cursor-pointer">Choose specific posting times</Label>
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="default-hashtags">Default Hashtags (optional)</Label>
-          <Input id="default-hashtags" placeholder="#yourbrand #industry #keyword" />
-          <p className="text-xs text-muted-foreground mt-1">Separate hashtags with spaces</p>
-        </div>
-        
-        <div className="flex justify-center mt-2">
-          <Button className="bg-primary text-white hover:bg-primary/90">
-            Enable Auto Posting
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
