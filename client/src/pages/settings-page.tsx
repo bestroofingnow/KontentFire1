@@ -87,11 +87,24 @@ export default function SettingsPage() {
     brandGuidelines: string;
   };
 
-  type BrandVoice = {
-    toneOfVoice: 'professional' | 'casual' | 'friendly' | 'formal';
+  type CustomVoice = {
+    id: string;
+    name: string;
+    description: string;
     formalityLevel: number;
     enthusiasmLevel: number;
     creativityLevel: number;
+    examples: string;
+    isActive: boolean;
+  };
+
+  type BrandVoice = {
+    toneOfVoice: 'professional' | 'casual' | 'friendly' | 'formal' | 'custom';
+    formalityLevel: number;
+    enthusiasmLevel: number;
+    creativityLevel: number;
+    customVoices: CustomVoice[];
+    activeCustomVoiceId?: string;
   };
 
   type BrandStory = {
@@ -314,6 +327,8 @@ export default function SettingsPage() {
             formalityLevel: 50,
             enthusiasmLevel: 50,
             creativityLevel: 50,
+            customVoices: [],
+            activeCustomVoiceId: undefined,
           },
           story: {
             sections: [],
@@ -340,6 +355,8 @@ export default function SettingsPage() {
     formalityLevel: 50,
     enthusiasmLevel: 50,
     creativityLevel: 50,
+    customVoices: [],
+    activeCustomVoiceId: undefined,
   });
   
   const [story, setStory] = useState<BrandStory>({
@@ -1259,6 +1276,14 @@ export default function SettingsPage() {
                                   <h3 className="font-medium mb-1">Formal</h3>
                                   <p className="text-sm text-muted-foreground">Traditional and structured, emphasizing respect</p>
                                 </div>
+
+                                <div 
+                                  className={`border rounded-lg p-4 cursor-pointer transition-all ${voice.toneOfVoice === 'custom' ? 'border-primary bg-primary/5' : 'border-border'}`}
+                                  onClick={() => setVoice({ ...voice, toneOfVoice: 'custom' })}
+                                >
+                                  <h3 className="font-medium mb-1">Custom Voice</h3>
+                                  <p className="text-sm text-muted-foreground">Create and use your own personalized brand voices</p>
+                                </div>
                               </div>
                             </div>
                             
@@ -1308,6 +1333,216 @@ export default function SettingsPage() {
                                 />
                               </div>
                             </div>
+                            
+                            {/* Custom Voice Manager (only shown when "Custom" tone is selected) */}
+                            {voice.toneOfVoice === 'custom' && (
+                              <div className="mt-8 border rounded-lg p-6 space-y-6">
+                                <div className="flex justify-between items-center">
+                                  <h3 className="text-lg font-medium">Custom Voice Manager</h3>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      const newCustomVoice: CustomVoice = {
+                                        id: `voice-${Date.now()}`,
+                                        name: "New Custom Voice",
+                                        description: "Description of this voice's characteristics and use cases",
+                                        formalityLevel: voice.formalityLevel,
+                                        enthusiasmLevel: voice.enthusiasmLevel,
+                                        creativityLevel: voice.creativityLevel,
+                                        examples: "",
+                                        isActive: false
+                                      };
+                                      
+                                      setVoice({
+                                        ...voice,
+                                        customVoices: [...voice.customVoices, newCustomVoice]
+                                      });
+                                    }}
+                                  >
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Create New Voice
+                                  </Button>
+                                </div>
+                                
+                                {voice.customVoices.length === 0 ? (
+                                  <div className="text-center py-8 bg-muted/10">
+                                    <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+                                    <h4 className="font-medium mb-1">No custom voices yet</h4>
+                                    <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                                      Create custom brand voices with unique personalities to use across different content types
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-4">
+                                    {voice.customVoices.map((customVoice) => (
+                                      <div 
+                                        key={customVoice.id} 
+                                        className={`border rounded-lg p-4 ${customVoice.id === voice.activeCustomVoiceId ? 'border-primary' : ''}`}
+                                      >
+                                        <div className="flex justify-between items-start mb-4">
+                                          <div className="space-y-2 flex-1 mr-4">
+                                            <Label htmlFor={`voice-name-${customVoice.id}`}>Voice Name</Label>
+                                            <Input
+                                              id={`voice-name-${customVoice.id}`}
+                                              value={customVoice.name}
+                                              onChange={(e) => {
+                                                const updatedVoices = voice.customVoices.map(v => 
+                                                  v.id === customVoice.id 
+                                                    ? { ...v, name: e.target.value } 
+                                                    : v
+                                                );
+                                                setVoice({ ...voice, customVoices: updatedVoices });
+                                              }}
+                                            />
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => {
+                                                const updatedVoices = voice.customVoices.map(v => 
+                                                  v.id === customVoice.id 
+                                                    ? { ...v, isActive: true } 
+                                                    : { ...v, isActive: false }
+                                                );
+                                                setVoice({ 
+                                                  ...voice, 
+                                                  customVoices: updatedVoices,
+                                                  activeCustomVoiceId: customVoice.id 
+                                                });
+                                              }}
+                                            >
+                                              {customVoice.id === voice.activeCustomVoiceId ? 'Active' : 'Set Active'}
+                                            </Button>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm" 
+                                              className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                              onClick={() => {
+                                                const updatedVoices = voice.customVoices.filter(v => v.id !== customVoice.id);
+                                                setVoice({ 
+                                                  ...voice, 
+                                                  customVoices: updatedVoices,
+                                                  activeCustomVoiceId: updatedVoices.length > 0 && voice.activeCustomVoiceId === customVoice.id 
+                                                    ? updatedVoices[0].id 
+                                                    : voice.activeCustomVoiceId
+                                                });
+                                              }}
+                                            >
+                                              Remove
+                                            </Button>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`voice-desc-${customVoice.id}`}>Description</Label>
+                                            <Textarea
+                                              id={`voice-desc-${customVoice.id}`}
+                                              value={customVoice.description}
+                                              onChange={(e) => {
+                                                const updatedVoices = voice.customVoices.map(v => 
+                                                  v.id === customVoice.id 
+                                                    ? { ...v, description: e.target.value } 
+                                                    : v
+                                                );
+                                                setVoice({ ...voice, customVoices: updatedVoices });
+                                              }}
+                                              placeholder="Describe the characteristics and use cases for this voice"
+                                              className="min-h-[80px]"
+                                            />
+                                          </div>
+                                          
+                                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="space-y-2">
+                                              <div className="flex justify-between">
+                                                <Label>Formality</Label>
+                                                <span className="text-sm text-muted-foreground">{customVoice.formalityLevel}%</span>
+                                              </div>
+                                              <Slider
+                                                min={0}
+                                                max={100}
+                                                step={1}
+                                                value={[customVoice.formalityLevel]}
+                                                onValueChange={(value) => {
+                                                  const updatedVoices = voice.customVoices.map(v => 
+                                                    v.id === customVoice.id 
+                                                      ? { ...v, formalityLevel: value[0] } 
+                                                      : v
+                                                  );
+                                                  setVoice({ ...voice, customVoices: updatedVoices });
+                                                }}
+                                              />
+                                            </div>
+                                            
+                                            <div className="space-y-2">
+                                              <div className="flex justify-between">
+                                                <Label>Enthusiasm</Label>
+                                                <span className="text-sm text-muted-foreground">{customVoice.enthusiasmLevel}%</span>
+                                              </div>
+                                              <Slider
+                                                min={0}
+                                                max={100}
+                                                step={1}
+                                                value={[customVoice.enthusiasmLevel]}
+                                                onValueChange={(value) => {
+                                                  const updatedVoices = voice.customVoices.map(v => 
+                                                    v.id === customVoice.id 
+                                                      ? { ...v, enthusiasmLevel: value[0] } 
+                                                      : v
+                                                  );
+                                                  setVoice({ ...voice, customVoices: updatedVoices });
+                                                }}
+                                              />
+                                            </div>
+                                            
+                                            <div className="space-y-2">
+                                              <div className="flex justify-between">
+                                                <Label>Creativity</Label>
+                                                <span className="text-sm text-muted-foreground">{customVoice.creativityLevel}%</span>
+                                              </div>
+                                              <Slider
+                                                min={0}
+                                                max={100}
+                                                step={1}
+                                                value={[customVoice.creativityLevel]}
+                                                onValueChange={(value) => {
+                                                  const updatedVoices = voice.customVoices.map(v => 
+                                                    v.id === customVoice.id 
+                                                      ? { ...v, creativityLevel: value[0] } 
+                                                      : v
+                                                  );
+                                                  setVoice({ ...voice, customVoices: updatedVoices });
+                                                }}
+                                              />
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`voice-examples-${customVoice.id}`}>Sample Writing (Optional)</Label>
+                                            <Textarea
+                                              id={`voice-examples-${customVoice.id}`}
+                                              value={customVoice.examples}
+                                              onChange={(e) => {
+                                                const updatedVoices = voice.customVoices.map(v => 
+                                                  v.id === customVoice.id 
+                                                    ? { ...v, examples: e.target.value } 
+                                                    : v
+                                                );
+                                                setVoice({ ...voice, customVoices: updatedVoices });
+                                              }}
+                                              placeholder="Add example text that showcases this voice style to help the AI understand it better"
+                                              className="min-h-[120px]"
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             
                             <div className="pt-4 flex justify-end">
                               <InteractiveHover effect="pulse" intensity="medium">
