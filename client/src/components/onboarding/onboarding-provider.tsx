@@ -3,6 +3,33 @@ import { useAuth } from '@/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
 import GetStartedPopup from './get-started-popup';
 
+// Interface definitions for API data
+interface CompanyProfile {
+  id?: number;
+  name: string;
+  industry: string;
+  description?: string;
+  logoUrl?: string;
+  websiteUrl?: string;
+  foundedYear?: number;
+  size?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
+interface BrandSettings {
+  id?: number;
+  voice: string;
+  primaryColor: string;
+  secondaryColor?: string;
+  tone?: string;
+  targetAudience?: string;
+  messagingGuidelines?: string;
+  brandValues?: string[];
+  brandStory?: string;
+}
+
 type OnboardingProviderProps = {
   children: React.ReactNode;
 };
@@ -16,16 +43,30 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
   const [showGetStarted, setShowGetStarted] = useState(false);
   
   // Get company profile data
-  const { data: companyProfile } = useQuery({
+  const { data: companyProfile } = useQuery<CompanyProfile | undefined>({
     queryKey: ['/api/company-profile'],
     enabled: !!user,
   });
   
   // Get brand settings data
-  const { data: brandSettings } = useQuery({
+  const { data: brandSettings } = useQuery<BrandSettings | undefined>({
     queryKey: ['/api/brand-settings'],
     enabled: !!user,
   });
+  
+  // Cast data to proper types - using type assertion for API response data
+  const profileData = companyProfile as CompanyProfile | undefined;
+  const brandData = brandSettings as BrandSettings | undefined;
+  
+  // Flag for whether company profile is complete
+  const hasCompanyProfile = !!(profileData && 
+    profileData.name && 
+    profileData.industry);
+  
+  // Flag for whether brand settings are complete
+  const hasBrandSettings = !!(brandData && 
+    brandData.voice && 
+    brandData.primaryColor);
   
   useEffect(() => {
     // Don't show for admin users
@@ -33,16 +74,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     
     // Check if user has already dismissed the popup
     const isDismissed = localStorage.getItem('onboardingDismissed') === 'true';
-    
-    // Check if user has completed their profile
-    const hasCompanyProfile = !!companyProfile && 
-      !!companyProfile.name && 
-      !!companyProfile.industry;
-    
-    // Check if user has set up brand settings
-    const hasBrandSettings = !!brandSettings && 
-      !!brandSettings.voice && 
-      !!brandSettings.primaryColor;
     
     // Show popup if not dismissed and either company profile or brand settings are incomplete
     const shouldShow = !isDismissed && (!hasCompanyProfile || !hasBrandSettings);
@@ -53,7 +84,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [user, companyProfile, brandSettings]);
+  }, [user, hasCompanyProfile, hasBrandSettings]);
   
   // Handle popup close
   const handleCloseGetStarted = () => {
@@ -69,16 +100,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({ children
           userName={user.username}
           isOpen={showGetStarted}
           onClose={handleCloseGetStarted}
-          hasCompanyProfile={
-            !!companyProfile && 
-            !!companyProfile.name && 
-            !!companyProfile.industry
-          }
-          hasBrandSettings={
-            !!brandSettings && 
-            !!brandSettings.voice && 
-            !!brandSettings.primaryColor
-          }
+          hasCompanyProfile={hasCompanyProfile}
+          hasBrandSettings={hasBrandSettings}
         />
       )}
     </>

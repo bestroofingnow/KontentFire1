@@ -288,7 +288,7 @@ export const GetStartedPopup: React.FC<GetStartedPopupProps> = ({
                     <div className="space-y-4">
                       <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
                         <AnimatedBadge effect="tada" animate={true} variant="success" className="mb-2">
-                          Ready to go!
+                          <span>Ready to go!</span>
                         </AnimatedBadge>
                         <p className="text-sm">
                           You've completed all the essential setup steps. Now you can start creating amazing content with Kontent Fire!
