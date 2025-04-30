@@ -139,7 +139,11 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
                 variant="ghost" 
                 size="sm" 
                 className="h-8 w-8 p-0" 
-                onClick={onSkip}
+                onClick={() => {
+                  if (onSkip) onSkip();
+                  onClose();
+                }}
+                type="button"
               >
                 <span className="sr-only">Skip tutorial</span>
                 <X className="h-4 w-4" />

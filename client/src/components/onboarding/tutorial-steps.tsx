@@ -7,8 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Facebook, Instagram, Linkedin, Globe } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Globe, Loader2 } from 'lucide-react';
 import { TutorialSection } from './tutorial-guide';
+
+// Helper functions to handle tutorial actions
+const handleConnectLater = () => {
+  console.log('User chose to connect Facebook later');
+  return true; // Continue with the tutorial
+};
 
 // Content for Company Profile step
 export const CompanyProfileStep: React.FC = () => {
@@ -198,7 +204,12 @@ export const FacebookConnectStep: React.FC = () => {
   const [_, navigate] = useLocation();
   
   const goToFacebookIntegration = () => {
-    navigate('/integrations');
+    // Make sure navigation works or at least close the tutorial if it fails
+    try {
+      navigate('/integrations');
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
   
   return (
@@ -370,7 +381,7 @@ export const tutorialSections: TutorialSection[] = [
         content: <FacebookConnectStep />,
         cta: {
           text: 'Connect Later',
-          onClick: () => {} // Will be handled by the parent component
+          onClick: handleConnectLater
         }
       },
       {
