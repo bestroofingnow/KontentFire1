@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { db } from "./db";
 import { setupAuth } from "./auth";
 import { contentPipelineService } from "./cds-integration";
+import brandSettingsRouter from './routes/brand-settings';
 import {
   getFacebookAuthUrl,
   exchangeCodeForToken,
@@ -3616,6 +3617,9 @@ export function registerRoutes(app: Express): Server {
       return res.status(500).json({ message: 'Failed to authenticate with Facebook: ' + error.message });
     }
   });
+
+  // Register brand settings router
+  app.use('/api/brand-settings', brandSettingsRouter);
 
   const httpServer = createServer(app);
   return httpServer;
