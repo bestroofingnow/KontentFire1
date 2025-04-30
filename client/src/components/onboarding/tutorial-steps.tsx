@@ -188,6 +188,40 @@ export const AutoPostConfigStep: React.FC = () => {
             </SelectContent>
           </Select>
         </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="content-template">Content Template</Label>
+          <Select>
+            <SelectTrigger id="content-template">
+              <SelectValue placeholder="Select template" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="standard">Standard</SelectItem>
+              <SelectItem value="battle-royale">Battle Royale</SelectItem>
+              <SelectItem value="basics-101">Basics 101</SelectItem>
+              <SelectItem value="myth-buster">Myth Buster</SelectItem>
+              <SelectItem value="technical-guide">Technical Guide</SelectItem>
+              <SelectItem value="case-against">Case Against</SelectItem>
+              <SelectItem value="checklist">Checklist</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="author-selection">Author</Label>
+          <Select>
+            <SelectTrigger id="author-selection">
+              <SelectValue placeholder="Select author" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="system">System Default</SelectItem>
+              <SelectItem value="parker-cohn">Parker Cohn</SelectItem>
+              <SelectItem value="michelle-taylor">Michelle Taylor</SelectItem>
+              <SelectItem value="james-peterson">James Peterson</SelectItem>
+              <SelectItem value="add-new">+ Add New Author</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );
@@ -377,7 +411,7 @@ export const tutorialSections: TutorialSection[] = [
           text: 'Connect Later',
           onClick: () => {
             console.log('User chose to connect Facebook later');
-            return true;
+            // No need to return anything, the controller will always go to next step now
           }
         }
       },

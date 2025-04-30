@@ -135,19 +135,25 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
               {currentSection?.title}
             </CardTitle>
             <div className="flex space-x-1">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 w-8 p-0" 
-                onClick={() => {
-                  if (onSkip) onSkip();
-                  onClose();
-                }}
-                type="button"
-              >
-                <span className="sr-only">Skip tutorial</span>
-                <X className="h-4 w-4" />
-              </Button>
+              <InteractiveHover effect="pulse" intensity="light">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0" 
+                  onClick={() => {
+                    // Call onSkip first if it exists, then close
+                    if (onSkip) {
+                      onSkip();
+                    }
+                    // Always ensure onClose is called 
+                    onClose();
+                  }}
+                  type="button"
+                >
+                  <span className="sr-only">Close tutorial</span>
+                  <X className="h-4 w-4" />
+                </Button>
+              </InteractiveHover>
             </div>
           </CardHeader>
           
@@ -235,28 +241,44 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
                 </CardContent>
                 
                 <CardFooter className="flex justify-between pt-2 px-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const stepIndex = section.steps.findIndex(s => s.id === activeStep);
-                      if (stepIndex > 0) {
-                        setActiveStep(section.steps[stepIndex - 1].id);
-                      } else {
-                        const sectionIndex = sections.findIndex(s => s.id === section.id);
-                        if (sectionIndex > 0) {
-                          const prevSection = sections[sectionIndex - 1];
-                          setActiveSection(prevSection.id);
-                          setActiveStep(prevSection.steps[prevSection.steps.length - 1].id);
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const stepIndex = section.steps.findIndex(s => s.id === activeStep);
+                        if (stepIndex > 0) {
+                          setActiveStep(section.steps[stepIndex - 1].id);
+                        } else {
+                          const sectionIndex = sections.findIndex(s => s.id === section.id);
+                          if (sectionIndex > 0) {
+                            const prevSection = sections[sectionIndex - 1];
+                            setActiveSection(prevSection.id);
+                            setActiveStep(prevSection.steps[prevSection.steps.length - 1].id);
+                          }
                         }
+                      }}
+                      disabled={
+                        activeStep === sections[0].steps[0].id
                       }
-                    }}
-                    disabled={
-                      activeStep === sections[0].steps[0].id
-                    }
-                  >
-                    Previous
-                  </Button>
+                    >
+                      Previous
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm" 
+                      className="text-muted-foreground"
+                      onClick={() => {
+                        if (onSkip) {
+                          onSkip();
+                        }
+                        onClose();
+                      }}
+                    >
+                      Skip Tutorial
+                    </Button>
+                  </div>
                   
                   <InteractiveHover effect="pulse" intensity="strong">
                     <Button
