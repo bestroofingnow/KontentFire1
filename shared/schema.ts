@@ -467,6 +467,29 @@ export const insertAdminSettingsSchema = createInsertSchema(adminSettings).omit(
 export type InsertAdminSettings = z.infer<typeof insertAdminSettingsSchema>;
 export type AdminSettings = typeof adminSettings.$inferSelect;
 
+// Brand settings table
+export const brandSettings = pgTable('brand_settings', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  information: json('information').notNull(), // Brand information data
+  voice: json('voice').notNull(), // Brand voice configuration
+  story: json('story').notNull(), // Brand story sections
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const brandSettingsRelations = relations(brandSettings, ({ one }) => ({
+  user: one(users, {
+    fields: [brandSettings.userId],
+    references: [users.id],
+  }),
+}));
+
+// Brand settings schema
+export const insertBrandSettingsSchema = createInsertSchema(brandSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBrandSettings = z.infer<typeof insertBrandSettingsSchema>;
+export type BrandSettings = typeof brandSettings.$inferSelect;
+
 // Auto content status enum
 export const autoContentStatusEnum = pgEnum('auto_content_status', [
   'pending',
