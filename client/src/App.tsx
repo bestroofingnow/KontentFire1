@@ -16,6 +16,7 @@ import FactCheckPage from "@/pages/fact-check-page";
 import PRKreationPage from "@/pages/pr-kreation-page";
 import PipelinesPage from "@/pages/pipelines-page";
 import PipelineRunPage from "@/pages/pipeline-run-page";
+import BrandSettingsPage from "@/pages/brand-settings-page";
 import TestAuthPage from "@/pages/test-auth-page";
 import AnimationDemoPage from "@/pages/animation-demo-page";
 import InteractiveDemoPage from "@/pages/interactive-demo-page";
@@ -126,6 +127,9 @@ function App() {
       </Route>
       <Route path="/interactive-demo">
         <ProtectedRoute path="/interactive-demo" component={InteractiveDemoPage} />
+      </Route>
+      <Route path="/brand-settings">
+        <ProtectedRoute path="/brand-settings" component={BrandSettingsPage} />
       </Route>
       <Route>
         <NotFound />
