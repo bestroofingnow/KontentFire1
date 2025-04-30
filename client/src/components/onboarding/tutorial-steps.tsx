@@ -88,6 +88,86 @@ export const CompanyColorsStep: React.FC = () => {
   );
 };
 
+// Content for Brand Voice step
+export const BrandVoiceStep: React.FC = () => {
+  const [_, navigate] = useLocation();
+  
+  return (
+    <div className="space-y-4">
+      <Alert className="bg-blue-50 border-blue-200">
+        <AlertDescription className="flex items-center text-blue-800">
+          <Info className="h-5 w-5 mr-2 text-blue-600" />
+          Configure your brand voice in the Brand tab of Settings
+        </AlertDescription>
+      </Alert>
+      
+      <Card className="border border-primary/20">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <h3 className="font-medium">Brand Voice Setup</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Define how your brand speaks to customers - professional, friendly, casual, or create custom voices for different content types.
+            </p>
+            <div className="flex justify-center mt-2">
+              <Button 
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/settings?tab=brand&brandTab=voice')}
+              >
+                Configure Brand Voice
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Content for Brand Story step
+export const BrandStoryStep: React.FC = () => {
+  const [_, navigate] = useLocation();
+  
+  return (
+    <div className="space-y-4">
+      <Alert className="bg-amber-50 border-amber-200">
+        <AlertDescription className="flex items-center text-amber-800">
+          <Info className="h-5 w-5 mr-2 text-amber-600" />
+          Add your brand story in the Brand tab of Settings
+        </AlertDescription>
+      </Alert>
+      
+      <Card className="border border-primary/20">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <h3 className="font-medium">Brand Story Elements</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Tell your brand's story to help our AI understand what makes your company unique. This informs all content creation.
+            </p>
+            <div className="flex justify-center mt-2">
+              <Button 
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/settings?tab=brand&brandTab=story')}
+              >
+                Set Brand Story
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 // Content for Website and Social Links step
 export const SocialLinksStep: React.FC = () => {
   const [_, navigate] = useLocation();
@@ -319,10 +399,10 @@ export const CompletionStep: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-xl font-medium mb-2">All Set!</h2>
+        <h2 className="text-xl font-medium mb-2">Brand Setup Complete!</h2>
         <p className="text-gray-600 mb-6">
-          You've successfully set up your company profile and created your first auto post.
-          Your content will be automatically generated and published according to your schedule.
+          You've successfully set up your company profile and brand settings.
+          For help with specific features, try asking our AI assistant in the chat.
         </p>
         <div className="flex space-x-3 justify-center">
           <Button 
@@ -333,15 +413,17 @@ export const CompletionStep: React.FC = () => {
           </Button>
           <Button 
             className="bg-primary text-white hover:bg-primary/90"
-            onClick={() => navigate('/content')}
+            onClick={() => navigate('/assistant')}
           >
-            Create More Content
+            Chat with Assistant
           </Button>
         </div>
       </div>
     </div>
   );
 };
+
+
 
 // Tutorial Sections - Focused only on Company and Brand Setup
 export const tutorialSections: TutorialSection[] = [
@@ -373,79 +455,13 @@ export const tutorialSections: TutorialSection[] = [
         id: 'brand-voice',
         title: 'Brand Voice',
         description: 'Set the tone and style of your brand\'s communications.',
-        content: (
-          <div className="space-y-4">
-            <Alert className="bg-blue-50 border-blue-200">
-              <AlertDescription className="flex items-center text-blue-800">
-                <Info className="h-5 w-5 mr-2 text-blue-600" />
-                Configure your brand voice in the Brand tab of Settings
-              </AlertDescription>
-            </Alert>
-            
-            <Card className="border border-primary/20">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                    <h3 className="font-medium">Brand Voice Setup</h3>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Define how your brand speaks to customers - professional, friendly, casual, or create custom voices for different content types.
-                  </p>
-                  <div className="flex justify-center mt-2">
-                    <Button 
-                      className="bg-primary text-white hover:bg-primary/90"
-                      onClick={() => navigate('/settings?tab=brand&brandTab=voice')}
-                    >
-                      Configure Brand Voice
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ),
+        content: <BrandVoiceStep />,
       },
       {
         id: 'brand-story',
         title: 'Brand Story',
         description: 'Share your company\'s mission, vision, and core values.',
-        content: (
-          <div className="space-y-4">
-            <Alert className="bg-amber-50 border-amber-200">
-              <AlertDescription className="flex items-center text-amber-800">
-                <Info className="h-5 w-5 mr-2 text-amber-600" />
-                Add your brand story in the Brand tab of Settings
-              </AlertDescription>
-            </Alert>
-            
-            <Card className="border border-primary/20">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <h3 className="font-medium">Brand Story Elements</h3>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Tell your brand's story to help our AI understand what makes your company unique. This informs all content creation.
-                  </p>
-                  <div className="flex justify-center mt-2">
-                    <Button 
-                      className="bg-primary text-white hover:bg-primary/90"
-                      onClick={() => navigate('/settings?tab=brand&brandTab=story')}
-                    >
-                      Set Brand Story
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ),
+        content: <BrandStoryStep />,
       }
     ]
   },
@@ -458,36 +474,7 @@ export const tutorialSections: TutorialSection[] = [
         id: 'done',
         title: 'Setup Complete',
         description: 'Your brand settings are ready. For any questions about features, chat with our AI assistant.',
-        content: (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-medium mb-2">Brand Setup Complete!</h2>
-              <p className="text-gray-600 mb-6">
-                You've successfully set up your company profile and brand settings.
-                For help with specific features, try asking our AI assistant in the chat.
-              </p>
-              <div className="flex space-x-3 justify-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.location.href = '/dashboard'}
-                >
-                  Go to Dashboard
-                </Button>
-                <Button 
-                  className="bg-primary text-white hover:bg-primary/90"
-                  onClick={() => window.location.href = '/assistant'}
-                >
-                  Chat with Assistant
-                </Button>
-              </div>
-            </div>
-          </div>
-        ),
+        content: <CompletionStep />,
       }
     ]
   }
