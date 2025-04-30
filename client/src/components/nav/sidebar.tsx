@@ -78,7 +78,7 @@ export function Sidebar() {
     { name: 'Integrations', href: '/integrations', icon: Zap },
     { name: 'Animation Demo', href: '/animation-demo', icon: Zap },
     { name: 'Interactive Demo', href: '/interactive-demo', icon: Zap },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Settings & Brand', href: '/settings', icon: Settings },
   ];
 
   // Add admin route if user is admin

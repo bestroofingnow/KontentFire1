@@ -459,12 +459,11 @@ export default function SettingsPage() {
             
             {/* Settings Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid grid-cols-5 gap-2 w-full md:w-auto">
+              <TabsList className="grid grid-cols-4 gap-2 w-full md:w-auto">
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="password">Password</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
-                <TabsTrigger value="company">Company</TabsTrigger>
-                <TabsTrigger value="brand">Brand</TabsTrigger>
+                <TabsTrigger value="brand">Company & Brand</TabsTrigger>
               </TabsList>
               
               {/* Profile Tab */}
@@ -714,307 +713,7 @@ export default function SettingsPage() {
                 </Card>
               </TabsContent>
               
-              {/* Company Profile Tab */}
-              <TabsContent value="company">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Company Profile</CardTitle>
-                    <CardDescription>
-                      Set up your company profile to help AI create better content with your branding
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoadingProfile ? (
-                      <div className="flex justify-center py-6">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                    ) : (
-                      <Form {...companyProfileForm}>
-                        <form onSubmit={companyProfileForm.handleSubmit(onCompanyProfileSubmit)} className="space-y-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Basic Information */}
-                            <div className="space-y-6 md:col-span-2">
-                              <h3 className="text-lg font-medium">Basic Information</h3>
-                              
-                              <FormField
-                                control={companyProfileForm.control}
-                                name="companyName"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Company Name*</FormLabel>
-                                    <FormControl>
-                                      <Input {...field} />
-                                    </FormControl>
-                                    <FormDescription>
-                                      The name of your company or brand
-                                    </FormDescription>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              
-                              <FormField
-                                control={companyProfileForm.control}
-                                name="industry"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Industry</FormLabel>
-                                    <FormControl>
-                                      <Input {...field} />
-                                    </FormControl>
-                                    <FormDescription>
-                                      Your business industry or niche (e.g., Tech, Healthcare, Education)
-                                    </FormDescription>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              
-                              <FormField
-                                control={companyProfileForm.control}
-                                name="description"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Company Description</FormLabel>
-                                    <FormControl>
-                                      <Textarea 
-                                        {...field} 
-                                        placeholder="Describe your business, mission, values, and target audience" 
-                                        className="min-h-32"
-                                      />
-                                    </FormControl>
-                                    <FormDescription>
-                                      This helps AI understand your company and create more relevant content
-                                    </FormDescription>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                            
-                            {/* Branding */}
-                            <div className="space-y-6 md:col-span-2">
-                              <h3 className="text-lg font-medium">Branding</h3>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="websiteUrl"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Website URL</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="https://yourwebsite.com" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="logoUrl"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Logo URL</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="https://yourwebsite.com/logo.png" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="primaryColor"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Primary Brand Color</FormLabel>
-                                      <FormControl>
-                                        <div className="flex gap-2">
-                                          <Input {...field} placeholder="#FF5500" />
-                                          {field.value && (
-                                            <div 
-                                              className="h-10 w-10 rounded-md border" 
-                                              style={{ backgroundColor: field.value }}
-                                            />
-                                          )}
-                                        </div>
-                                      </FormControl>
-                                      <FormDescription>
-                                        Hexadecimal color code (#RRGGBB)
-                                      </FormDescription>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="secondaryColor"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Secondary Brand Color</FormLabel>
-                                      <FormControl>
-                                        <div className="flex gap-2">
-                                          <Input {...field} placeholder="#0055FF" />
-                                          {field.value && (
-                                            <div 
-                                              className="h-10 w-10 rounded-md border" 
-                                              style={{ backgroundColor: field.value }}
-                                            />
-                                          )}
-                                        </div>
-                                      </FormControl>
-                                      <FormDescription>
-                                        Hexadecimal color code (#RRGGBB)
-                                      </FormDescription>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Social Media Links */}
-                            <div className="space-y-6 md:col-span-2">
-                              <h3 className="text-lg font-medium">Social Media</h3>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="facebookUrl"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Facebook</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="https://facebook.com/yourcompany" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="twitterUrl"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Twitter</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="https://twitter.com/yourcompany" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="instagramUrl"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Instagram</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="https://instagram.com/yourcompany" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="linkedinUrl"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>LinkedIn</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="https://linkedin.com/company/yourcompany" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="youtubeUrl"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>YouTube</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="https://youtube.com/@yourcompany" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                
-                                <FormField
-                                  control={companyProfileForm.control}
-                                  name="tiktokUrl"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>TikTok</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="https://tiktok.com/@yourcompany" />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Additional Information */}
-                            <div className="space-y-6 md:col-span-2">
-                              <h3 className="text-lg font-medium">Additional Information</h3>
-                              
-                              <FormField
-                                control={companyProfileForm.control}
-                                name="additionalInfo"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Additional Information</FormLabel>
-                                    <FormControl>
-                                      <Textarea 
-                                        {...field} 
-                                        placeholder="Add any additional information about your company that might help with content creation" 
-                                        className="min-h-32"
-                                      />
-                                    </FormControl>
-                                    <FormDescription>
-                                      Product details, tone of voice preferences, specific CTAs, or important brand guidelines
-                                    </FormDescription>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                          </div>
-                          
-                          <Button 
-                            type="submit" 
-                            className="bg-primary hover:bg-primary-dark"
-                            disabled={companyProfileMutation.isPending}
-                          >
-                            {companyProfileMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
-                              </>
-                            ) : (
-                              'Save Company Profile'
-                            )}
-                          </Button>
-                        </form>
-                      </Form>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+
               {/* Brand Tab */}
               <TabsContent value="brand">
                 <Card>
@@ -1052,6 +751,7 @@ export default function SettingsPage() {
                         {/* Brand Information Tab */}
                         {brandTabActive === 'information' && (
                           <div className="space-y-6">
+                            <h3 className="text-lg font-medium">Basic Information</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div className="space-y-2">
                                 <Label htmlFor="companyName">Company Name</Label>
@@ -1129,6 +829,77 @@ export default function SettingsPage() {
                               />
                             </div>
                             
+                            <h3 className="text-lg font-medium pt-4">Brand Assets</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <Label htmlFor="websiteUrl">Website URL</Label>
+                                <Input
+                                  id="websiteUrl"
+                                  placeholder="https://yourwebsite.com"
+                                  value={companyProfile?.websiteUrl || ''}
+                                  disabled
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Edit this in the settings form below
+                                </p>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label htmlFor="logoUrl">Logo URL</Label>
+                                <Input
+                                  id="logoUrl"
+                                  placeholder="https://yourwebsite.com/logo.png"
+                                  value={companyProfile?.logoUrl || ''}
+                                  disabled
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Edit this in the settings form below
+                                </p>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label htmlFor="primaryColor">Primary Brand Color</Label>
+                                <div className="flex gap-2">
+                                  <Input
+                                    id="primaryColor"
+                                    placeholder="#FF5500"
+                                    value={companyProfile?.primaryColor || ''}
+                                    disabled
+                                  />
+                                  {companyProfile?.primaryColor && (
+                                    <div 
+                                      className="h-10 w-10 rounded-md border" 
+                                      style={{ backgroundColor: companyProfile.primaryColor }}
+                                    />
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Edit this in the settings form below
+                                </p>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label htmlFor="secondaryColor">Secondary Brand Color</Label>
+                                <div className="flex gap-2">
+                                  <Input
+                                    id="secondaryColor"
+                                    placeholder="#0055FF"
+                                    value={companyProfile?.secondaryColor || ''}
+                                    disabled
+                                  />
+                                  {companyProfile?.secondaryColor && (
+                                    <div 
+                                      className="h-10 w-10 rounded-md border" 
+                                      style={{ backgroundColor: companyProfile.secondaryColor }}
+                                    />
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Edit this in the settings form below
+                                </p>
+                              </div>
+                            </div>
+                            
                             <div className="space-y-2">
                               <Label htmlFor="brandGuidelines">Brand Guidelines</Label>
                               <Textarea
@@ -1150,6 +921,303 @@ export default function SettingsPage() {
                                   {saveBrandSettingsMutation.isPending ? 'Saving...' : 'Save Information'}
                                 </Button>
                               </InteractiveHover>
+                            </div>
+                            
+                            <div className="border-t pt-6 mt-8">
+                              <h3 className="text-lg font-medium mb-4">Company Profile Settings</h3>
+                              <p className="text-sm text-muted-foreground mb-4">
+                                Update your company details, branding and social media links here.
+                                These settings will be synced with your brand information.
+                              </p>
+                              
+                              {isLoadingProfile ? (
+                                <div className="flex justify-center py-6">
+                                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                </div>
+                              ) : (
+                                <Form {...companyProfileForm}>
+                                  <form onSubmit={companyProfileForm.handleSubmit(onCompanyProfileSubmit)} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      {/* Basic Information */}
+                                      <div className="space-y-6 md:col-span-2">
+                                        <h4 className="text-base font-medium">Basic Information</h4>
+                                        
+                                        <FormField
+                                          control={companyProfileForm.control}
+                                          name="companyName"
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel>Company Name*</FormLabel>
+                                              <FormControl>
+                                                <Input {...field} />
+                                              </FormControl>
+                                              <FormDescription>
+                                                The name of your company or brand
+                                              </FormDescription>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        
+                                        <FormField
+                                          control={companyProfileForm.control}
+                                          name="industry"
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel>Industry</FormLabel>
+                                              <FormControl>
+                                                <Input {...field} />
+                                              </FormControl>
+                                              <FormDescription>
+                                                Your business industry or niche (e.g., Tech, Healthcare, Education)
+                                              </FormDescription>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        
+                                        <FormField
+                                          control={companyProfileForm.control}
+                                          name="description"
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel>Company Description</FormLabel>
+                                              <FormControl>
+                                                <Textarea 
+                                                  {...field} 
+                                                  placeholder="Describe your business, mission, values, and target audience" 
+                                                  className="min-h-32"
+                                                />
+                                              </FormControl>
+                                              <FormDescription>
+                                                This helps AI understand your company and create more relevant content
+                                              </FormDescription>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                      </div>
+                                      
+                                      {/* Branding */}
+                                      <div className="space-y-6 md:col-span-2">
+                                        <h4 className="text-base font-medium">Branding</h4>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="websiteUrl"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Website URL</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="https://yourwebsite.com" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="logoUrl"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Logo URL</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="https://yourwebsite.com/logo.png" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="primaryColor"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Primary Brand Color</FormLabel>
+                                                <FormControl>
+                                                  <div className="flex gap-2">
+                                                    <Input {...field} placeholder="#FF5500" />
+                                                    {field.value && (
+                                                      <div 
+                                                        className="h-10 w-10 rounded-md border" 
+                                                        style={{ backgroundColor: field.value }}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                </FormControl>
+                                                <FormDescription>
+                                                  Hexadecimal color code (#RRGGBB)
+                                                </FormDescription>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="secondaryColor"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Secondary Brand Color</FormLabel>
+                                                <FormControl>
+                                                  <div className="flex gap-2">
+                                                    <Input {...field} placeholder="#0055FF" />
+                                                    {field.value && (
+                                                      <div 
+                                                        className="h-10 w-10 rounded-md border" 
+                                                        style={{ backgroundColor: field.value }}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                </FormControl>
+                                                <FormDescription>
+                                                  Hexadecimal color code (#RRGGBB)
+                                                </FormDescription>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Social Media Links */}
+                                      <div className="space-y-6 md:col-span-2">
+                                        <h4 className="text-base font-medium">Social Media</h4>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="facebookUrl"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Facebook</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="https://facebook.com/yourcompany" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="twitterUrl"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Twitter</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="https://twitter.com/yourcompany" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="instagramUrl"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Instagram</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="https://instagram.com/yourcompany" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="linkedinUrl"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>LinkedIn</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="https://linkedin.com/company/yourcompany" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="youtubeUrl"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>YouTube</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="https://youtube.com/@yourcompany" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          
+                                          <FormField
+                                            control={companyProfileForm.control}
+                                            name="tiktokUrl"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>TikTok</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} placeholder="https://tiktok.com/@yourcompany" />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Additional Information */}
+                                      <div className="space-y-6 md:col-span-2">
+                                        <h4 className="text-base font-medium">Additional Information</h4>
+                                        
+                                        <FormField
+                                          control={companyProfileForm.control}
+                                          name="additionalInfo"
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel>Additional Information</FormLabel>
+                                              <FormControl>
+                                                <Textarea 
+                                                  {...field} 
+                                                  placeholder="Add any additional information about your company that might help with content creation" 
+                                                  className="min-h-32"
+                                                />
+                                              </FormControl>
+                                              <FormDescription>
+                                                Product details, tone of voice preferences, specific CTAs, or important brand guidelines
+                                              </FormDescription>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                      </div>
+                                    </div>
+                                    
+                                    <Button 
+                                      type="submit" 
+                                      className="bg-primary hover:bg-primary-dark"
+                                      disabled={companyProfileMutation.isPending}
+                                    >
+                                      {companyProfileMutation.isPending ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Saving...
+                                        </>
+                                      ) : (
+                                        'Save Company Profile'
+                                      )}
+                                    </Button>
+                                  </form>
+                                </Form>
+                              )}
                             </div>
                           </div>
                         )}
