@@ -108,6 +108,28 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
       description: "You've successfully completed the onboarding tutorial.",
     });
   };
+  
+  // Simple skip handler that directly calls parent functions
+  const handleSkipTutorial = () => {
+    console.log('Simple skip handler called in tutorial-guide');
+    // Call skip function if provided
+    if (onSkip) {
+      try {
+        console.log('Calling onSkip directly');
+        onSkip();
+      } catch (error) {
+        console.error('Error in skip handler:', error);
+      }
+    }
+    
+    // Call close function
+    try {
+      console.log('Calling onClose directly');
+      onClose();
+    } catch (error) {
+      console.error('Error in close handler:', error);
+    }
+  };
 
   // Navigate to a specific step
   const navigateToStep = (sectionId: string, stepId: string) => {
@@ -143,27 +165,8 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Close button clicked - direct');
-                    
-                    // Skip first if needed
-                    if (typeof onSkip === 'function') {
-                      console.log('Calling onSkip directly');
-                      try {
-                        onSkip();
-                      } catch (error) {
-                        console.error('Error in onSkip:', error);
-                      }
-                    }
-                    
-                    // Try to close
-                    try {
-                      console.log('Calling onClose directly'); 
-                      if (typeof onClose === 'function') {
-                        onClose();
-                      }
-                    } catch (error) {
-                      console.error('Error in onClose:', error);
-                    }
+                    console.log('Using direct simple handler');
+                    handleSkipTutorial();
                   }}
                   type="button"
                 >
@@ -289,27 +292,8 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Skip Tutorial button clicked in footer');
-                        
-                        // Skip first if needed
-                        if (typeof onSkip === 'function') {
-                          console.log('Calling onSkip directly from footer');
-                          try {
-                            onSkip();
-                          } catch (error) {
-                            console.error('Error in onSkip from footer:', error);
-                          }
-                        }
-                        
-                        // Try to close
-                        try {
-                          console.log('Calling onClose directly from footer'); 
-                          if (typeof onClose === 'function') {
-                            onClose();
-                          }
-                        } catch (error) {
-                          console.error('Error in onClose from footer:', error);
-                        }
+                        console.log('Using simple skip handler from footer');
+                        handleSkipTutorial();
                       }}
                     >
                       Skip Tutorial
