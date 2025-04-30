@@ -121,7 +121,8 @@ export default function AuthPage() {
       });
       
       // Force reload the page instead of using navigate
-      window.location.href = '/';
+      // Add new_user=true parameter to trigger the tutorial for new users
+      window.location.href = '/?new_user=true';
     } catch (error) {
       toast({
         title: "Registration Failed",

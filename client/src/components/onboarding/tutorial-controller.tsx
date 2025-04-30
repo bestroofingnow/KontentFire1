@@ -67,24 +67,54 @@ const TutorialController: React.FC = () => {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        // First check localStorage to see if tutorial was already completed
-        const tutorialCompleted = localStorage.getItem('tutorial-completed') === 'true';
+        // Check if the user has just registered (via URL parameter)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isNewUser = urlParams.get('new_user') === 'true';
         
-        if (tutorialCompleted) {
-          console.log('Tutorial already completed according to localStorage');
+        // If it's explicitly a new user via URL param, always show the tutorial
+        if (isNewUser) {
+          showWelcomeDialog();
           return;
         }
         
-        // Mock API call to check onboarding status
-        // const response = await apiRequest('GET', '/api/user/onboarding-status');
-        // const { completed } = await response.json();
-        
-        // For demo, always show tutorial after welcome dialog if not completed
-        const completed = false;
-        
-        if (!completed && !hasShownWelcome) {
-          // Show welcome dialog first
-          showWelcomeDialog();
+        // Check if this is a first login for this user
+        try {
+          // Get user data from API to check if this is their first login
+          const response = await apiRequest('GET', '/api/user');
+          const userData = await response.json();
+          
+          // First check localStorage to see if tutorial was already completed
+          const tutorialCompleted = localStorage.getItem('tutorial-completed') === 'true';
+          
+          if (tutorialCompleted) {
+            console.log('Tutorial already completed according to localStorage');
+            return;
+          }
+          
+          // Check if the user has any company profile - if not, they're likely new
+          const profileResponse = await apiRequest('GET', '/api/company-profile');
+          if (profileResponse.status === 404 || profileResponse.status === 204) {
+            // No company profile found, likely new user
+            showWelcomeDialog();
+            return;
+          }
+          
+          // For demo purposes, also check if the user has been active for less than 1 minute
+          // This helps ensure new users see the tutorial
+          const createdAt = new Date(userData.createdAt);
+          const now = new Date();
+          const timeDiff = now.getTime() - createdAt.getTime();
+          const isNewAccount = timeDiff < 1000 * 60 * 60; // Less than 1 hour old
+          
+          if (isNewAccount && !hasShownWelcome) {
+            showWelcomeDialog();
+          }
+        } catch (error) {
+          console.error('Error checking user status:', error);
+          // If there's an error, default to showing the welcome
+          if (!hasShownWelcome) {
+            showWelcomeDialog();
+          }
         }
       } catch (error) {
         console.error('Failed to check onboarding status:', error);
@@ -92,7 +122,7 @@ const TutorialController: React.FC = () => {
     };
 
     checkOnboardingStatus();
-  }, []);
+  }, [hasShownWelcome]);
 
   // Mutation for saving company profile
   const saveCompanyProfileMutation = useMutation({
