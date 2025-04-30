@@ -12,40 +12,38 @@ import { TutorialSection } from './tutorial-guide';
 
 // Content for Company Profile step
 export const CompanyProfileStep: React.FC = () => {
+  const [_, navigate] = useLocation();
+  
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="company-name">Company Name</Label>
-          <Input id="company-name" placeholder="Your company name" />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="company-industry">Industry</Label>
-          <Select>
-            <SelectTrigger id="company-industry">
-              <SelectValue placeholder="Select industry" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="technology">Technology</SelectItem>
-              <SelectItem value="healthcare">Healthcare</SelectItem>
-              <SelectItem value="education">Education</SelectItem>
-              <SelectItem value="finance">Finance</SelectItem>
-              <SelectItem value="retail">Retail</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="company-description">Company Description</Label>
-          <Textarea
-            id="company-description"
-            placeholder="Describe your company in a few sentences..."
-            className="min-h-[80px]"
-          />
-        </div>
-      </div>
+      <Alert className="bg-blue-50 border-blue-200">
+        <AlertDescription className="flex items-center text-blue-800">
+          <Info className="h-5 w-5 mr-2 text-blue-600" />
+          Fill out your company profile in the Settings page to help generate relevant content
+        </AlertDescription>
+      </Alert>
+      
+      <Card className="border border-primary/20">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Globe className="h-5 w-5 text-primary" />
+              <h3 className="font-medium">Company Profile Setup</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Your company profile information is used to tailor the AI-generated content to your specific business needs.
+            </p>
+            <div className="flex justify-center mt-2">
+              <Button 
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/settings')}
+              >
+                Go to Company Profile
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
