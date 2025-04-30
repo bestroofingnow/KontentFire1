@@ -265,6 +265,7 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
                       onClick={() => {
                         if (currentStep?.cta?.onClick) {
                           currentStep.cta.onClick();
+                          goToNextStep();
                         } else {
                           goToNextStep();
                         }

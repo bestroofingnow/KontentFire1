@@ -31,11 +31,7 @@ type AutoPostConfig = {
   defaultHashtags?: string;
 };
 
-// Custom handle for the Facebook integration "Connect Later" button
-export const handleConnectLater = () => {
-  console.log('User chose to connect Facebook later');
-  return true; // Continue with the tutorial
-};
+// Custom handles removed to avoid circular dependencies
 
 const TutorialController: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);

@@ -10,12 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Facebook, Instagram, Linkedin, Globe, Loader2 } from 'lucide-react';
 import { TutorialSection } from './tutorial-guide';
 
-// Helper functions to handle tutorial actions
-const handleConnectLater = () => {
-  console.log('User chose to connect Facebook later');
-  return true; // Continue with the tutorial
-};
-
 // Content for Company Profile step
 export const CompanyProfileStep: React.FC = () => {
   return (
@@ -381,7 +375,10 @@ export const tutorialSections: TutorialSection[] = [
         content: <FacebookConnectStep />,
         cta: {
           text: 'Connect Later',
-          onClick: handleConnectLater
+          onClick: () => {
+            console.log('User chose to connect Facebook later');
+            return true;
+          }
         }
       },
       {
