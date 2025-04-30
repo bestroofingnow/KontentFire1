@@ -55,46 +55,8 @@ export default function HomePage() {
         
         <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
-            {/* Page Header */}
-            <div className="mb-8">
-              <h1 className="text-2xl md:text-3xl font-bold font-display text-dark mb-2">Dashboard</h1>
-              <p className="text-gray-600">Welcome back! Here's an overview of your content.</p>
-            </div>
-            
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard 
-                title="Content Created" 
-                value={statsLoading ? "-" : stats?.totalContent || 0}
-                icon={<PenTool className="h-6 w-6 text-primary" />}
-                change={{ value: 18, isPositive: true }}
-                iconColorClass="bg-primary-light"
-              />
-              
-              <StatCard 
-                title="Posts Published" 
-                value={statsLoading ? "-" : stats?.publishedContent || 0}
-                icon={<Calendar className="h-6 w-6 text-secondary" />}
-                change={{ value: 12, isPositive: true }}
-                iconColorClass="bg-secondary"
-              />
-              
-              <StatCard 
-                title="Images Generated" 
-                value={statsLoading ? "-" : stats?.totalImages || 0}
-                icon={<ImageIcon className="h-6 w-6 text-primary" />}
-                change={{ value: 24, isPositive: true }}
-                iconColorClass="bg-primary-light"
-              />
-              
-              <StatCard 
-                title="Total Engagement" 
-                value={statsLoading ? "-" : stats?.totalEngagement || 0}
-                icon={<ThumbsUp className="h-6 w-6 text-secondary" />}
-                change={{ value: 5, isPositive: false }}
-                iconColorClass="bg-secondary"
-              />
-            </div>
+            {/* Personalized Welcome Screen with User Insights */}
+            <WelcomeScreen />
             
             {/* Create New Content Button */}
             <div className="flex justify-center mb-8">
