@@ -30,6 +30,7 @@ import AdminAuthPage from "@/pages/admin/admin-auth-page";
 // Components
 import { AIAssistant } from "@/components/assistant/ai-assistant";
 import FacebookSDKProvider from "@/components/integrations/facebook-sdk-provider";
+import { OnboardingProvider } from "@/components/onboarding/onboarding-provider";
 
 // Route protection components
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -53,91 +54,93 @@ function App() {
   
   return (
     <FacebookSDKProvider appId={facebookAppId} version="v22.0">
-      {/* AI Assistant visible for authenticated users */}
-      {user && !user.isAdmin && (
-        <>
-          <AIAssistant />
-          {/* Tutorial completely removed */}
-        </>
-      )}
-      
-      <Switch>
-        {/* Regular user authentication */}
-        <Route path="/auth">
-          {user ? <Redirect to="/" /> : <AuthPage />}
-        </Route>
+      <OnboardingProvider>
+        {/* AI Assistant visible for authenticated users */}
+        {user && !user.isAdmin && (
+          <>
+            <AIAssistant />
+            {/* Tutorial completely removed */}
+          </>
+        )}
         
-        {/* Admin authentication - separate from regular user auth */}
-        <Route path="/admin/login">
-          {user && user.isAdmin ? <Redirect to="/admin" /> : <AdminAuthPage />}
-        </Route>
-      
-      {/* Admin protected routes */}
-      <AdminProtectedRoute path="/admin" component={AdminDashboard} />
-      
-      {/* Regular user routes */}
-      <Route path="/">
-        <ProtectedRoute path="/" component={HomePage} />
-      </Route>
-      <Route path="/content">
-        <PremiumProtectedRoute path="/content" component={ContentPage} requiredPlan="inferno" />
-      </Route>
-      <Route path="/schedule">
-        <ProtectedRoute path="/schedule" component={SchedulePage} />
-      </Route>
-      <Route path="/analytics">
-        <ProtectedRoute path="/analytics" component={AnalyticsPage} />
-      </Route>
-      <Route path="/integrations">
-        <ProtectedRoute path="/integrations" component={IntegrationsPage} />
-      </Route>
-      <Route path="/settings">
-        <ProtectedRoute path="/settings" component={SettingsPage} />
-      </Route>
-      <Route path="/subscription">
-        <ProtectedRoute path="/subscription" component={SubscriptionPage} />
-      </Route>
-      <Route path="/auto-content">
-        <ProtectedRoute path="/auto-content" component={AutoContentPage} />
-      </Route>
-      <Route path="/auto-posting-setup">
-        <ProtectedRoute path="/auto-posting-setup" component={AutoPostingSetup} />
-      </Route>
-      <Route path="/listings">
-        <ProtectedRoute path="/listings" component={ListingsPage} />
-      </Route>
-      <Route path="/fact-check">
-        <ProtectedRoute path="/fact-check" component={FactCheckPage} />
-      </Route>
-      <Route path="/pr-kreation">
-        <PremiumProtectedRoute path="/pr-kreation" component={PRKreationPage} requiredPlan="inferno" />
-      </Route>
-      <Route path="/pipelines">
-        <PremiumProtectedRoute path="/pipelines" component={PipelinesPage} requiredPlan="inferno" />
-      </Route>
-      <Route path="/pipeline-runs/:runId">
-        <PremiumProtectedRoute path="/pipeline-runs/:runId" component={PipelineRunPage} requiredPlan="inferno" />
-      </Route>
-      {/* Test auth route - not protected for debugging */}
-      <Route path="/test-auth">
-        <TestAuthPage />
-      </Route>
-      <Route path="/animation-demo">
-        <ProtectedRoute path="/animation-demo" component={AnimationDemoPage} />
-      </Route>
-      <Route path="/interactive-demo">
-        <ProtectedRoute path="/interactive-demo" component={InteractiveDemoPage} />
-      </Route>
-      <Route path="/micro-interactions">
-        <ProtectedRoute path="/micro-interactions" component={MicroInteractionsDemo} />
-      </Route>
-      <Route path="/brand-settings">
-        <ProtectedRoute path="/brand-settings" component={BrandSettingsPage} />
-      </Route>
-      <Route>
-        <NotFound />
-      </Route>
-    </Switch>
+        <Switch>
+          {/* Regular user authentication */}
+          <Route path="/auth">
+            {user ? <Redirect to="/" /> : <AuthPage />}
+          </Route>
+          
+          {/* Admin authentication - separate from regular user auth */}
+          <Route path="/admin/login">
+            {user && user.isAdmin ? <Redirect to="/admin" /> : <AdminAuthPage />}
+          </Route>
+          
+          {/* Admin protected routes */}
+          <AdminProtectedRoute path="/admin" component={AdminDashboard} />
+          
+          {/* Regular user routes */}
+          <Route path="/">
+            <ProtectedRoute path="/" component={HomePage} />
+          </Route>
+          <Route path="/content">
+            <PremiumProtectedRoute path="/content" component={ContentPage} requiredPlan="inferno" />
+          </Route>
+          <Route path="/schedule">
+            <ProtectedRoute path="/schedule" component={SchedulePage} />
+          </Route>
+          <Route path="/analytics">
+            <ProtectedRoute path="/analytics" component={AnalyticsPage} />
+          </Route>
+          <Route path="/integrations">
+            <ProtectedRoute path="/integrations" component={IntegrationsPage} />
+          </Route>
+          <Route path="/settings">
+            <ProtectedRoute path="/settings" component={SettingsPage} />
+          </Route>
+          <Route path="/subscription">
+            <ProtectedRoute path="/subscription" component={SubscriptionPage} />
+          </Route>
+          <Route path="/auto-content">
+            <ProtectedRoute path="/auto-content" component={AutoContentPage} />
+          </Route>
+          <Route path="/auto-posting-setup">
+            <ProtectedRoute path="/auto-posting-setup" component={AutoPostingSetup} />
+          </Route>
+          <Route path="/listings">
+            <ProtectedRoute path="/listings" component={ListingsPage} />
+          </Route>
+          <Route path="/fact-check">
+            <ProtectedRoute path="/fact-check" component={FactCheckPage} />
+          </Route>
+          <Route path="/pr-kreation">
+            <PremiumProtectedRoute path="/pr-kreation" component={PRKreationPage} requiredPlan="inferno" />
+          </Route>
+          <Route path="/pipelines">
+            <PremiumProtectedRoute path="/pipelines" component={PipelinesPage} requiredPlan="inferno" />
+          </Route>
+          <Route path="/pipeline-runs/:runId">
+            <PremiumProtectedRoute path="/pipeline-runs/:runId" component={PipelineRunPage} requiredPlan="inferno" />
+          </Route>
+          {/* Test auth route - not protected for debugging */}
+          <Route path="/test-auth">
+            <TestAuthPage />
+          </Route>
+          <Route path="/animation-demo">
+            <ProtectedRoute path="/animation-demo" component={AnimationDemoPage} />
+          </Route>
+          <Route path="/interactive-demo">
+            <ProtectedRoute path="/interactive-demo" component={InteractiveDemoPage} />
+          </Route>
+          <Route path="/micro-interactions">
+            <ProtectedRoute path="/micro-interactions" component={MicroInteractionsDemo} />
+          </Route>
+          <Route path="/brand-settings">
+            <ProtectedRoute path="/brand-settings" component={BrandSettingsPage} />
+          </Route>
+          <Route>
+            <NotFound />
+          </Route>
+        </Switch>
+      </OnboardingProvider>
     </FacebookSDKProvider>
   );
 }
