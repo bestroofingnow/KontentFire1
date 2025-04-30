@@ -244,6 +244,10 @@ export const analytics = pgTable('analytics', {
   event: text('event').notNull(),
   platform: text('platform'),
   value: integer('value'),
+  likes: integer('likes').default(0),
+  shares: integer('shares').default(0), 
+  comments: integer('comments').default(0),
+  clicks: integer('clicks').default(0),
   metadata: json('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

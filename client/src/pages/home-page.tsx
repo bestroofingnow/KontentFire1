@@ -9,6 +9,7 @@ import RecentlyCreated from "@/components/content/recently-created";
 import ContentPreviewSlider from "@/components/content/content-preview-slider";
 import ProcessSteps from "@/components/content/process-steps";
 import CreateContentModal from "@/components/content/create-content-modal";
+import WelcomeScreen from "@/components/dashboard/welcome-screen";
 import { Button } from "@/components/ui/button";
 import { PenTool, Calendar, ImageIcon, ThumbsUp, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
