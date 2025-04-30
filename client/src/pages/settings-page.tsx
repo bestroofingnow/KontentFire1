@@ -15,9 +15,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2 } from "lucide-react";
+import { Loader2, Building, MessageSquare, Book } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import type { CompanyProfile } from "@shared/schema";
+import InteractiveHover from "@/components/ui/interactive-hover";
 
 // Profile schema
 const profileSchema = z.object({
@@ -71,6 +73,41 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("profile");
+  
+  // Types for brand settings data
+  type BrandInformation = {
+    companyName: string;
+    industry: string;
+    missionStatement: string;
+    vision: string;
+    coreValues: string;
+    targetAudience: string;
+    uniqueSellingPoints: string;
+    brandGuidelines: string;
+  };
+
+  type BrandVoice = {
+    toneOfVoice: 'professional' | 'casual' | 'friendly' | 'formal';
+    formalityLevel: number;
+    enthusiasmLevel: number;
+    creativityLevel: number;
+  };
+
+  type BrandStory = {
+    sections: Array<{
+      id: string;
+      type: 'mission' | 'vision' | 'values' | 'custom';
+      title: string;
+      content: string;
+      imageUrl?: string;
+    }>;
+  };
+
+  type BrandSettings = {
+    information: BrandInformation;
+    voice: BrandVoice;
+    story: BrandStory;
+  };
   
   // Profile form
   const profileForm = useForm<ProfileFormValues>({
@@ -247,6 +284,145 @@ export default function SettingsPage() {
       });
     },
   });
+  
+  // Brand settings state and query
+  const [brandTabActive, setBrandTabActive] = useState<string>('information');
+  
+  // Fetch brand settings
+  const { data: brandSettings, isLoading: isLoadingBrandSettings } = useQuery<BrandSettings>({
+    queryKey: ['/api/brand-settings'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/brand-settings');
+        return await response.json();
+      } catch (error) {
+        // If no settings exist yet, return default values
+        return {
+          information: {
+            companyName: '',
+            industry: '',
+            missionStatement: '',
+            vision: '',
+            coreValues: '',
+            targetAudience: '',
+            uniqueSellingPoints: '',
+            brandGuidelines: '',
+          },
+          voice: {
+            toneOfVoice: 'professional' as const,
+            formalityLevel: 50,
+            enthusiasmLevel: 50,
+            creativityLevel: 50,
+          },
+          story: {
+            sections: [],
+          },
+        };
+      }
+    },
+  });
+  
+  // Local state for brand settings form values
+  const [information, setInformation] = useState<BrandInformation>({
+    companyName: '',
+    industry: '',
+    missionStatement: '',
+    vision: '',
+    coreValues: '',
+    targetAudience: '',
+    uniqueSellingPoints: '',
+    brandGuidelines: '',
+  });
+  
+  const [voice, setVoice] = useState<BrandVoice>({
+    toneOfVoice: 'professional',
+    formalityLevel: 50,
+    enthusiasmLevel: 50,
+    creativityLevel: 50,
+  });
+  
+  const [story, setStory] = useState<BrandStory>({
+    sections: [],
+  });
+  
+  // Update local state when brand settings are loaded
+  React.useEffect(() => {
+    if (brandSettings) {
+      setInformation(brandSettings.information);
+      setVoice(brandSettings.voice);
+      setStory(brandSettings.story);
+    }
+  }, [brandSettings]);
+  
+  // Mutation for saving brand settings
+  const saveBrandSettingsMutation = useMutation({
+    mutationFn: async (data: Partial<BrandSettings>) => {
+      const response = await apiRequest('POST', '/api/brand-settings', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/brand-settings'] });
+      toast({
+        title: 'Brand settings saved',
+        description: 'Your brand settings have been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error saving settings',
+        description: error.message || 'An error occurred while saving your brand settings.',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Handle saving information tab
+  const handleSaveInformation = () => {
+    saveBrandSettingsMutation.mutate({ information });
+  };
+
+  // Handle saving voice tab
+  const handleSaveVoice = () => {
+    saveBrandSettingsMutation.mutate({ voice });
+  };
+
+  // Handle saving story tab
+  const handleSaveStory = () => {
+    saveBrandSettingsMutation.mutate({ story });
+  };
+
+  // Handle adding a new story section
+  const handleAddStorySection = () => {
+    const newSection = {
+      id: `section-${Date.now()}`,
+      type: 'custom' as const,
+      title: 'New Section',
+      content: '',
+    };
+    
+    setStory(prev => ({
+      ...prev,
+      sections: [...prev.sections, newSection],
+    }));
+  };
+
+  // Handle updating a story section
+  const handleUpdateStorySection = (id: string, field: string, value: string) => {
+    setStory(prev => ({
+      ...prev,
+      sections: prev.sections.map(section => 
+        section.id === id ? { ...section, [field]: value } : section
+      ),
+    }));
+  };
+
+  // Handle removing a story section
+  const handleRemoveStorySection = (id: string) => {
+    setStory(prev => ({
+      ...prev,
+      sections: prev.sections.filter(section => section.id !== id),
+    }));
+  };
 
   // Handle form submissions
   const onProfileSubmit = (data: ProfileFormValues) => {
@@ -282,11 +458,12 @@ export default function SettingsPage() {
             
             {/* Settings Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid grid-cols-4 gap-2 w-full md:w-auto">
+              <TabsList className="grid grid-cols-5 gap-2 w-full md:w-auto">
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="password">Password</TabsTrigger>
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 <TabsTrigger value="company">Company</TabsTrigger>
+                <TabsTrigger value="brand">Brand</TabsTrigger>
               </TabsList>
               
               {/* Profile Tab */}
