@@ -15,9 +15,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Building, MessageSquare, Book } from "lucide-react";
+import { Loader2, Building, MessageSquare, Book, PlusCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 import type { CompanyProfile } from "@shared/schema";
 import InteractiveHover from "@/components/ui/interactive-hover";
 
@@ -1010,6 +1011,340 @@ export default function SettingsPage() {
                           </Button>
                         </form>
                       </Form>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              {/* Brand Tab */}
+              <TabsContent value="brand">
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle>Brand Settings</CardTitle>
+                    <CardDescription>
+                      Define your brand identity, voice, and story to improve AI-generated content
+                    </CardDescription>
+                    
+                    <Tabs defaultValue={brandTabActive} onValueChange={setBrandTabActive} className="mt-4">
+                      <TabsList className="mb-6">
+                        <TabsTrigger value="information" className="flex items-center">
+                          <Building className="mr-2 h-4 w-4" />
+                          Brand Information
+                        </TabsTrigger>
+                        <TabsTrigger value="voice" className="flex items-center">
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Brand Voice
+                        </TabsTrigger>
+                        <TabsTrigger value="story" className="flex items-center">
+                          <Book className="mr-2 h-4 w-4" />
+                          Brand Story
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    {isLoadingBrandSettings ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <>
+                        {/* Brand Information Tab */}
+                        {brandTabActive === 'information' && (
+                          <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <Label htmlFor="companyName">Company Name</Label>
+                                <Input
+                                  id="companyName"
+                                  placeholder="Enter your company name"
+                                  value={information.companyName}
+                                  onChange={(e) => setInformation({ ...information, companyName: e.target.value })}
+                                />
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label htmlFor="industry">Industry</Label>
+                                <Input
+                                  id="industry"
+                                  placeholder="e.g., Technology, Retail, Healthcare"
+                                  value={information.industry}
+                                  onChange={(e) => setInformation({ ...information, industry: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="missionStatement">Mission Statement</Label>
+                              <Textarea
+                                id="missionStatement"
+                                placeholder="What is your company's mission?"
+                                className="min-h-[100px]"
+                                value={information.missionStatement}
+                                onChange={(e) => setInformation({ ...information, missionStatement: e.target.value })}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="vision">Vision</Label>
+                              <Textarea
+                                id="vision"
+                                placeholder="What is your company's long-term vision?"
+                                className="min-h-[100px]"
+                                value={information.vision}
+                                onChange={(e) => setInformation({ ...information, vision: e.target.value })}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="coreValues">Core Values</Label>
+                              <Textarea
+                                id="coreValues"
+                                placeholder="List your company's core values"
+                                className="min-h-[100px]"
+                                value={information.coreValues}
+                                onChange={(e) => setInformation({ ...information, coreValues: e.target.value })}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="targetAudience">Target Audience</Label>
+                              <Textarea
+                                id="targetAudience"
+                                placeholder="Describe your target audience demographics and characteristics"
+                                className="min-h-[100px]"
+                                value={information.targetAudience}
+                                onChange={(e) => setInformation({ ...information, targetAudience: e.target.value })}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="uniqueSellingPoints">Unique Selling Points</Label>
+                              <Textarea
+                                id="uniqueSellingPoints"
+                                placeholder="What makes your brand unique?"
+                                className="min-h-[100px]"
+                                value={information.uniqueSellingPoints}
+                                onChange={(e) => setInformation({ ...information, uniqueSellingPoints: e.target.value })}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="brandGuidelines">Brand Guidelines</Label>
+                              <Textarea
+                                id="brandGuidelines"
+                                placeholder="Any specific brand guidelines or preferences"
+                                className="min-h-[100px]"
+                                value={information.brandGuidelines}
+                                onChange={(e) => setInformation({ ...information, brandGuidelines: e.target.value })}
+                              />
+                            </div>
+                            
+                            <div className="pt-4 flex justify-end">
+                              <InteractiveHover effect="pulse" intensity="medium">
+                                <Button 
+                                  onClick={handleSaveInformation}
+                                  className="bg-primary text-white hover:bg-primary/90"
+                                  disabled={saveBrandSettingsMutation.isPending}
+                                >
+                                  {saveBrandSettingsMutation.isPending ? 'Saving...' : 'Save Information'}
+                                </Button>
+                              </InteractiveHover>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Brand Voice Tab */}
+                        {brandTabActive === 'voice' && (
+                          <div className="space-y-8">
+                            <div className="space-y-4">
+                              <Label>Tone of Voice</Label>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div 
+                                  className={`border rounded-lg p-4 cursor-pointer transition-all ${voice.toneOfVoice === 'professional' ? 'border-primary bg-primary/5' : 'border-border'}`}
+                                  onClick={() => setVoice({ ...voice, toneOfVoice: 'professional' })}
+                                >
+                                  <h3 className="font-medium mb-1">Professional</h3>
+                                  <p className="text-sm text-muted-foreground">Industry expert voice, authoritative and trustworthy</p>
+                                </div>
+                                
+                                <div 
+                                  className={`border rounded-lg p-4 cursor-pointer transition-all ${voice.toneOfVoice === 'casual' ? 'border-primary bg-primary/5' : 'border-border'}`}
+                                  onClick={() => setVoice({ ...voice, toneOfVoice: 'casual' })}
+                                >
+                                  <h3 className="font-medium mb-1">Casual</h3>
+                                  <p className="text-sm text-muted-foreground">Relaxed and approachable, like talking to a friend</p>
+                                </div>
+                                
+                                <div 
+                                  className={`border rounded-lg p-4 cursor-pointer transition-all ${voice.toneOfVoice === 'friendly' ? 'border-primary bg-primary/5' : 'border-border'}`}
+                                  onClick={() => setVoice({ ...voice, toneOfVoice: 'friendly' })}
+                                >
+                                  <h3 className="font-medium mb-1">Friendly</h3>
+                                  <p className="text-sm text-muted-foreground">Warm and engaging, building personal connections</p>
+                                </div>
+                                
+                                <div 
+                                  className={`border rounded-lg p-4 cursor-pointer transition-all ${voice.toneOfVoice === 'formal' ? 'border-primary bg-primary/5' : 'border-border'}`}
+                                  onClick={() => setVoice({ ...voice, toneOfVoice: 'formal' })}
+                                >
+                                  <h3 className="font-medium mb-1">Formal</h3>
+                                  <p className="text-sm text-muted-foreground">Traditional and structured, emphasizing respect</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-6">
+                              <div className="space-y-3">
+                                <div className="flex justify-between">
+                                  <Label htmlFor="formality-slider">Formality Level</Label>
+                                  <span className="text-sm text-muted-foreground">{voice.formalityLevel}%</span>
+                                </div>
+                                <Slider
+                                  id="formality-slider"
+                                  min={0}
+                                  max={100}
+                                  step={1}
+                                  value={[voice.formalityLevel]}
+                                  onValueChange={(value) => setVoice({ ...voice, formalityLevel: value[0] })}
+                                />
+                              </div>
+                              
+                              <div className="space-y-3">
+                                <div className="flex justify-between">
+                                  <Label htmlFor="enthusiasm-slider">Enthusiasm</Label>
+                                  <span className="text-sm text-muted-foreground">{voice.enthusiasmLevel}%</span>
+                                </div>
+                                <Slider
+                                  id="enthusiasm-slider"
+                                  min={0}
+                                  max={100}
+                                  step={1}
+                                  value={[voice.enthusiasmLevel]}
+                                  onValueChange={(value) => setVoice({ ...voice, enthusiasmLevel: value[0] })}
+                                />
+                              </div>
+                              
+                              <div className="space-y-3">
+                                <div className="flex justify-between">
+                                  <Label htmlFor="creativity-slider">Creativity</Label>
+                                  <span className="text-sm text-muted-foreground">{voice.creativityLevel}%</span>
+                                </div>
+                                <Slider
+                                  id="creativity-slider"
+                                  min={0}
+                                  max={100}
+                                  step={1}
+                                  value={[voice.creativityLevel]}
+                                  onValueChange={(value) => setVoice({ ...voice, creativityLevel: value[0] })}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="pt-4 flex justify-end">
+                              <InteractiveHover effect="pulse" intensity="medium">
+                                <Button 
+                                  onClick={handleSaveVoice}
+                                  className="bg-primary text-white hover:bg-primary/90"
+                                  disabled={saveBrandSettingsMutation.isPending}
+                                >
+                                  {saveBrandSettingsMutation.isPending ? 'Saving...' : 'Save Voice Settings'}
+                                </Button>
+                              </InteractiveHover>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Brand Story Tab */}
+                        {brandTabActive === 'story' && (
+                          <div className="space-y-6">
+                            <div className="flex justify-between items-center">
+                              <h3 className="text-lg font-semibold">Story Sections</h3>
+                              <Button 
+                                onClick={handleAddStorySection}
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center"
+                              >
+                                <PlusCircle className="mr-1 h-4 w-4" />
+                                Add Section
+                              </Button>
+                            </div>
+                            
+                            {story.sections.length === 0 ? (
+                              <div className="text-center py-8 border rounded-lg bg-muted/10">
+                                <Book className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+                                <h3 className="font-medium mb-1">No story sections yet</h3>
+                                <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                                  Add sections to your brand story to help the AI understand your company's narrative and create more authentic content.
+                                </p>
+                                <Button variant="outline" size="sm" onClick={handleAddStorySection}>
+                                  Add First Section
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="space-y-6">
+                                {story.sections.map((section) => (
+                                  <div key={section.id} className="border rounded-lg p-4 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                      <div className="space-y-2 flex-1 mr-4">
+                                        <Label htmlFor={`section-title-${section.id}`}>Section Title</Label>
+                                        <Input
+                                          id={`section-title-${section.id}`}
+                                          value={section.title}
+                                          onChange={(e) => handleUpdateStorySection(section.id, 'title', e.target.value)}
+                                        />
+                                      </div>
+                                      <div>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                          onClick={() => handleRemoveStorySection(section.id)}
+                                        >
+                                          Remove
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`section-content-${section.id}`}>Content</Label>
+                                      <Textarea
+                                        id={`section-content-${section.id}`}
+                                        value={section.content}
+                                        onChange={(e) => handleUpdateStorySection(section.id, 'content', e.target.value)}
+                                        className="min-h-[120px]"
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <Label htmlFor={`section-image-${section.id}`}>Image URL (Optional)</Label>
+                                      <Input
+                                        id={`section-image-${section.id}`}
+                                        value={section.imageUrl || ''}
+                                        onChange={(e) => handleUpdateStorySection(section.id, 'imageUrl', e.target.value)}
+                                        placeholder="https://example.com/image.jpg"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            <div className="pt-4 flex justify-end">
+                              <InteractiveHover effect="pulse" intensity="medium">
+                                <Button 
+                                  onClick={handleSaveStory}
+                                  className="bg-primary text-white hover:bg-primary/90"
+                                  disabled={saveBrandSettingsMutation.isPending || story.sections.length === 0}
+                                >
+                                  {saveBrandSettingsMutation.isPending ? 'Saving...' : 'Save Story'}
+                                </Button>
+                              </InteractiveHover>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </CardContent>
                 </Card>

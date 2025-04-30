@@ -76,7 +76,6 @@ export function Sidebar() {
     { name: 'Fact Check', href: '/fact-check', icon: SearchCheck },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Integrations', href: '/integrations', icon: Zap },
-    { name: 'Brand Settings', href: '/brand-settings', icon: Building },
     { name: 'Animation Demo', href: '/animation-demo', icon: Zap },
     { name: 'Interactive Demo', href: '/interactive-demo', icon: Zap },
     { name: 'Settings', href: '/settings', icon: Settings },
