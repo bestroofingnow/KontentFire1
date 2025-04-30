@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +46,7 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
   const [activeSection, setActiveSection] = useState(sections[0]?.id || '');
   const [activeStep, setActiveStep] = useState('');
   const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({});
-  const navigate = useNavigate();
+  const [_, navigate] = useLocation();
   const { toast } = useToast();
 
   // Initialize first step of the first section

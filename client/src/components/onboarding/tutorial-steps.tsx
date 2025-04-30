@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -195,7 +195,7 @@ export const AutoPostConfigStep: React.FC = () => {
 
 // Content for Facebook Connection step
 export const FacebookConnectStep: React.FC = () => {
-  const navigate = useNavigate();
+  const [_, navigate] = useLocation();
   
   const goToFacebookIntegration = () => {
     navigate('/integrations');
@@ -291,7 +291,7 @@ export const ScheduleSetupStep: React.FC = () => {
 
 // Content for Completion step
 export const CompletionStep: React.FC = () => {
-  const navigate = useNavigate();
+  const [_, navigate] = useLocation();
   
   return (
     <div className="space-y-6">

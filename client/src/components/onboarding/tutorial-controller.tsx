@@ -147,7 +147,7 @@ const TutorialController: React.FC = () => {
       setIsOpen(false);
       toast({
         title: 'Onboarding Completed',
-        description: 'You're all set to start using Kontent Fire!',
+        description: "You're all set to start using Kontent Fire!",
       });
       
       // Redirect to dashboard

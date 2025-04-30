@@ -52,8 +52,13 @@ function App() {
   
   return (
     <FacebookSDKProvider appId={facebookAppId} version="v22.0">
-      {/* AI Assistant always visible for authenticated users */}
-      {user && !user.isAdmin && <AIAssistant />}
+      {/* AI Assistant and tutorial always visible for authenticated users */}
+      {user && !user.isAdmin && (
+        <>
+          <AIAssistant />
+          <TutorialController />
+        </>
+      )}
       
       <Switch>
         {/* Regular user authentication */}
