@@ -29,7 +29,6 @@ import AdminAuthPage from "@/pages/admin/admin-auth-page";
 // Components
 import { AIAssistant } from "@/components/assistant/ai-assistant";
 import FacebookSDKProvider from "@/components/integrations/facebook-sdk-provider";
-import TutorialController from "@/components/onboarding/tutorial-controller";
 
 // Route protection components
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -53,11 +52,11 @@ function App() {
   
   return (
     <FacebookSDKProvider appId={facebookAppId} version="v22.0">
-      {/* AI Assistant and tutorial always visible for authenticated users */}
+      {/* AI Assistant visible for authenticated users */}
       {user && !user.isAdmin && (
         <>
           <AIAssistant />
-          <TutorialController />
+          {/* Tutorial completely removed */}
         </>
       )}
       
