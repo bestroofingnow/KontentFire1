@@ -28,6 +28,7 @@ import AdminAuthPage from "@/pages/admin/admin-auth-page";
 // Components
 import { AIAssistant } from "@/components/assistant/ai-assistant";
 import FacebookSDKProvider from "@/components/integrations/facebook-sdk-provider";
+import TutorialController from "@/components/onboarding/tutorial-controller";
 
 // Route protection components
 import { ProtectedRoute } from "@/lib/protected-route";
