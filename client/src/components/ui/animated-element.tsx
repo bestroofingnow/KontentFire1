@@ -1,157 +1,126 @@
 import React from 'react';
-import { motion, Variant } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-interface AnimatedElementProps {
+type AnimatedElementProps = {
   children: React.ReactNode;
-  animation?: 'fade' | 'slide-in' | 'pop' | 'bounce' | 'pulse' | 'scale' | 'wiggle';
-  delay?: number;
-  duration?: number;
   className?: string;
-  repeat?: boolean | number;
-  custom?: any;
-  whileHover?: boolean;
-  whileTap?: boolean;
-  onAnimationComplete?: () => void;
-}
+  animation?: 'fade' | 'slide-in' | 'scale' | 'bounce' | 'rotate' | 'none';
+  direction?: 'up' | 'down' | 'left' | 'right';
+  duration?: number;
+  delay?: number;
+  hover?: boolean;
+  onClick?: () => void;
+};
 
 /**
- * AnimatedElement - A general purpose animated container 
+ * AnimatedElement - General-purpose animated component wrapper
+ * 
+ * @example
+ * <AnimatedElement animation="slide-in" direction="up" delay={0.2}>
+ *   <div>Content to animate</div>
+ * </AnimatedElement>
  */
 export const AnimatedElement: React.FC<AnimatedElementProps> = ({
   children,
+  className,
   animation = 'fade',
-  delay = 0,
+  direction = 'up',
   duration = 0.5,
-  className = '',
-  repeat = false,
-  custom,
-  whileHover = false,
-  whileTap = false,
-  onAnimationComplete,
+  delay = 0,
+  hover = false,
+  onClick
 }) => {
-  // Animation variants for different effects
-  const variants = {
-    fade: {
-      hidden: { opacity: 0 },
-      visible: { 
-        opacity: 1,
-        transition: { 
-          duration,
-          delay 
-        } 
-      },
-    },
-    'slide-in': {
-      hidden: { x: -30, opacity: 0 },
-      visible: { 
-        x: 0, 
-        opacity: 1,
-        transition: { 
-          type: 'spring',
-          stiffness: 300,
-          damping: 24,
-          delay 
-        } 
-      },
-    },
-    pop: {
-      hidden: { scale: 0.8, opacity: 0 },
-      visible: { 
-        scale: 1, 
-        opacity: 1,
-        transition: { 
-          type: 'spring',
-          stiffness: 300,
-          damping: 10,
-          delay 
-        } 
-      },
-    },
-    bounce: {
-      hidden: { y: -20, opacity: 0 },
-      visible: { 
-        y: 0, 
-        opacity: 1,
-        transition: { 
-          type: 'spring',
-          stiffness: 300,
-          damping: 10,
-          delay 
-        } 
-      },
-    },
-    pulse: {
-      hidden: { scale: 1 },
-      visible: { 
-        scale: [1, 1.05, 1],
-        transition: { 
-          duration: duration,
-          delay,
-          repeat: typeof repeat === 'number' ? repeat : repeat ? Infinity : 0,
-          repeatType: "mirror" as "mirror" | "loop" | "reverse" | undefined
-        } 
-      },
-    },
-    scale: {
-      hidden: { scale: 0 },
-      visible: { 
-        scale: 1,
-        transition: { 
-          type: 'spring',
-          stiffness: 300,
-          damping: 20,
-          delay 
-        } 
-      },
-    },
-    wiggle: {
-      hidden: { rotate: 0 },
-      visible: { 
-        rotate: [0, -5, 5, -5, 0],
-        transition: { 
-          duration: duration,
-          delay,
-          repeat: typeof repeat === 'number' ? repeat : repeat ? Infinity : 0,
-          repeatType: "mirror" as "mirror" | "loop" | "reverse" | undefined,
-          repeatDelay: 1,
-        } 
-      },
-    },
+  // Configure initial and animate states based on animation type
+  const getAnimationVariants = () => {
+    switch (animation) {
+      case 'fade':
+        return {
+          initial: { opacity: 0 },
+          animate: { opacity: 1 },
+          hover: { opacity: 0.8 }
+        };
+        
+      case 'slide-in': {
+        const offset = 30;
+        const directionMap = {
+          up: { y: offset },
+          down: { y: -offset },
+          left: { x: offset },
+          right: { x: -offset }
+        };
+        
+        return {
+          initial: { opacity: 0, ...directionMap[direction] },
+          animate: { opacity: 1, x: 0, y: 0 },
+          hover: { 
+            ...directionMap[direction],
+            scale: 0.98,
+            transition: { duration: 0.2 } 
+          }
+        };
+      }
+      
+      case 'scale':
+        return {
+          initial: { opacity: 0, scale: 0.8 },
+          animate: { opacity: 1, scale: 1 },
+          hover: { scale: 1.05 }
+        };
+        
+      case 'bounce':
+        return {
+          initial: { opacity: 0, y: 50 },
+          animate: { 
+            opacity: 1, 
+            y: 0,
+            transition: { 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 15 
+            } 
+          },
+          hover: { 
+            y: -5,
+            transition: { 
+              type: "spring", 
+              stiffness: 500, 
+              damping: 10 
+            } 
+          }
+        };
+        
+      case 'rotate':
+        return {
+          initial: { opacity: 0, rotate: -30 },
+          animate: { opacity: 1, rotate: 0 },
+          hover: { rotate: 5 }
+        };
+        
+      default:
+        return {
+          initial: {},
+          animate: {},
+          hover: {}
+        };
+    }
   };
-
-  // Hover animations
-  const hoverAnimations = {
-    fade: { opacity: 0.8 },
-    'slide-in': { x: 5 },
-    pop: { scale: 1.05 },
-    bounce: { y: -5 },
-    pulse: { scale: 1.05 },
-    scale: { scale: 1.05 },
-    wiggle: { rotate: 5 },
-  };
-
-  // Tap animations
-  const tapAnimations = {
-    fade: { opacity: 0.6 },
-    'slide-in': { x: -2 },
-    pop: { scale: 0.95 },
-    bounce: { y: 2 },
-    pulse: { scale: 0.95 },
-    scale: { scale: 0.95 },
-    wiggle: { rotate: -5 },
-  };
-
+  
+  const variants = getAnimationVariants();
+  
   return (
     <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={variants[animation]}
-      whileHover={whileHover ? hoverAnimations[animation] : undefined}
-      whileTap={whileTap ? tapAnimations[animation] : undefined}
-      custom={custom}
-      onAnimationComplete={onAnimationComplete}
-      className={cn(className)}
+      className={cn(onClick ? 'cursor-pointer' : '', className)}
+      initial="initial"
+      animate="animate"
+      whileHover={hover ? "hover" : undefined}
+      variants={variants}
+      transition={{ 
+        duration,
+        delay,
+        ease: "easeOut"
+      }}
+      onClick={onClick}
     >
       {children}
     </motion.div>

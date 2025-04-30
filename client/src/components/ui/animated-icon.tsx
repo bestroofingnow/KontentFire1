@@ -2,137 +2,141 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-interface AnimatedIconProps {
+type AnimatedIconProps = {
   icon: React.ReactNode;
-  animation?: 'spin' | 'pulse' | 'bounce' | 'shake' | 'wiggle' | 'ping';
+  className?: string;
+  animation?: 'pulse' | 'rotate' | 'bounce' | 'shake' | 'hover-bounce' | 'none';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   color?: string;
-  className?: string;
-  onClick?: () => void;
-  isButton?: boolean;
-  hoverAnimation?: boolean;
-  continuous?: boolean;
   duration?: number;
-  delay?: number;
-}
+  repeatDelay?: number;
+  continuous?: boolean;
+  onClick?: () => void;
+};
 
 /**
- * AnimatedIcon - Component for animated icons with various effects
+ * AnimatedIcon - Component for animated icons
+ * 
+ * @example
+ * <AnimatedIcon icon={<Zap />} animation="pulse" />
  */
 export const AnimatedIcon: React.FC<AnimatedIconProps> = ({
   icon,
-  animation = 'pulse',
+  className,
+  animation = 'none',
   size = 'md',
   color,
-  className = '',
-  onClick,
-  isButton = false,
-  hoverAnimation = true,
-  continuous = false,
   duration = 1,
-  delay = 0,
+  repeatDelay = 0,
+  continuous = false,
+  onClick
 }) => {
-  // Size mappings
-  const sizeClasses = {
+  // Size variants
+  const sizeMap = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
     lg: 'w-8 h-8',
-    xl: 'w-10 h-10',
+    xl: 'w-10 h-10'
   };
-
+  
   // Animation variants
-  const getAnimationVariant = () => {
-    const variants = {
-      spin: {
-        animate: { 
-          rotate: 360,
-          transition: { 
-            repeat: continuous ? Infinity : 0,
-            duration,
-            delay,
-            ease: 'linear',
+  const getAnimationVariants = () => {
+    switch (animation) {
+      case 'pulse':
+        return {
+          animate: { 
+            scale: [1, 1.1, 1],
+            opacity: [1, 0.8, 1],
+            transition: { 
+              duration,
+              repeat: continuous ? Infinity : 0,
+              repeatType: "loop" as const,
+              repeatDelay
+            }
           }
-        },
-        hover: { rotate: 360, transition: { duration: 0.6 } },
-      },
-      pulse: {
-        animate: { 
-          scale: [1, 1.1, 1],
-          opacity: [0.8, 1, 0.8],
-          transition: { 
-            repeat: continuous ? Infinity : 0,
-            duration,
-            delay,
+        };
+        
+      case 'rotate':
+        return {
+          animate: { 
+            rotate: 360,
+            transition: { 
+              duration,
+              ease: "linear",
+              repeat: continuous ? Infinity : 0,
+              repeatType: "loop" as const,
+              repeatDelay
+            }
           }
-        },
-        hover: { scale: 1.2, transition: { duration: 0.3 } },
-      },
-      bounce: {
-        animate: { 
-          y: [0, -5, 0],
-          transition: { 
-            repeat: continuous ? Infinity : 0,
-            duration,
-            delay,
+        };
+        
+      case 'bounce':
+        return {
+          animate: { 
+            y: [0, -5, 0],
+            transition: { 
+              duration: duration * 0.5,
+              repeat: continuous ? Infinity : 0,
+              repeatType: "loop" as const,
+              repeatDelay
+            }
           }
-        },
-        hover: { y: -5, transition: { type: 'spring', stiffness: 300 } },
-      },
-      shake: {
-        animate: { 
-          rotate: [0, -3, 3, -3, 0],
-          transition: { 
-            repeat: continuous ? Infinity : 0,
-            duration,
-            delay,
+        };
+        
+      case 'shake':
+        return {
+          animate: { 
+            x: [0, -3, 3, -3, 0],
+            transition: { 
+              duration: duration * 0.5,
+              repeat: continuous ? Infinity : 0,
+              repeatType: "loop" as const,
+              repeatDelay
+            }
           }
-        },
-        hover: { rotate: [-3, 3, -3, 0], transition: { duration: 0.4 } },
-      },
-      wiggle: {
-        animate: { 
-          rotate: [0, -10, 10, -10, 0],
-          transition: { 
-            repeat: continuous ? Infinity : 0,
-            duration,
-            delay,
+        };
+        
+      case 'hover-bounce':
+        return {
+          initial: { y: 0 },
+          hover: { 
+            y: -5,
+            transition: { 
+              type: "spring",
+              stiffness: 300,
+              damping: 10
+            }
           }
-        },
-        hover: { rotate: 15, transition: { duration: 0.2 } },
-      },
-      ping: {
-        animate: { 
-          scale: [1, 1.2, 1],
-          opacity: [0.8, 1, 0.8],
-          transition: { 
-            repeat: continuous ? Infinity : 0,
-            duration: duration / 2,
-            delay,
-            repeatDelay: duration / 2,
-          }
-        },
-        hover: { scale: 1.3, transition: { duration: 0.2 } },
-      },
-    };
-
-    return variants[animation];
+        };
+        
+      default:
+        return {
+          animate: {}
+        };
+    }
   };
-
-  // Get the appropriate variant
-  const variant = getAnimationVariant();
-
+  
+  const variants = getAnimationVariants();
+  
+  // Handle click animation
+  const handleClick = () => {
+    if (onClick) onClick();
+  };
+  
   return (
     <motion.div
       className={cn(
-        sizeClasses[size],
-        isButton && 'cursor-pointer',
+        sizeMap[size],
+        onClick ? 'cursor-pointer' : '',
         className
       )}
-      style={{ color, display: 'inline-flex' }}
-      animate={continuous ? variant.animate : undefined}
-      whileHover={hoverAnimation ? variant.hover : undefined}
-      whileTap={isButton ? { scale: 0.9 } : undefined}
-      onClick={onClick}
+      style={{ color }}
+      variants={variants}
+      animate={animation !== 'hover-bounce' ? 'animate' : undefined}
+      initial={animation === 'hover-bounce' ? 'initial' : undefined}
+      whileHover={animation === 'hover-bounce' ? 'hover' : undefined}
+      whileTap={onClick ? { scale: 0.9 } : undefined}
+      onClick={handleClick}
     >
       {icon}
     </motion.div>

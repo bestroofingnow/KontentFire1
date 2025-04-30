@@ -20,6 +20,7 @@ import BrandSettingsPage from "@/pages/brand-settings-page";
 import TestAuthPage from "@/pages/test-auth-page";
 import AnimationDemoPage from "@/pages/animation-demo-page";
 import InteractiveDemoPage from "@/pages/interactive-demo-page";
+import MicroInteractionsDemo from "@/pages/micro-interactions-demo";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -126,6 +127,9 @@ function App() {
       </Route>
       <Route path="/interactive-demo">
         <ProtectedRoute path="/interactive-demo" component={InteractiveDemoPage} />
+      </Route>
+      <Route path="/micro-interactions">
+        <ProtectedRoute path="/micro-interactions" component={MicroInteractionsDemo} />
       </Route>
       <Route path="/brand-settings">
         <ProtectedRoute path="/brand-settings" component={BrandSettingsPage} />
