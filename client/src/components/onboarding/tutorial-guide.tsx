@@ -140,13 +140,30 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
                   variant="ghost" 
                   size="sm" 
                   className="h-8 w-8 p-0" 
-                  onClick={() => {
-                    // Call onSkip first if it exists, then close
-                    if (onSkip) {
-                      onSkip();
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Close button clicked - direct');
+                    
+                    // Skip first if needed
+                    if (typeof onSkip === 'function') {
+                      console.log('Calling onSkip directly');
+                      try {
+                        onSkip();
+                      } catch (error) {
+                        console.error('Error in onSkip:', error);
+                      }
                     }
-                    // Always ensure onClose is called 
-                    onClose();
+                    
+                    // Try to close
+                    try {
+                      console.log('Calling onClose directly'); 
+                      if (typeof onClose === 'function') {
+                        onClose();
+                      }
+                    } catch (error) {
+                      console.error('Error in onClose:', error);
+                    }
                   }}
                   type="button"
                 >
@@ -269,11 +286,30 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
                       variant="ghost"
                       size="sm" 
                       className="text-muted-foreground"
-                      onClick={() => {
-                        if (onSkip) {
-                          onSkip();
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Skip Tutorial button clicked in footer');
+                        
+                        // Skip first if needed
+                        if (typeof onSkip === 'function') {
+                          console.log('Calling onSkip directly from footer');
+                          try {
+                            onSkip();
+                          } catch (error) {
+                            console.error('Error in onSkip from footer:', error);
+                          }
                         }
-                        onClose();
+                        
+                        // Try to close
+                        try {
+                          console.log('Calling onClose directly from footer'); 
+                          if (typeof onClose === 'function') {
+                            onClose();
+                          }
+                        } catch (error) {
+                          console.error('Error in onClose from footer:', error);
+                        }
                       }}
                     >
                       Skip Tutorial

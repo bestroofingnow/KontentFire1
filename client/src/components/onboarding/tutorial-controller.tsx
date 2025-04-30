@@ -161,11 +161,14 @@ const TutorialController: React.FC = () => {
 
   // Handle skipping the tutorial
   const handleSkipTutorial = () => {
+    console.log('handleSkipTutorial called');
     setIsOpen(false);
+    console.log('isOpen set to false');
     toast({
       title: 'Tutorial Skipped',
       description: 'You can always access the tutorial from the help menu.',
     });
+    console.log('Toast displayed');
   };
 
   return (
@@ -210,7 +213,10 @@ const TutorialController: React.FC = () => {
       <TutorialGuide
         sections={tutorialSections}
         isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        onClose={() => {
+          console.log('onClose in controller called');
+          setIsOpen(false);
+        }}
         onComplete={handleCompleteTutorial}
         onSkip={handleSkipTutorial}
       />
