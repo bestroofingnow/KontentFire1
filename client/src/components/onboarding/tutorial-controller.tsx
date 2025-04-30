@@ -67,11 +67,19 @@ const TutorialController: React.FC = () => {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
+        // First check localStorage to see if tutorial was already completed
+        const tutorialCompleted = localStorage.getItem('tutorial-completed') === 'true';
+        
+        if (tutorialCompleted) {
+          console.log('Tutorial already completed according to localStorage');
+          return;
+        }
+        
         // Mock API call to check onboarding status
         // const response = await apiRequest('GET', '/api/user/onboarding-status');
         // const { completed } = await response.json();
         
-        // For demo, always show tutorial after welcome dialog
+        // For demo, always show tutorial after welcome dialog if not completed
         const completed = false;
         
         if (!completed && !hasShownWelcome) {
@@ -152,6 +160,14 @@ const TutorialController: React.FC = () => {
         description: "You're all set to start using Kontent Fire!",
       });
       
+      // Save completed state to localStorage
+      try {
+        localStorage.setItem('tutorial-completed', 'true');
+        console.log('Saved tutorial-completed=true to localStorage');
+      } catch (err) {
+        console.error('Failed to save to localStorage:', err);
+      }
+      
       // Redirect to dashboard
       navigate('/dashboard');
     } catch (error) {
@@ -161,14 +177,25 @@ const TutorialController: React.FC = () => {
 
   // Handle skipping the tutorial
   const handleSkipTutorial = () => {
-    console.log('handleSkipTutorial called');
-    setIsOpen(false);
-    console.log('isOpen set to false');
-    toast({
-      title: 'Tutorial Skipped',
-      description: 'You can always access the tutorial from the help menu.',
-    });
-    console.log('Toast displayed');
+    console.log('handleSkipTutorial called in TutorialController');
+    
+    // Forcibly close by directly setting state
+    try {
+      setIsOpen(false);
+      console.log('isOpen set to false');
+      
+      // Show a toast notification
+      toast({
+        title: 'Tutorial Skipped',
+        description: 'You can always access the tutorial from the help menu.',
+      });
+      console.log('Toast displayed');
+      
+      // Mark as completed in local storage to prevent re-showing on refresh
+      localStorage.setItem('tutorial-completed', 'true');
+    } catch (error) {
+      console.error('Error in handleSkipTutorial:', error);
+    }
   };
 
   return (
@@ -215,7 +242,20 @@ const TutorialController: React.FC = () => {
         isOpen={isOpen}
         onClose={() => {
           console.log('onClose in controller called');
-          setIsOpen(false);
+          
+          try {
+            // Forcibly close the tutorial
+            setIsOpen(false);
+            console.log('isOpen set to false in onClose');
+            
+            // Add a delay for the animation to complete
+            setTimeout(() => {
+              console.log('Confirming tutorial is closed');
+              if (isOpen) setIsOpen(false);
+            }, 100);
+          } catch (error) {
+            console.error('Error in onClose:', error);
+          }
         }}
         onComplete={handleCompleteTutorial}
         onSkip={handleSkipTutorial}

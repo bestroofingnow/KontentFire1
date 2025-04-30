@@ -63,15 +63,44 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
     
     return section.steps.every(step => completedSteps[step.id]);
   };
-
-  // Get the current section and step
-  const currentSection = sections.find(s => s.id === activeSection);
-  const currentStep = currentSection?.steps.find(s => s.id === activeStep);
   
+  // Function to handle skipping or closing the tutorial
+  const handleSkipTutorial = () => {
+    console.log('Tutorial Guide: handleSkipTutorial called');
+    
+    if (typeof onSkip === 'function') {
+      try {
+        console.log('Tutorial Guide: Calling onSkip()');
+        onSkip();
+      } catch (error) {
+        console.error('Error in onSkip:', error);
+      }
+    } else if (typeof onClose === 'function') {
+      try {
+        console.log('Tutorial Guide: Calling onClose() as fallback');
+        onClose();
+      } catch (error) {
+        console.error('Error in onClose:', error);
+      }
+    }
+    
+    // Set localStorage directly from here too as a last resort
+    try {
+      localStorage.setItem('tutorial-completed', 'true');
+      console.log('Tutorial Guide: Set localStorage tutorial-completed=true');
+    } catch (err) {
+      console.error('Error setting localStorage:', err);
+    }
+  };
+
   // Mark a step as completed
   const completeStep = (stepId: string) => {
     setCompletedSteps(prev => ({ ...prev, [stepId]: true }));
   };
+
+  // Get current section and step
+  const currentSection = sections.find(s => s.id === activeSection);
+  const currentStep = currentSection?.steps.find(s => s.id === activeStep);
 
   // Go to the next step or section
   const goToNextStep = () => {
@@ -109,28 +138,6 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({
     });
   };
   
-  // Simple skip handler that directly calls parent functions
-  const handleSkipTutorial = () => {
-    console.log('Simple skip handler called in tutorial-guide');
-    // Call skip function if provided
-    if (onSkip) {
-      try {
-        console.log('Calling onSkip directly');
-        onSkip();
-      } catch (error) {
-        console.error('Error in skip handler:', error);
-      }
-    }
-    
-    // Call close function
-    try {
-      console.log('Calling onClose directly');
-      onClose();
-    } catch (error) {
-      console.error('Error in close handler:', error);
-    }
-  };
-
   // Navigate to a specific step
   const navigateToStep = (sectionId: string, stepId: string) => {
     setActiveSection(sectionId);
