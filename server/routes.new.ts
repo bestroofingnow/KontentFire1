@@ -10,6 +10,8 @@ import {
   disconnectFacebookIntegration,
   postToFacebook
 } from './integrations/facebook';
+import { getCompanyProfile, saveCompanyProfile } from './routes/company-profile';
+import { getBrandSettings, saveBrandSettings } from './routes/brand-settings';
 import axios from 'axios';
 import {
   users,
@@ -192,8 +194,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // The rest of your routes here
-  // ...
+  // Company Profile endpoints
+  app.get('/api/company-profile', getCompanyProfile);
+  app.post('/api/company-profile', saveCompanyProfile);
+  
+  // Brand Settings endpoints
+  app.get('/api/brand-settings', getBrandSettings);
+  app.post('/api/brand-settings', saveBrandSettings);
 
   const httpServer = createServer(app);
   return httpServer;
