@@ -13,9 +13,7 @@ export async function getCompanyProfile(req: Request, res: Response) {
     const userId = req.user.id;
     
     // Get the company profile
-    const profile = await db.query.companyProfiles.findFirst({
-      where: eq(companyProfiles.userId, userId)
-    });
+    const [profile] = await db.select().from(companyProfiles).where(eq(companyProfiles.userId, userId));
     
     if (!profile) {
       return res.status(404).json({ error: 'Company profile not found' });
@@ -52,9 +50,7 @@ export async function saveCompanyProfile(req: Request, res: Response) {
     }
     
     // Check if company profile already exists
-    const existingProfile = await db.query.companyProfiles.findFirst({
-      where: eq(companyProfiles.userId, userId)
-    });
+    const [existingProfile] = await db.select().from(companyProfiles).where(eq(companyProfiles.userId, userId));
     
     if (existingProfile) {
       // Update existing profile

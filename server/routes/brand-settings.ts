@@ -13,9 +13,7 @@ export async function getBrandSettings(req: Request, res: Response) {
     const userId = req.user.id;
     
     // Get the brand settings
-    const settings = await db.query.brandSettings.findFirst({
-      where: eq(brandSettings.userId, userId)
-    });
+    const [settings] = await db.select().from(brandSettings).where(eq(brandSettings.userId, userId));
     
     if (!settings) {
       return res.status(404).json({ error: 'Brand settings not found' });
@@ -83,9 +81,7 @@ export async function saveBrandSettings(req: Request, res: Response) {
     }
     
     // Check if brand settings already exist
-    const existingSettings = await db.query.brandSettings.findFirst({
-      where: eq(brandSettings.userId, userId)
-    });
+    const [existingSettings] = await db.select().from(brandSettings).where(eq(brandSettings.userId, userId));
     
     if (existingSettings) {
       // Update existing settings
