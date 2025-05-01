@@ -145,9 +145,11 @@ export const GetStartedPopup: React.FC<GetStartedPopupProps> = ({
                 <TransitionElement effect="fade-in">
                   <div className="flex items-center space-x-3 mb-2">
                     {currentStepData.icon}
-                    <AnimatedText effect="highlight" hoverTrigger={false}>
-                      <CardTitle>{currentStepData.title}</CardTitle>
-                    </AnimatedText>
+                    <CardTitle>
+                      <AnimatedText effect="highlight" hoverTrigger={false}>
+                        {currentStepData.title}
+                      </AnimatedText>
+                    </CardTitle>
                   </div>
                 </TransitionElement>
                 
