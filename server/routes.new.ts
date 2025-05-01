@@ -10,6 +10,15 @@ import {
   disconnectFacebookIntegration,
   postToFacebook
 } from './integrations/facebook';
+import {
+  getLinkedInAuthUrl,
+  getAccessTokenFromCode,
+  getLinkedInProfile,
+  saveLinkedInIntegration,
+  disconnectLinkedInIntegration,
+  postToLinkedIn,
+  validateAccessToken
+} from './integrations/linkedin';
 import { getCompanyProfile, saveCompanyProfile } from './routes/company-profile';
 import { getBrandSettings, saveBrandSettings } from './routes/brand-settings';
 import axios from 'axios';
@@ -201,6 +210,210 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Brand Settings endpoints
   app.get('/api/brand-settings', getBrandSettings);
   app.post('/api/brand-settings', saveBrandSettings);
+  
+  // LinkedIn Integration endpoints
+  
+  // Get LinkedIn authorization URL
+  app.get('/api/integrations/linkedin/auth-url', (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      // The OAuth redirect URI that LinkedIn will redirect back to
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/linkedin/callback`;
+      const authUrl = getLinkedInAuthUrl(redirectUri);
+      res.json({ authUrl });
+    } catch (error) {
+      console.error('Failed to get LinkedIn auth URL:', error);
+      res.status(500).json({ 
+        message: 'Failed to get LinkedIn auth URL: ' + (error instanceof Error ? error.message : 'Unknown error')
+      });
+    }
+  });
+  
+  // OAuth callback endpoint that LinkedIn will redirect to
+  app.get('/api/integrations/linkedin/callback', async (req: Request, res: Response) => {
+    const { code, state, error } = req.query;
+    
+    // Handle error from LinkedIn
+    if (error) {
+      return res.redirect(`/settings?error=${encodeURIComponent(error as string)}`);
+    }
+    
+    // Validate state to prevent CSRF
+    if (state !== 'linkedInAuth') {
+      return res.redirect('/settings?error=invalid_state');
+    }
+    
+    if (!code) {
+      return res.redirect('/settings?error=missing_code');
+    }
+    
+    try {
+      // The redirectUri must be the same as the one used to get the auth URL
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/linkedin/callback`;
+      
+      // Exchange the code for an access token
+      const tokenResponse = await getAccessTokenFromCode(code as string, redirectUri);
+      
+      // Get the user's LinkedIn profile
+      const profile = await getLinkedInProfile(tokenResponse.access_token);
+      
+      // Store the integration in the database
+      if (req.isAuthenticated()) {
+        await saveLinkedInIntegration(
+          req.user.id, 
+          tokenResponse.access_token, 
+          tokenResponse.expires_in,
+          profile
+        );
+      }
+      
+      // Redirect back to the settings page
+      return res.redirect('/settings?linkedin=connected');
+    } catch (error) {
+      console.error('LinkedIn OAuth callback error:', error);
+      return res.redirect(`/settings?error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
+    }
+  });
+  
+  // Post to LinkedIn
+  app.post('/api/integrations/linkedin/post', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    const { text, imageUrl, link, title, description } = req.body;
+    
+    if (!text && !imageUrl && !link) {
+      return res.status(400).json({ message: 'At least one of text, image, or link is required' });
+    }
+    
+    try {
+      // Get the user's LinkedIn integration
+      const [integration] = await db
+        .select()
+        .from(platformIntegrations)
+        .where(
+          eq(platformIntegrations.userId, req.user.id) && 
+          eq(platformIntegrations.platform, 'linkedin')
+        );
+      
+      if (!integration || !integration.isActive) {
+        return res.status(400).json({ message: 'LinkedIn integration not found or inactive' });
+      }
+      
+      // Verify token is still valid
+      const isTokenValid = await validateAccessToken(integration.accessToken);
+      
+      if (!isTokenValid) {
+        return res.status(401).json({ message: 'LinkedIn access token expired, please reconnect' });
+      }
+      
+      // Post to LinkedIn
+      const result = await axios.post(
+        'https://api.linkedin.com/v2/ugcPosts',
+        {
+          author: `urn:li:person:${integration.accountId}`,
+          lifecycleState: 'PUBLISHED',
+          specificContent: {
+            'com.linkedin.ugc.ShareContent': {
+              shareCommentary: {
+                text: text || ''
+              },
+              shareMediaCategory: link ? 'ARTICLE' : imageUrl ? 'IMAGE' : 'NONE',
+              media: link || imageUrl ? [
+                link ? {
+                  status: 'READY',
+                  originalUrl: link,
+                  title: {
+                    text: title || link
+                  },
+                  description: {
+                    text: description || ''
+                  }
+                } : {
+                  status: 'READY',
+                  description: {
+                    text: description || ''
+                  },
+                  media: `urn:li:image:${imageUrl}`,
+                  title: {
+                    text: title || ''
+                  }
+                }
+              ] : undefined
+            }
+          },
+          visibility: {
+            'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+          }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${integration.accessToken}`,
+            'Content-Type': 'application/json',
+            'X-Restli-Protocol-Version': '2.0.0'
+          }
+        }
+      );
+      
+      // Update the last used timestamp
+      await db
+        .update(platformIntegrations)
+        .set({
+          lastUsed: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(platformIntegrations.id, integration.id));
+      
+      res.json(result.data);
+    } catch (error) {
+      console.error('Failed to post to LinkedIn:', error);
+      res.status(500).json({ 
+        message: 'Failed to post to LinkedIn: ' + (error instanceof Error ? error.message : 'Unknown error')
+      });
+    }
+  });
+  
+  // Disconnect LinkedIn integration
+  app.delete('/api/integrations/linkedin', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      // Find the integration
+      const [integration] = await db
+        .select()
+        .from(platformIntegrations)
+        .where(
+          eq(platformIntegrations.userId, req.user.id) && 
+          eq(platformIntegrations.platform, 'linkedin')
+        );
+      
+      if (!integration) {
+        return res.status(404).json({ message: 'LinkedIn integration not found' });
+      }
+      
+      // Mark as inactive instead of deleting
+      await db
+        .update(platformIntegrations)
+        .set({
+          isActive: false,
+          updatedAt: new Date()
+        })
+        .where(eq(platformIntegrations.id, integration.id));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to disconnect LinkedIn account:', error);
+      res.status(500).json({ 
+        message: 'Failed to disconnect LinkedIn account: ' + (error instanceof Error ? error.message : 'Unknown error')
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
