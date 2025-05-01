@@ -188,7 +188,6 @@ export const companyProfiles = pgTable('company_profiles', {
   logo: text('logo_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  metadata: json('metadata'),
 });
 
 export const companyProfilesRelations = relations(companyProfiles, ({ one }) => ({
