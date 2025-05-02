@@ -21,6 +21,7 @@ import {
 } from './integrations/linkedin';
 import { getCompanyProfile, saveCompanyProfile } from './routes/company-profile';
 import { getBrandSettings, saveBrandSettings } from './routes/brand-settings';
+import { createAnimationHandler, listAnimationsHandler } from './routes/animations';
 import axios from 'axios';
 import {
   users,
@@ -210,6 +211,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Brand Settings endpoints
   app.get('/api/brand-settings', getBrandSettings);
   app.post('/api/brand-settings', saveBrandSettings);
+  
+  // AnimateDiff endpoints
+  app.post('/api/animations', createAnimationHandler);
+  app.get('/api/animations', listAnimationsHandler);
   
   // LinkedIn Integration endpoints
   
