@@ -5,13 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { SiLinkedin } from 'react-icons/si';
-import { Loader2, LinkIcon, ImageIcon, SendIcon } from 'lucide-react';
+import { Loader2, LinkIcon, ImageIcon, SendIcon, VideoIcon, XIcon } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AnimatedElement } from '@/components/ui/animated-element';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import AnimationCreator from '@/components/animations/animation-creator';
+import AnimationPreview from '@/components/animations/animation-preview';
 
 // Define the form schema
 const linkedInPostSchema = z.object({
@@ -36,6 +39,18 @@ interface LinkedInPostProps {
   };
 }
 
+interface AnimationResult {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  format: string;
+  width: number;
+  height: number;
+  frames: number;
+  duration: number;
+  createdAt: Date;
+}
+
 export function LinkedInPost({ 
   isConnected, 
   onPostSuccess,
@@ -44,10 +59,13 @@ export function LinkedInPost({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showImageField, setShowImageField] = useState(!!initialContent.imageUrl);
   const [showLinkField, setShowLinkField] = useState(!!initialContent.link);
+  const [animationDialogOpen, setAnimationDialogOpen] = useState(false);
+  const [showAnimationPreview, setShowAnimationPreview] = useState(false);
+  const [currentAnimation, setCurrentAnimation] = useState<AnimationResult | null>(null);
   const { toast } = useToast();
 
   // Initialize react-hook-form
-  const { register, handleSubmit, formState: { errors } } = useForm<LinkedInPostFormValues>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<LinkedInPostFormValues>({
     resolver: zodResolver(linkedInPostSchema),
     defaultValues: {
       text: initialContent.text || '',
@@ -57,6 +75,8 @@ export function LinkedInPost({
       description: initialContent.description || ''
     }
   });
+  
+  const currentImageUrl = watch('imageUrl');
 
   // Handle form submission
   const onSubmit = async (data: LinkedInPostFormValues) => {
@@ -154,13 +174,74 @@ export function LinkedInPost({
             {showImageField && (
               <div className="space-y-4 p-3 border rounded-lg">
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl" className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4" /> Image URL
-                  </Label>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="imageUrl" className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" /> Image URL
+                    </Label>
+                    
+                    {currentAnimation ? (
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setShowAnimationPreview(true)}
+                        >
+                          <VideoIcon className="h-4 w-4 mr-1" />
+                          View Animation
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setCurrentAnimation(null);
+                            setValue('imageUrl', '');
+                          }}
+                        >
+                          <XIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Dialog open={animationDialogOpen} onOpenChange={setAnimationDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            className="flex items-center gap-1"
+                          >
+                            <VideoIcon className="h-4 w-4" />
+                            Create Animation
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl">
+                          <AnimationCreator 
+                            onAnimationCreated={(animation) => {
+                              setCurrentAnimation(animation);
+                              setValue('imageUrl', window.location.origin + animation.url);
+                              setValue('title', 'Animated content');
+                              setValue('description', `${animation.width}x${animation.height} animation, ${animation.frames} frames`);
+                              setAnimationDialogOpen(false);
+                              toast({
+                                title: "Animation Created",
+                                description: "Animation added to your LinkedIn post",
+                              });
+                            }}
+                            onClose={() => setAnimationDialogOpen(false)}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                  
                   <Input
                     id="imageUrl"
                     placeholder="https://example.com/image.jpg"
                     {...register('imageUrl')}
+                    className={currentAnimation ? "bg-muted cursor-not-allowed" : ""}
+                    disabled={!!currentAnimation}
                   />
                   {errors.imageUrl && (
                     <p className="text-sm text-destructive">{errors.imageUrl.message}</p>
@@ -185,6 +266,22 @@ export function LinkedInPost({
                   />
                 </div>
               </div>
+            )}
+            
+            {/* Animation Preview Dialog */}
+            {currentAnimation && (
+              <Dialog open={showAnimationPreview} onOpenChange={setShowAnimationPreview}>
+                <DialogContent className="max-w-md">
+                  <AnimationPreview 
+                    animation={currentAnimation}
+                    onClose={() => setShowAnimationPreview(false)}
+                    onUseAnimation={(url) => {
+                      setValue('imageUrl', window.location.origin + url);
+                      setShowAnimationPreview(false);
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
             )}
             
             {showLinkField && (
