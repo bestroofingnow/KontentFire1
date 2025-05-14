@@ -33,6 +33,7 @@ export default function LinkedInDemoPage() {
         host: window.location.host,
         protocol: window.location.protocol,
         origin: window.location.origin,
+        productionRedirectUri: 'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback'
       });
     } catch (err) {
       console.error('Error fetching debug info:', err);

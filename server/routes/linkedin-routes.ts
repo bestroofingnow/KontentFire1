@@ -22,23 +22,11 @@ router.get('/auth-url', (req: Request, res: Response) => {
     const state = generateNonce();
     
     // Build the redirect URI
-    // Use a hardcoded URL for development as we need to match the LinkedIn app settings exactly
-    // In production, this should be dynamically constructed
-    let redirectUri = '';
+    // Use the production domain for LinkedIn OAuth
+    const redirectUri = 'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback';
     
-    // First try to get a host from headers
-    const host = req.get('host') || 'localhost:3000';
-    console.log('Current host detected:', host);
-    
-    if (host && host.includes('replit')) {
-      // Use the replit domain
-      redirectUri = `https://${host}/api/integrations/linkedin/callback`;
-    } else {
-      // Use localhost for development
-      redirectUri = `http://localhost:3000/api/integrations/linkedin/callback`;
-    }
-    
-    console.log('Using redirect URI:', redirectUri);
+    // Log the redirectUri for debugging
+    console.log('Using LinkedIn redirect URI:', redirectUri);
     
     // Generate LinkedIn authentication URL
     const authUrl = linkedInService.generateAuthUrl(redirectUri, state);
@@ -107,22 +95,11 @@ router.get('/callback', async (req: Request, res: Response) => {
   
   try {
     // The redirectUri must be the same as the one used to get the auth URL
-    // Use a hardcoded URL for development as we need to match the LinkedIn app settings exactly
-    let redirectUri = '';
+    // Use the production domain for LinkedIn OAuth (must match exactly what's registered in LinkedIn app)
+    const redirectUri = 'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback';
     
-    // First try to get a host from headers
-    const host = req.get('host') || 'localhost:3000';
-    console.log('Callback - host detected:', host);
-    
-    if (host && host.includes('replit')) {
-      // Use the replit domain
-      redirectUri = `https://${host}/api/integrations/linkedin/callback`;
-    } else {
-      // Use localhost for development
-      redirectUri = `http://localhost:3000/api/integrations/linkedin/callback`;
-    }
-    
-    console.log('Callback - using redirect URI:', redirectUri);
+    // Log the redirectUri for debugging
+    console.log('Callback - using LinkedIn redirect URI:', redirectUri);
     
     // Exchange authorization code for access token
     const tokenResponse = await linkedInService.exchangeCodeForToken(code as string, redirectUri);
