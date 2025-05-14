@@ -158,7 +158,7 @@ export async function postToLinkedIn(userId: number, options: LinkedInPostOption
   // LinkedIn API requires specific format for creating posts
   // Base structure for a text post
   const postData: any = {
-    author: `urn:li:person:${integration.metadata?.linkedinId || ''}`,
+    author: `urn:li:person:${integration.accountId || integration.metadata?.linkedinId || ''}`,
     lifecycleState: 'PUBLISHED',
     specificContent: {
       'com.linkedin.ugc.ShareContent': {
@@ -188,6 +188,9 @@ export async function postToLinkedIn(userId: number, options: LinkedInPostOption
   }
   
   try {
+    console.log('Posting to LinkedIn with data:', JSON.stringify(postData, null, 2));
+    console.log('Using access token:', integration.accessToken?.substring(0, 10) + '...');
+    
     // Create a post using LinkedIn's UGC Post API
     const response = await axios.post(
       `${LINKEDIN_API_URL}/ugcPosts`,
@@ -218,11 +221,18 @@ export async function postToLinkedIn(userId: number, options: LinkedInPostOption
     };
   } catch (error: any) {
     // Enhanced error handling with LinkedIn API specific messages
-    console.error('LinkedIn API error:', error.response?.data || error.message);
+    console.error('LinkedIn API error:', JSON.stringify({
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      stack: error.stack
+    }, null, 2));
     
     let errorMessage = 'Failed to post to LinkedIn';
     if (error.response?.data?.message) {
       errorMessage = `LinkedIn API error: ${error.response.data.message}`;
+    } else if (error.response?.data?.error_description) {
+      errorMessage = `LinkedIn API error: ${error.response.data.error_description}`;
     } else if (error.response?.status === 401) {
       errorMessage = 'LinkedIn authorization expired. Please reconnect your account.';
     } else if (error.response?.status === 403) {
