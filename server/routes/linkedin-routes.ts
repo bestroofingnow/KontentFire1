@@ -54,7 +54,8 @@ router.get('/callback', async (req: Request, res: Response) => {
   
   // Handle error from LinkedIn
   if (error) {
-    return res.redirect(`/dashboard/settings/connections?error=${encodeURIComponent(error as string)}`);
+    console.error('LinkedIn error:', error);
+    return res.redirect(`/integrations?error=${encodeURIComponent(error as string)}`);
   }
   
   // Check if user is authenticated
@@ -64,9 +65,11 @@ router.get('/callback', async (req: Request, res: Response) => {
   
   // Validate state to prevent CSRF
   const sessionState = req.session?.linkedInState;
-  // For development, temporarily skip state validation
-  if (false && (!sessionState || sessionState !== state)) {
-    return res.redirect('/dashboard/settings/connections?error=invalid_state');
+  
+  // State validation 
+  if (!sessionState || sessionState !== state) {
+    console.error('LinkedIn state validation failed', { sessionState, queryState: state });
+    return res.redirect('/integrations?error=invalid_state');
   }
   
   // Clear state from session
@@ -75,7 +78,8 @@ router.get('/callback', async (req: Request, res: Response) => {
   }
   
   if (!code) {
-    return res.redirect('/dashboard/settings/connections?error=missing_code');
+    console.error('LinkedIn code missing in callback');
+    return res.redirect('/integrations?error=missing_code');
   }
   
   try {
@@ -105,10 +109,10 @@ router.get('/callback', async (req: Request, res: Response) => {
     });
     
     // Redirect to success page
-    res.redirect('/dashboard/settings/connections?success=linkedin_connected');
+    res.redirect('/integrations?success=linkedin_connected');
   } catch (error) {
     console.error('LinkedIn auth callback error:', error);
-    res.redirect(`/dashboard/settings/connections?error=${encodeURIComponent((error instanceof Error ? error.message : 'Unknown error'))}`);
+    res.redirect(`/integrations?error=${encodeURIComponent((error instanceof Error ? error.message : 'Unknown error'))}`);
   }
 });
 
