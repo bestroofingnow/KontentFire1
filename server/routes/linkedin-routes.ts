@@ -14,6 +14,7 @@ import {
   shareVideoPost,
   isAccessTokenValid
 } from '../integrations/linkedin';
+import { generateNonce } from '../utils/auth';
 
 // Random string generation for CSRF protection
 const generateState = () => Math.random().toString(36).substring(2, 15);

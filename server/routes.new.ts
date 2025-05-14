@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import Stripe from "stripe";
 import { db } from "./db";
 import { setupAuth } from "./auth";
+import { storage } from "./storage";
 import { contentPipelineService } from "./cds-integration";
 import {
   connectFacebookAccount,
@@ -10,15 +11,7 @@ import {
   disconnectFacebookIntegration,
   postToFacebook
 } from './integrations/facebook';
-import {
-  getAuthorizationUrl,
-  getAccessToken,
-  getUserProfile,
-  shareTextPost,
-  shareImagePost,
-  shareVideoPost,
-  isAccessTokenValid
-} from './integrations/linkedin';
+import linkedInRouter from './routes/linkedin-routes';
 import { getCompanyProfile, saveCompanyProfile } from './routes/company-profile';
 import { getBrandSettings, saveBrandSettings } from './routes/brand-settings';
 import { createAnimationHandler, listAnimationsHandler } from './routes/animations';
@@ -47,155 +40,30 @@ import { eq, and, desc, sql, SQL, asc } from "drizzle-orm";
 if (!process.env.STRIPE_SECRET_KEY) {
   console.warn('Warning: STRIPE_SECRET_KEY environment variable not set. Stripe functionality will be limited.');
 }
-
-const stripe = process.env.STRIPE_SECRET_KEY 
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-03-31.basil" })
-  : null;
-
-// Define subscription plan price IDs
-const EMBER_PLAN_PRICE_ID = process.env.STRIPE_EMBER_PLAN_PRICE_ID;
-const INFERNO_PLAN_PRICE_ID = process.env.STRIPE_INFERNO_PLAN_PRICE_ID;
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
+}) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Authentication routes
+  // Setup authentication routes
   setupAuth(app);
-
-  // Facebook integration endpoints
   
-  // Client-side SDK auth endpoint (used by the FacebookLoginButton component)
-  app.post('/api/integrations/facebook/connect', async (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-    
-    const { accessToken, userID, name, email } = req.body;
-    
-    if (!accessToken || !userID) {
-      return res.status(400).json({ message: 'Access token and user ID are required' });
-    }
-    
-    try {
-      // Verify the access token with Facebook
-      const verifyResponse = await axios.get(`https://graph.facebook.com/debug_token`, {
-        params: {
-          input_token: accessToken,
-          access_token: `${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`,
-        },
-      });
-      
-      const tokenData = verifyResponse.data.data;
-      
-      // Verify the token is valid and for the correct user
-      if (!tokenData.is_valid || tokenData.user_id !== userID) {
-        throw new Error('Invalid Facebook access token');
-      }
-      
-      // Connect the Facebook account using our helper
-      const result = await connectFacebookAccount(req.user.id, {
-        accessToken,
-        userID,
-        name,
-        email
-      });
-      
-      res.json(result);
-    } catch (error) {
-      console.error('Failed to connect Facebook account:', error);
-      res.status(500).json({ 
-        message: 'Failed to connect Facebook account: ' + (error instanceof Error ? error.message : 'Unknown error')
-      });
-    }
-  });
-
-  // Post to Facebook using our client component 
-  app.post('/api/integrations/facebook/post', async (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    const { text, imageUrl, pageId, pageAccessToken } = req.body;
-
-    if (!text && !imageUrl) {
-      return res.status(400).json({ message: 'Either text or image is required' });
-    }
-
-    if (!pageId || !pageAccessToken) {
-      return res.status(400).json({ message: 'Page ID and access token are required' });
-    }
-
-    try {
-      const result = await postToFacebook({
-        text,
-        imageUrl,
-        pageId,
-        pageAccessToken
-      });
-      
-      res.json(result);
-    } catch (error) {
-      console.error('Failed to post to Facebook:', error);
-      res.status(500).json({ 
-        message: 'Failed to post to Facebook: ' + (error instanceof Error ? error.message : 'Unknown error')
-      });
-    }
-  });
-
-  // Get Facebook pages
-  app.get('/api/integrations/facebook/pages', async (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    try {
-      const pages = await getFacebookPages(req.user.id);
-      res.json(pages);
-    } catch (error) {
-      console.error('Failed to get Facebook pages:', error);
-      res.status(500).json({ 
-        message: 'Failed to get Facebook pages: ' + (error instanceof Error ? error.message : 'Unknown error')
-      });
-    }
-  });
-
-  // Disconnect Facebook integration
-  app.delete('/api/integrations/facebook', async (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    try {
-      const result = await disconnectFacebookIntegration(req.user.id);
-      res.json(result);
-    } catch (error) {
-      console.error('Failed to disconnect Facebook account:', error);
-      res.status(500).json({ 
-        message: 'Failed to disconnect Facebook account: ' + (error instanceof Error ? error.message : 'Unknown error')
-      });
-    }
-  });
-
-  // Get all user's integrations
+  // Integrations endpoints
   app.get('/api/integrations', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
-
+    
     try {
-      const integrations = await db.select()
+      const integrations = await db
+        .select()
         .from(platformIntegrations)
-        .where(eq(platformIntegrations.userId, req.user.id));
+        .where(and(
+          eq(platformIntegrations.userId, req.user.id),
+          eq(platformIntegrations.isActive, true)
+        ));
       
-      // Format for client
-      const formattedIntegrations = integrations.map(integration => ({
-        id: integration.id,
-        platform: integration.platform,
-        platformUsername: integration.accountName,
-        platformImageUrl: integration.profileImageUrl,
-        isConnected: integration.isActive,
-        lastUsed: integration.lastUsed
-      }));
-      
-      res.json(formattedIntegrations);
+      res.json(integrations);
     } catch (error) {
       console.error('Failed to get integrations:', error);
       res.status(500).json({ 
@@ -203,7 +71,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
+  
+  // Facebook integration
+  app.post('/api/integrations/facebook/connect', connectFacebookAccount);
+  app.post('/api/integrations/facebook/post', postToFacebook);
+  app.get('/api/integrations/facebook/pages', getFacebookPages);
+  app.delete('/api/integrations/facebook', disconnectFacebookIntegration);
+  
+  // LinkedIn integration
+  app.use('/api/integrations/linkedin', linkedInRouter);
+  
+  // Stripe payment route
+  if (stripe) {
+    app.post("/api/create-payment-intent", async (req, res) => {
+      try {
+        const { amount } = req.body;
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(amount * 100), // Convert to cents
+          currency: "usd",
+        });
+        res.json({ clientSecret: paymentIntent.client_secret });
+      } catch (error: any) {
+        res
+          .status(500)
+          .json({ message: "Error creating payment intent: " + error.message });
+      }
+    });
+  }
+  
   // Company Profile endpoints
   app.get('/api/company-profile', getCompanyProfile);
   app.post('/api/company-profile', saveCompanyProfile);
@@ -216,230 +111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/animations', createAnimationHandler);
   app.get('/api/animations', listAnimationsHandler);
   
-  // LinkedIn Integration endpoints
-  
-  // Get LinkedIn authorization URL
-  app.get('/api/integrations/linkedin/auth-url', (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-    
-    try {
-      // The OAuth redirect URI that LinkedIn will redirect back to
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/linkedin/callback`;
-      
-      // Generate a random state for CSRF protection
-      const state = Math.random().toString(36).substring(2, 15);
-      
-      // Store state in session
-      if (req.session) {
-        req.session.linkedInState = state;
-      }
-      
-      const authUrl = getAuthorizationUrl(redirectUri, state);
-      res.json({ authUrl });
-    } catch (error) {
-      console.error('Failed to get LinkedIn auth URL:', error);
-      res.status(500).json({ 
-        message: 'Failed to get LinkedIn auth URL: ' + (error instanceof Error ? error.message : 'Unknown error')
-      });
-    }
-  });
-  
-  // OAuth callback endpoint that LinkedIn will redirect to
-  app.get('/api/integrations/linkedin/callback', async (req: Request, res: Response) => {
-    const { code, state, error } = req.query;
-    
-    // Handle error from LinkedIn
-    if (error) {
-      return res.redirect(`/dashboard/settings/connections?error=${encodeURIComponent(error as string)}`);
-    }
-    
-    // Check if user is authenticated
-    if (!req.isAuthenticated()) {
-      return res.redirect('/auth?error=Please log in to connect LinkedIn');
-    }
-    
-    // Validate state to prevent CSRF
-    const sessionState = req.session?.linkedInState;
-    if (!sessionState || sessionState !== state) {
-      return res.redirect('/dashboard/settings/connections?error=invalid_state');
-    }
-    
-    // Clear state from session
-    if (req.session) {
-      delete req.session.linkedInState;
-    }
-    
-    if (!code) {
-      return res.redirect('/dashboard/settings/connections?error=missing_code');
-    }
-    
-    try {
-      // The redirectUri must be the same as the one used to get the auth URL
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/linkedin/callback`;
-      
-      // Exchange the code for an access token
-      const tokenData = await getAccessToken(code as string, redirectUri);
-      
-      // Get the user's LinkedIn profile
-      const profile = await getUserProfile(tokenData.access_token);
-      
-      // Store the LinkedIn connection details
-      await storage.saveLinkedInConnection(req.user.id, {
-        linkedinId: profile.id,
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
-        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
-        name: `${profile.firstName} ${profile.lastName}`,
-        profilePicture: profile.profilePicture || null,
-        email: profile.email || null,
-      });
-      
-      // Redirect back to the settings page
-      return res.redirect('/dashboard/settings/connections?linkedin=connected');
-    } catch (error) {
-      console.error('LinkedIn OAuth callback error:', error);
-      return res.redirect(`/dashboard/settings/connections?error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
-    }
-  });
-  
-  // Post to LinkedIn
-  app.post('/api/integrations/linkedin/post', async (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-    
-    const { text, mediaType, mediaUrl, title } = req.body;
-    
-    if (!text) {
-      return res.status(400).json({ message: 'Text content is required' });
-    }
-    
-    try {
-      // Get the user's LinkedIn connection
-      const connection = await storage.getLinkedInConnection(req.user.id);
-      
-      if (!connection) {
-        return res.status(400).json({ message: 'LinkedIn account not connected' });
-      }
-      
-      // Check if token is expired
-      if (connection.tokenExpiry && new Date(connection.tokenExpiry) <= new Date()) {
-        return res.status(401).json({ message: 'LinkedIn token expired, please reconnect your account' });
-      }
-      
-      // Check if token is still valid
-      const isValid = await isAccessTokenValid(connection.accessToken!);
-      
-      if (!isValid) {
-        return res.status(401).json({ message: 'LinkedIn token is invalid, please reconnect your account' });
-      }
-      
-      // Post to LinkedIn
-      const result = await axios.post(
-        'https://api.linkedin.com/v2/ugcPosts',
-        {
-          author: `urn:li:person:${integration.accountId}`,
-          lifecycleState: 'PUBLISHED',
-          specificContent: {
-            'com.linkedin.ugc.ShareContent': {
-              shareCommentary: {
-                text: text || ''
-              },
-              shareMediaCategory: link ? 'ARTICLE' : imageUrl ? 'IMAGE' : 'NONE',
-              media: link || imageUrl ? [
-                link ? {
-                  status: 'READY',
-                  originalUrl: link,
-                  title: {
-                    text: title || link
-                  },
-                  description: {
-                    text: description || ''
-                  }
-                } : {
-                  status: 'READY',
-                  description: {
-                    text: description || ''
-                  },
-                  media: `urn:li:image:${imageUrl}`,
-                  title: {
-                    text: title || ''
-                  }
-                }
-              ] : undefined
-            }
-          },
-          visibility: {
-            'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-          }
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${integration.accessToken}`,
-            'Content-Type': 'application/json',
-            'X-Restli-Protocol-Version': '2.0.0'
-          }
-        }
-      );
-      
-      // Update the last used timestamp
-      await db
-        .update(platformIntegrations)
-        .set({
-          lastUsed: new Date(),
-          updatedAt: new Date()
-        })
-        .where(eq(platformIntegrations.id, integration.id));
-      
-      res.json(result.data);
-    } catch (error) {
-      console.error('Failed to post to LinkedIn:', error);
-      res.status(500).json({ 
-        message: 'Failed to post to LinkedIn: ' + (error instanceof Error ? error.message : 'Unknown error')
-      });
-    }
-  });
-  
-  // Disconnect LinkedIn integration
-  app.delete('/api/integrations/linkedin', async (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-    
-    try {
-      // Find the integration
-      const [integration] = await db
-        .select()
-        .from(platformIntegrations)
-        .where(
-          eq(platformIntegrations.userId, req.user.id) && 
-          eq(platformIntegrations.platform, 'linkedin')
-        );
-      
-      if (!integration) {
-        return res.status(404).json({ message: 'LinkedIn integration not found' });
-      }
-      
-      // Mark as inactive instead of deleting
-      await db
-        .update(platformIntegrations)
-        .set({
-          isActive: false,
-          updatedAt: new Date()
-        })
-        .where(eq(platformIntegrations.id, integration.id));
-      
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Failed to disconnect LinkedIn account:', error);
-      res.status(500).json({ 
-        message: 'Failed to disconnect LinkedIn account: ' + (error instanceof Error ? error.message : 'Unknown error')
-      });
-    }
-  });
-
+  // Create HTTP server
   const httpServer = createServer(app);
+  
   return httpServer;
 }
