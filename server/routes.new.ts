@@ -11,13 +11,13 @@ import {
   postToFacebook
 } from './integrations/facebook';
 import {
-  getLinkedInAuthUrl,
-  getAccessTokenFromCode,
-  getLinkedInProfile,
-  saveLinkedInIntegration,
-  disconnectLinkedInIntegration,
-  postToLinkedIn,
-  validateAccessToken
+  getAuthorizationUrl,
+  getAccessToken,
+  getUserProfile,
+  shareTextPost,
+  shareImagePost,
+  shareVideoPost,
+  isAccessTokenValid
 } from './integrations/linkedin';
 import { getCompanyProfile, saveCompanyProfile } from './routes/company-profile';
 import { getBrandSettings, saveBrandSettings } from './routes/brand-settings';
