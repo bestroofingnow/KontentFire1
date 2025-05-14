@@ -227,7 +227,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // The OAuth redirect URI that LinkedIn will redirect back to
       const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/linkedin/callback`;
-      const authUrl = getLinkedInAuthUrl(redirectUri);
+      
+      // Generate a random state for CSRF protection
+      const state = Math.random().toString(36).substring(2, 15);
+      
+      // Store state in session
+      if (req.session) {
+        req.session.linkedInState = state;
+      }
+      
+      const authUrl = getAuthorizationUrl(redirectUri, state);
       res.json({ authUrl });
     } catch (error) {
       console.error('Failed to get LinkedIn auth URL:', error);
@@ -243,16 +252,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Handle error from LinkedIn
     if (error) {
-      return res.redirect(`/settings?error=${encodeURIComponent(error as string)}`);
+      return res.redirect(`/dashboard/settings/connections?error=${encodeURIComponent(error as string)}`);
+    }
+    
+    // Check if user is authenticated
+    if (!req.isAuthenticated()) {
+      return res.redirect('/auth?error=Please log in to connect LinkedIn');
     }
     
     // Validate state to prevent CSRF
-    if (state !== 'linkedInAuth') {
-      return res.redirect('/settings?error=invalid_state');
+    const sessionState = req.session?.linkedInState;
+    if (!sessionState || sessionState !== state) {
+      return res.redirect('/dashboard/settings/connections?error=invalid_state');
+    }
+    
+    // Clear state from session
+    if (req.session) {
+      delete req.session.linkedInState;
     }
     
     if (!code) {
-      return res.redirect('/settings?error=missing_code');
+      return res.redirect('/dashboard/settings/connections?error=missing_code');
     }
     
     try {
@@ -260,26 +280,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/linkedin/callback`;
       
       // Exchange the code for an access token
-      const tokenResponse = await getAccessTokenFromCode(code as string, redirectUri);
+      const tokenData = await getAccessToken(code as string, redirectUri);
       
       // Get the user's LinkedIn profile
-      const profile = await getLinkedInProfile(tokenResponse.access_token);
+      const profile = await getUserProfile(tokenData.access_token);
       
-      // Store the integration in the database
-      if (req.isAuthenticated()) {
-        await saveLinkedInIntegration(
-          req.user.id, 
-          tokenResponse.access_token, 
-          tokenResponse.expires_in,
-          profile
-        );
-      }
+      // Store the LinkedIn connection details
+      await storage.saveLinkedInConnection(req.user.id, {
+        linkedinId: profile.id,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
+        name: `${profile.firstName} ${profile.lastName}`,
+        profilePicture: profile.profilePicture || null,
+        email: profile.email || null,
+      });
       
       // Redirect back to the settings page
-      return res.redirect('/settings?linkedin=connected');
+      return res.redirect('/dashboard/settings/connections?linkedin=connected');
     } catch (error) {
       console.error('LinkedIn OAuth callback error:', error);
-      return res.redirect(`/settings?error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
+      return res.redirect(`/dashboard/settings/connections?error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
     }
   });
   
@@ -289,31 +310,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
-    const { text, imageUrl, link, title, description } = req.body;
+    const { text, mediaType, mediaUrl, title } = req.body;
     
-    if (!text && !imageUrl && !link) {
-      return res.status(400).json({ message: 'At least one of text, image, or link is required' });
+    if (!text) {
+      return res.status(400).json({ message: 'Text content is required' });
     }
     
     try {
-      // Get the user's LinkedIn integration
-      const [integration] = await db
-        .select()
-        .from(platformIntegrations)
-        .where(
-          eq(platformIntegrations.userId, req.user.id) && 
-          eq(platformIntegrations.platform, 'linkedin')
-        );
+      // Get the user's LinkedIn connection
+      const connection = await storage.getLinkedInConnection(req.user.id);
       
-      if (!integration || !integration.isActive) {
-        return res.status(400).json({ message: 'LinkedIn integration not found or inactive' });
+      if (!connection) {
+        return res.status(400).json({ message: 'LinkedIn account not connected' });
       }
       
-      // Verify token is still valid
-      const isTokenValid = await validateAccessToken(integration.accessToken);
+      // Check if token is expired
+      if (connection.tokenExpiry && new Date(connection.tokenExpiry) <= new Date()) {
+        return res.status(401).json({ message: 'LinkedIn token expired, please reconnect your account' });
+      }
       
-      if (!isTokenValid) {
-        return res.status(401).json({ message: 'LinkedIn access token expired, please reconnect' });
+      // Check if token is still valid
+      const isValid = await isAccessTokenValid(connection.accessToken!);
+      
+      if (!isValid) {
+        return res.status(401).json({ message: 'LinkedIn token is invalid, please reconnect your account' });
       }
       
       // Post to LinkedIn
