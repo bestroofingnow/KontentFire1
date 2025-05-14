@@ -51,6 +51,19 @@ export default function LinkedInDemoPage() {
           Test the LinkedIn integration functionality here
         </p>
         <Separator className="my-4" />
+        
+        <Alert className="mb-6">
+          <AlertTitle>Company Verification Required</AlertTitle>
+          <AlertDescription>
+            <p className="mb-2">LinkedIn requires company verification for this integration. To complete the verification process:</p>
+            <ol className="list-decimal pl-5 mb-2 space-y-1">
+              <li>A LinkedIn Page Admin for Kynex needs to approve the association</li>
+              <li>During approval, your LinkedIn profile details will be visible to the Page Admin</li>
+              <li>Once verified, the integration will allow posting to the company page</li>
+            </ol>
+            <p>This process must be completed in the LinkedIn Developer Portal.</p>
+          </AlertDescription>
+        </Alert>
       </div>
       
       {error && (
@@ -110,7 +123,7 @@ export default function LinkedInDemoPage() {
           <CardHeader>
             <CardTitle>Debug Information</CardTitle>
             <CardDescription>
-              Technical details to help troubleshoot LinkedIn integration issues.
+              Technical details to help troubleshoot LinkedIn integration issues and complete company verification.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -124,8 +137,23 @@ export default function LinkedInDemoPage() {
             </Button>
             
             {debugInfo && (
-              <div className="mt-4 p-4 bg-slate-50 rounded-md overflow-x-auto">
-                <pre className="text-xs">{JSON.stringify(debugInfo, null, 2)}</pre>
+              <div className="mt-4">
+                <div className="p-4 bg-slate-50 rounded-md overflow-x-auto">
+                  <pre className="text-xs">{JSON.stringify(debugInfo, null, 2)}</pre>
+                </div>
+                
+                <div className="mt-4 p-4 border border-amber-200 bg-amber-50 rounded-md">
+                  <h4 className="font-medium text-amber-800 mb-2">Company Verification Instructions</h4>
+                  <p className="text-sm mb-2">For the LinkedIn Developer Portal:</p>
+                  <ol className="list-decimal text-sm pl-5 mb-2 space-y-1">
+                    <li>Go to the LinkedIn Developer Portal and select your app</li>
+                    <li>In the app settings, look for the "Company verification" section</li>
+                    <li>Copy the verification URL provided there</li>
+                    <li>Send this URL to a LinkedIn Page Admin for Kynex</li>
+                    <li>They must click the link and approve the application</li>
+                  </ol>
+                  <p className="text-sm">Once verification is complete, you'll be able to use all authorized scopes.</p>
+                </div>
               </div>
             )}
           </CardContent>
