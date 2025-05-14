@@ -22,6 +22,7 @@ import AnimationDemoPage from "@/pages/animation-demo-page";
 import InteractiveDemoPage from "@/pages/interactive-demo-page";
 import MicroInteractionsDemo from "@/pages/micro-interactions-demo";
 import LinkedInIntegrationDemo from "@/pages/linkedin-integration-demo";
+import LinkedInDemoPage from "@/pages/linkedin-demo";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -136,6 +137,9 @@ function App() {
           </Route>
           <Route path="/linkedin-demo">
             <ProtectedRoute path="/linkedin-demo" component={LinkedInIntegrationDemo} />
+          </Route>
+          <Route path="/linkedin-posts">
+            <ProtectedRoute path="/linkedin-posts" component={LinkedInDemoPage} />
           </Route>
           <Route path="/brand-settings">
             <ProtectedRoute path="/brand-settings" component={BrandSettingsPage} />
