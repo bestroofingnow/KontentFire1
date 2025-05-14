@@ -78,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/integrations/facebook/pages', getFacebookPages);
   app.delete('/api/integrations/facebook', disconnectFacebookIntegration);
   
-  // LinkedIn integration
+  // LinkedIn integration 
   app.use('/api/integrations/linkedin', linkedInRouter);
   
   // Stripe payment route

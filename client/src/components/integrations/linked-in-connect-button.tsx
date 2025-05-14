@@ -44,7 +44,7 @@ export function LinkedInConnectButton({
   const checkConnectionStatus = async () => {
     try {
       setIsLoading(true);
-      const response = await apiRequest('GET', '/api/linkedin/status');
+      const response = await apiRequest('GET', '/api/integrations/linkedin/status');
       const data = await response.json();
       
       setIsConnected(data.isConnected);
@@ -71,7 +71,7 @@ export function LinkedInConnectButton({
   const connectToLinkedIn = async () => {
     try {
       setIsLoading(true);
-      const response = await apiRequest('GET', '/api/linkedin/auth-url');
+      const response = await apiRequest('GET', '/api/integrations/linkedin/auth-url');
       const data = await response.json();
       
       // Redirect to LinkedIn auth page
@@ -91,7 +91,7 @@ export function LinkedInConnectButton({
   const disconnectFromLinkedIn = async () => {
     try {
       setIsLoading(true);
-      await apiRequest('DELETE', '/api/linkedin');
+      await apiRequest('DELETE', '/api/integrations/linkedin');
       
       setIsConnected(false);
       setProfile(null);

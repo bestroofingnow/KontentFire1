@@ -81,7 +81,7 @@ export function LinkedInPost({
     try {
       setIsSubmitting(true);
       
-      const response = await apiRequest('POST', '/api/linkedin/post', {
+      const response = await apiRequest('POST', '/api/integrations/linkedin/post', {
         text: postText,
         mediaUrl: mediaUrl || undefined,
       });

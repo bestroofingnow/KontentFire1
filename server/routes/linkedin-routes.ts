@@ -23,7 +23,7 @@ router.get('/auth-url', (req: Request, res: Response) => {
     
     // Build the redirect URI
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const redirectUri = `${baseUrl}/api/linkedin/callback`;
+    const redirectUri = `${baseUrl}/api/integrations/linkedin/callback`;
     
     // Generate LinkedIn authentication URL
     const authUrl = linkedInService.generateAuthUrl(redirectUri, state);
@@ -74,7 +74,7 @@ router.get('/callback', async (req: Request, res: Response) => {
   try {
     // The redirectUri must be the same as the one used to get the auth URL
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const redirectUri = `${baseUrl}/api/linkedin/callback`;
+    const redirectUri = `${baseUrl}/api/integrations/linkedin/callback`;
     
     // Exchange authorization code for access token
     const tokenResponse = await linkedInService.exchangeCodeForToken(code as string, redirectUri);
