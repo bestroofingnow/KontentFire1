@@ -263,24 +263,30 @@ export class DatabaseStorage implements IStorage {
   
   // Social sharing
   async recordSocialShare(userId: number, shareData: SocialShareRecord): Promise<any> {
-    // For now, we're just recording basic analytics
-    const [result] = await db
-      .insert(analytics)
-      .values({
-        userId,
-        event: 'social_share',
-        platform: shareData.platform,
-        metadata: {
-          contentType: shareData.contentType,
-          postId: shareData.postId,
-          text: shareData.text,
-          mediaUrl: shareData.mediaUrl,
-          sharedAt: shareData.timestamp.toISOString()
-        }
-      })
-      .returning();
+    // Since we don't have an analytics table yet, we'll just log the share
+    // TODO: Create an analytics table and record the share there
+    console.log('Social share recorded:', {
+      userId,
+      platform: shareData.platform,
+      contentType: shareData.contentType,
+      postId: shareData.postId,
+      timestamp: shareData.timestamp.toISOString(),
+    });
     
-    return result;
+    // Update the lastUsed timestamp on the integration
+    await db
+      .update(platformIntegrations)
+      .set({
+        lastUsed: new Date(),
+      })
+      .where(
+        and(
+          eq(platformIntegrations.userId, userId),
+          eq(platformIntegrations.platform, shareData.platform as any)
+        )
+      );
+    
+    return { success: true };
   }
 }
 

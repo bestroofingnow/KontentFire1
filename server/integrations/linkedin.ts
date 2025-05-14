@@ -1,115 +1,119 @@
 /**
  * LinkedIn Integration Service
- * Handles OAuth authentication and API interactions with LinkedIn
+ * 
+ * Provides functions for authenticating with LinkedIn OAuth,
+ * retrieving user profile information, and posting content.
  */
 
 import axios from 'axios';
+import { URL } from 'url';
 import querystring from 'querystring';
-import { storage } from '../storage';
 
-// LinkedIn API endpoints
+// Constants
+const LINKEDIN_API_URL = 'https://api.linkedin.com/v2';
 const LINKEDIN_AUTH_URL = 'https://www.linkedin.com/oauth/v2/authorization';
 const LINKEDIN_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken';
-const LINKEDIN_API_URL = 'https://api.linkedin.com/v2';
 
-// LinkedIn API credentials from environment variables
-const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
-const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
+// LinkedIn API scopes needed for our application
+const SCOPES = [
+  'r_liteprofile', 
+  'r_emailaddress', 
+  'w_member_social'
+];
 
-if (!CLIENT_ID || !CLIENT_SECRET) {
-  console.error('LinkedIn API credentials are missing. Set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET environment variables.');
+// Check if LinkedIn credentials are configured
+if (!process.env.LINKEDIN_CLIENT_ID || !process.env.LINKEDIN_CLIENT_SECRET) {
+  console.warn('LinkedIn API credentials not configured. LinkedIn integration will not function properly.');
 }
 
 /**
- * Generate the LinkedIn OAuth authorization URL
+ * Generate LinkedIn OAuth authorization URL
  * 
- * @param redirectUri The redirect URI after authentication
- * @param state An optional state parameter to verify the callback
- * @returns The authorization URL
+ * @param redirectUri - The redirect URI to return to after authentication
+ * @param state - Random state string for CSRF protection
+ * @returns The authorization URL to redirect the user to
  */
-export function getAuthorizationUrl(redirectUri: string, state: string = ''): string {
-  const params = {
-    response_type: 'code',
-    client_id: CLIENT_ID,
-    redirect_uri: redirectUri,
-    state,
-    scope: 'r_liteprofile r_emailaddress w_member_social',
-  };
-
-  return `${LINKEDIN_AUTH_URL}?${querystring.stringify(params)}`;
+export function getAuthorizationUrl(redirectUri: string, state: string): string {
+  const url = new URL(LINKEDIN_AUTH_URL);
+  
+  url.searchParams.append('response_type', 'code');
+  url.searchParams.append('client_id', process.env.LINKEDIN_CLIENT_ID!);
+  url.searchParams.append('redirect_uri', redirectUri);
+  url.searchParams.append('state', state);
+  url.searchParams.append('scope', SCOPES.join(' '));
+  
+  return url.toString();
 }
 
 /**
- * Exchange an authorization code for an access token
+ * Exchange authorization code for access token
  * 
- * @param code The authorization code received from LinkedIn
- * @param redirectUri The redirect URI used in the authorization request
- * @returns The access token and related information
+ * @param code - The authorization code from LinkedIn
+ * @param redirectUri - The redirect URI used in the authorization request
+ * @returns The access token response
  */
 export async function getAccessToken(code: string, redirectUri: string): Promise<{
   access_token: string;
   expires_in: number;
   refresh_token?: string;
 }> {
-  const params = {
-    grant_type: 'authorization_code',
-    code,
-    redirect_uri: redirectUri,
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-  };
-
   try {
-    const response = await axios.post(LINKEDIN_TOKEN_URL, querystring.stringify(params), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-
-    return response.data;
+    const response = await axios.post(
+      LINKEDIN_TOKEN_URL,
+      querystring.stringify({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        client_id: process.env.LINKEDIN_CLIENT_ID,
+        client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+    
+    return {
+      access_token: response.data.access_token,
+      expires_in: response.data.expires_in,
+      refresh_token: response.data.refresh_token,
+    };
   } catch (error) {
-    console.error('Error getting LinkedIn access token:', error);
+    console.error('LinkedIn getAccessToken error:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(`LinkedIn API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+    }
     throw error;
   }
 }
 
 /**
- * Refresh an expired access token
+ * Check if an access token is still valid
  * 
- * @param refreshToken The refresh token
- * @returns The new access token and related information
+ * @param accessToken - The access token to validate
+ * @returns True if the token is valid, false otherwise
  */
-export async function refreshAccessToken(refreshToken: string): Promise<{
-  access_token: string;
-  expires_in: number;
-  refresh_token?: string;
-}> {
-  const params = {
-    grant_type: 'refresh_token',
-    refresh_token: refreshToken,
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-  };
-
+export async function isAccessTokenValid(accessToken: string): Promise<boolean> {
   try {
-    const response = await axios.post(LINKEDIN_TOKEN_URL, querystring.stringify(params), {
+    // Make a simple API request to test the token
+    await axios.get(`${LINKEDIN_API_URL}/me`, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Bearer ${accessToken}`,
       },
     });
-
-    return response.data;
+    return true;
   } catch (error) {
-    console.error('Error refreshing LinkedIn access token:', error);
-    throw error;
+    console.warn('LinkedIn token validation failed:', error);
+    return false;
   }
 }
 
 /**
- * Get the user's LinkedIn profile information
+ * Get LinkedIn user profile information
  * 
- * @param accessToken The LinkedIn access token
- * @returns The user's profile information
+ * @param accessToken - The user's access token
+ * @returns User profile information
  */
 export async function getUserProfile(accessToken: string): Promise<{
   id: string;
@@ -119,78 +123,97 @@ export async function getUserProfile(accessToken: string): Promise<{
   email?: string;
 }> {
   try {
-    // Get basic profile
-    const profileResponse = await axios.get(`${LINKEDIN_API_URL}/me?projection=(id,firstName,lastName,profilePicture(displayImage~:playableStreams))`, {
+    // Get basic profile information
+    const profileResponse = await axios.get(`${LINKEDIN_API_URL}/me`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
-
-    // Get email address (separate API call)
-    const emailResponse = await axios.get(`${LINKEDIN_API_URL}/emailAddress?q=members&projection=(elements*(handle~))`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    const profile = profileResponse.data;
     
-    // Extract profile picture if available
-    let profilePicture;
-    if (profile.profilePicture && 
-        profile.profilePicture['displayImage~'] && 
-        profile.profilePicture['displayImage~'].elements) {
-      const elements = profile.profilePicture['displayImage~'].elements;
-      if (elements.length > 0) {
-        profilePicture = elements[0].identifiers[0].identifier;
+    // Get profile picture if available
+    let profilePicture: string | undefined;
+    try {
+      const pictureResponse = await axios.get(`${LINKEDIN_API_URL}/me?projection=(id,profilePicture(displayImage~:playableStreams))`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      
+      const pictures = pictureResponse.data?.profilePicture?.['displayImage~']?.elements || [];
+      if (pictures.length > 0) {
+        // Get the highest resolution image
+        const sortedPictures = pictures.sort((a: any, b: any) => b.width.pixelSize - a.width.pixelSize);
+        profilePicture = sortedPictures[0]?.identifiers?.[0]?.identifier;
       }
+    } catch (error) {
+      console.warn('Failed to retrieve LinkedIn profile picture:', error);
     }
-
-    // Extract email if available
-    let email;
-    if (emailResponse.data.elements && emailResponse.data.elements.length > 0) {
-      email = emailResponse.data.elements[0]['handle~'].emailAddress;
+    
+    // Get email address if available
+    let email: string | undefined;
+    try {
+      const emailResponse = await axios.get(`${LINKEDIN_API_URL}/emailAddress?q=members&projection=(elements*(handle~))`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      
+      email = emailResponse.data?.elements?.[0]?.['handle~']?.emailAddress;
+    } catch (error) {
+      console.warn('Failed to retrieve LinkedIn email:', error);
     }
-
-    // Format and return the profile
+    
     return {
-      id: profile.id,
-      firstName: profile.firstName.localized[Object.keys(profile.firstName.localized)[0]],
-      lastName: profile.lastName.localized[Object.keys(profile.lastName.localized)[0]],
+      id: profileResponse.data.id,
+      firstName: profileResponse.data.localizedFirstName,
+      lastName: profileResponse.data.localizedLastName,
       profilePicture,
       email,
     };
   } catch (error) {
-    console.error('Error getting LinkedIn profile:', error);
+    console.error('LinkedIn getUserProfile error:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(`LinkedIn API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+    }
     throw error;
   }
 }
 
 /**
- * Share a text post on LinkedIn
+ * Share a text-only post to LinkedIn
  * 
- * @param accessToken The LinkedIn access token
- * @param text The text content to share
- * @returns The response from the LinkedIn API
+ * @param accessToken - The user's access token
+ * @param text - The text content to share
+ * @returns The post response data
  */
 export async function shareTextPost(accessToken: string, text: string): Promise<any> {
   try {
+    // Get the user's LinkedIn ID (needed for the author field)
+    const profileResponse = await axios.get(`${LINKEDIN_API_URL}/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    
+    const linkedInId = profileResponse.data.id;
+    
+    // Create the share post
     const response = await axios.post(
       `${LINKEDIN_API_URL}/ugcPosts`,
       {
-        author: `urn:li:person:${await getLinkedInUserId(accessToken)}`,
+        author: `urn:li:person:${linkedInId}`,
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
             shareCommentary: {
-              text,
+              text: text
             },
             shareMediaCategory: 'NONE',
-          },
+          }
         },
         visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
-        },
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+        }
       },
       {
         headers: {
@@ -200,45 +223,56 @@ export async function shareTextPost(accessToken: string, text: string): Promise<
         },
       }
     );
-
+    
     return response.data;
   } catch (error) {
-    console.error('Error sharing LinkedIn post:', error);
+    console.error('LinkedIn shareTextPost error:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(`LinkedIn API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+    }
     throw error;
   }
 }
 
 /**
- * Share an image post on LinkedIn
+ * Share an image post to LinkedIn
  * 
- * @param accessToken The LinkedIn access token
- * @param text The text content to share
- * @param imageUrl The URL of the image to share
- * @param title Optional title for the image
- * @returns The response from the LinkedIn API
+ * @param accessToken - The user's access token
+ * @param text - The text content to share
+ * @param imageUrl - The URL of the image to share
+ * @param title - Optional title for the image
+ * @returns The post response data
  */
 export async function shareImagePost(
-  accessToken: string,
-  text: string,
-  imageUrl: string,
+  accessToken: string, 
+  text: string, 
+  imageUrl: string, 
   title?: string
 ): Promise<any> {
   try {
-    // 1. Register the image upload
-    const userId = await getLinkedInUserId(accessToken);
-    const registerUploadResponse = await axios.post(
+    // Get the user's LinkedIn ID (needed for the author field)
+    const profileResponse = await axios.get(`${LINKEDIN_API_URL}/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    
+    const linkedInId = profileResponse.data.id;
+    
+    // First, register the image with LinkedIn
+    const registerImageResponse = await axios.post(
       `${LINKEDIN_API_URL}/assets?action=registerUpload`,
       {
         registerUploadRequest: {
           recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
-          owner: `urn:li:person:${userId}`,
+          owner: `urn:li:person:${linkedInId}`,
           serviceRelationships: [
             {
               relationshipType: 'OWNER',
-              identifier: 'urn:li:userGeneratedContent',
-            },
-          ],
-        },
+              identifier: 'urn:li:userGeneratedContent'
+            }
+          ]
+        }
       },
       {
         headers: {
@@ -248,54 +282,56 @@ export async function shareImagePost(
         },
       }
     );
-
-    // 2. Get upload URL and asset URN from the response
-    const uploadUrl = registerUploadResponse.data.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
-    const assetUrn = registerUploadResponse.data.value.asset;
-
-    // 3. Download the image from the provided URL
-    const imageResponse = await axios.get(imageUrl, {
-      responseType: 'arraybuffer',
-    });
+    
+    // Get the upload URL from the response
+    const uploadUrl = registerImageResponse.data.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
+    const asset = registerImageResponse.data.value.asset;
+    
+    // Download the image from the provided URL
+    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     const imageBuffer = Buffer.from(imageResponse.data, 'binary');
-
-    // 4. Upload the image to LinkedIn's servers
-    await axios.put(uploadUrl, imageBuffer, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/octet-stream',
-      },
-    });
-
-    // 5. Create the post with the uploaded image
-    const response = await axios.post(
+    
+    // Upload the image to LinkedIn
+    await axios.put(
+      uploadUrl,
+      imageBuffer,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/octet-stream',
+        },
+      }
+    );
+    
+    // Now create the post with the uploaded image
+    const postResponse = await axios.post(
       `${LINKEDIN_API_URL}/ugcPosts`,
       {
-        author: `urn:li:person:${userId}`,
+        author: `urn:li:person:${linkedInId}`,
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
             shareCommentary: {
-              text,
+              text: text
             },
             shareMediaCategory: 'IMAGE',
             media: [
               {
                 status: 'READY',
                 description: {
-                  text: title || text.substring(0, 100),
+                  text: title || ''
                 },
-                media: assetUrn,
+                media: asset,
                 title: {
-                  text: title || text.substring(0, 50),
-                },
-              },
-            ],
-          },
+                  text: title || 'Image'
+                }
+              }
+            ]
+          }
         },
         visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
-        },
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+        }
       },
       {
         headers: {
@@ -305,65 +341,56 @@ export async function shareImagePost(
         },
       }
     );
-
-    return response.data;
+    
+    return postResponse.data;
   } catch (error) {
-    console.error('Error sharing LinkedIn image post:', error);
+    console.error('LinkedIn shareImagePost error:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(`LinkedIn API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+    }
     throw error;
   }
 }
 
 /**
- * Get the LinkedIn user ID from an access token
+ * Share a video post to LinkedIn
  * 
- * @param accessToken The LinkedIn access token
- * @returns The LinkedIn user ID
+ * @param accessToken - The user's access token
+ * @param text - The text content to share
+ * @param videoUrl - The URL of the video to share
+ * @param title - Optional title for the video
+ * @returns The post response data
  */
-async function getLinkedInUserId(accessToken: string): Promise<string> {
+export async function shareVideoPost(
+  accessToken: string, 
+  text: string, 
+  videoUrl: string, 
+  title?: string
+): Promise<any> {
   try {
-    const response = await axios.get(`${LINKEDIN_API_URL}/me`, {
+    // Get the user's LinkedIn ID (needed for the author field)
+    const profileResponse = await axios.get(`${LINKEDIN_API_URL}/me`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
-    return response.data.id;
-  } catch (error) {
-    console.error('Error getting LinkedIn user ID:', error);
-    throw error;
-  }
-}
-
-/**
- * Share a video post on LinkedIn
- * 
- * @param accessToken The LinkedIn access token
- * @param text The text content to share
- * @param videoUrl The URL of the video to share
- * @param title Optional title for the video
- * @returns The response from the LinkedIn API
- */
-export async function shareVideoPost(
-  accessToken: string,
-  text: string,
-  videoUrl: string,
-  title?: string
-): Promise<any> {
-  try {
-    // 1. Register the video upload
-    const userId = await getLinkedInUserId(accessToken);
-    const registerUploadResponse = await axios.post(
+    
+    const linkedInId = profileResponse.data.id;
+    
+    // First, register the video with LinkedIn
+    const registerVideoResponse = await axios.post(
       `${LINKEDIN_API_URL}/assets?action=registerUpload`,
       {
         registerUploadRequest: {
           recipes: ['urn:li:digitalmediaRecipe:feedshare-video'],
-          owner: `urn:li:person:${userId}`,
+          owner: `urn:li:person:${linkedInId}`,
           serviceRelationships: [
             {
               relationshipType: 'OWNER',
-              identifier: 'urn:li:userGeneratedContent',
-            },
-          ],
-        },
+              identifier: 'urn:li:userGeneratedContent'
+            }
+          ]
+        }
       },
       {
         headers: {
@@ -373,54 +400,56 @@ export async function shareVideoPost(
         },
       }
     );
-
-    // 2. Get upload URL and asset URN from the response
-    const uploadUrl = registerUploadResponse.data.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
-    const assetUrn = registerUploadResponse.data.value.asset;
-
-    // 3. Download the video from the provided URL
-    const videoResponse = await axios.get(videoUrl, {
-      responseType: 'arraybuffer',
-    });
+    
+    // Get the upload URL from the response
+    const uploadUrl = registerVideoResponse.data.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;
+    const asset = registerVideoResponse.data.value.asset;
+    
+    // Download the video from the provided URL
+    const videoResponse = await axios.get(videoUrl, { responseType: 'arraybuffer' });
     const videoBuffer = Buffer.from(videoResponse.data, 'binary');
-
-    // 4. Upload the video to LinkedIn's servers
-    await axios.put(uploadUrl, videoBuffer, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/octet-stream',
-      },
-    });
-
-    // 5. Create the post with the uploaded video
-    const response = await axios.post(
+    
+    // Upload the video to LinkedIn
+    await axios.put(
+      uploadUrl,
+      videoBuffer,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/octet-stream',
+        },
+      }
+    );
+    
+    // Now create the post with the uploaded video
+    const postResponse = await axios.post(
       `${LINKEDIN_API_URL}/ugcPosts`,
       {
-        author: `urn:li:person:${userId}`,
+        author: `urn:li:person:${linkedInId}`,
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
             shareCommentary: {
-              text,
+              text: text
             },
             shareMediaCategory: 'VIDEO',
             media: [
               {
                 status: 'READY',
                 description: {
-                  text: title || text.substring(0, 100),
+                  text: title || ''
                 },
-                media: assetUrn,
+                media: asset,
                 title: {
-                  text: title || text.substring(0, 50),
-                },
-              },
-            ],
-          },
+                  text: title || 'Video'
+                }
+              }
+            ]
+          }
         },
         visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
-        },
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+        }
       },
       {
         headers: {
@@ -430,29 +459,13 @@ export async function shareVideoPost(
         },
       }
     );
-
-    return response.data;
+    
+    return postResponse.data;
   } catch (error) {
-    console.error('Error sharing LinkedIn video post:', error);
+    console.error('LinkedIn shareVideoPost error:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(`LinkedIn API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+    }
     throw error;
-  }
-}
-
-/**
- * Check if a LinkedIn access token is valid
- * 
- * @param accessToken The LinkedIn access token to check
- * @returns True if the token is valid, false otherwise
- */
-export async function isAccessTokenValid(accessToken: string): Promise<boolean> {
-  try {
-    await axios.get(`${LINKEDIN_API_URL}/me`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    return true;
-  } catch (error) {
-    return false;
   }
 }

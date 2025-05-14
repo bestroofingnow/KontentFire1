@@ -12,3 +12,13 @@ import { randomBytes } from 'crypto';
 export function generateNonce(length = 32): string {
   return randomBytes(length).toString('hex');
 }
+
+// Add typings to extend Express.Session
+declare module 'express-session' {
+  interface SessionData {
+    linkedInState?: string;
+    facebookState?: string;
+    twitterState?: string;
+    instagramState?: string;
+  }
+}
