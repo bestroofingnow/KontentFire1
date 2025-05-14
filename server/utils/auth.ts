@@ -13,7 +13,7 @@ export function generateNonce(length = 32): string {
   return randomBytes(length).toString('hex');
 }
 
-// Add typings to extend Express.Session
+// Add session data typings for various social login states
 declare module 'express-session' {
   interface SessionData {
     linkedInState?: string;

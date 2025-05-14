@@ -2,42 +2,37 @@
  * LinkedIn API integration routes
  */
 
-import express from 'express';
-import { Request, Response } from 'express';
+import { Request, Response, Router } from 'express';
 import { storage } from '../storage';
-import { 
-  getAuthorizationUrl, 
-  getAccessToken, 
-  getUserProfile,
-  shareTextPost,
-  shareImagePost,
-  shareVideoPost,
-  isAccessTokenValid
-} from '../integrations/linkedin';
 import { generateNonce } from '../utils/auth';
+import * as linkedInService from '../integrations/linkedin';
+import { URL } from 'url';
 
-// Use generateNonce from auth utils for CSRF protection
-const router = express.Router();
+const router = Router();
 
-// Get LinkedIn authorization URL
+// Get LinkedIn authentication URL
 router.get('/auth-url', (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: 'Not authenticated' });
-  }
-  
   try {
-    // The OAuth redirect URI that LinkedIn will redirect back to
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/linkedin/callback`;
+    // Check if user is authenticated
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
     
-    // Generate a random state for CSRF protection
-    const state = generateNonce(16);
+    // Generate a random state value to prevent CSRF attacks
+    const state = generateNonce();
+    
+    // Build the redirect URI
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const redirectUri = `${baseUrl}/api/linkedin/callback`;
+    
+    // Generate LinkedIn authentication URL
+    const authUrl = linkedInService.generateAuthUrl(redirectUri, state);
     
     // Store state in session
     if (req.session) {
       req.session.linkedInState = state;
     }
     
-    const authUrl = getAuthorizationUrl(redirectUri, state);
     res.json({ authUrl });
   } catch (error) {
     console.error('Failed to get LinkedIn auth URL:', error);
@@ -58,7 +53,7 @@ router.get('/callback', async (req: Request, res: Response) => {
   
   // Check if user is authenticated
   if (!req.isAuthenticated()) {
-    return res.redirect('/auth?error=Please log in to connect LinkedIn');
+    return res.redirect('/auth?message=session_expired');
   }
   
   // Validate state to prevent CSRF
@@ -78,130 +73,135 @@ router.get('/callback', async (req: Request, res: Response) => {
   
   try {
     // The redirectUri must be the same as the one used to get the auth URL
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/linkedin/callback`;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const redirectUri = `${baseUrl}/api/linkedin/callback`;
     
-    // Exchange the code for an access token
-    const tokenData = await getAccessToken(code as string, redirectUri);
+    // Exchange authorization code for access token
+    const tokenResponse = await linkedInService.exchangeCodeForToken(code as string, redirectUri);
     
-    // Get the user's LinkedIn profile
-    const profile = await getUserProfile(tokenData.access_token);
+    // Get LinkedIn profile information
+    const profile = await linkedInService.getLinkedInProfile(tokenResponse.access_token);
     
-    // Store the LinkedIn connection details
+    // Calculate token expiration date
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + tokenResponse.expires_in);
+    
+    // Save LinkedIn connection to the database
     await storage.saveLinkedInConnection(req.user.id, {
       linkedinId: profile.id,
-      accessToken: tokenData.access_token,
-      refreshToken: tokenData.refresh_token,
-      expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
-      name: `${profile.firstName} ${profile.lastName}`,
-      profilePicture: profile.profilePicture || null,
+      accessToken: tokenResponse.access_token,
+      refreshToken: tokenResponse.refresh_token,
+      expiresAt,
+      name: `${profile.localizedFirstName} ${profile.localizedLastName}`,
+      profilePicture: profile.profilePicture?.displayImage || null,
       email: profile.email || null,
     });
     
-    // Redirect back to the settings page
-    return res.redirect('/dashboard/settings/connections?linkedin=connected');
+    // Redirect to success page
+    res.redirect('/dashboard/settings/connections?success=linkedin_connected');
   } catch (error) {
-    console.error('LinkedIn OAuth callback error:', error);
-    return res.redirect(`/dashboard/settings/connections?error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
+    console.error('LinkedIn auth callback error:', error);
+    res.redirect(`/dashboard/settings/connections?error=${encodeURIComponent((error instanceof Error ? error.message : 'Unknown error'))}`);
   }
 });
 
-// Get LinkedIn connection status
+// Check LinkedIn connection status
 router.get('/status', async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: 'Not authenticated' });
-  }
-  
   try {
-    const connection = await storage.getLinkedInConnection(req.user.id);
+    // Check if user is authenticated
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
     
-    if (!connection) {
-      return res.json({ connected: false });
+    // Get LinkedIn connection from database
+    const integration = await storage.getLinkedInConnection(req.user.id);
+    
+    if (!integration || !integration.accessToken) {
+      return res.json({
+        isConnected: false,
+      });
     }
     
     // Check if token is expired
-    const isExpired = connection.tokenExpiry && new Date(connection.tokenExpiry) <= new Date();
+    const now = new Date();
+    const expiresAt = new Date(integration.expiresAt);
     
-    // If not expired, also check if the token is still valid with LinkedIn
-    let isValid = !isExpired;
-    if (isValid && connection.accessToken) {
-      isValid = await isAccessTokenValid(connection.accessToken);
+    // If token is expired, try to refresh it
+    if (now > expiresAt && integration.refreshToken) {
+      try {
+        const tokenResponse = await linkedInService.refreshLinkedInToken(integration.refreshToken);
+        
+        // Calculate new expiration date
+        const newExpiresAt = new Date();
+        newExpiresAt.setSeconds(newExpiresAt.getSeconds() + tokenResponse.expires_in);
+        
+        // Update token in database
+        await storage.saveLinkedInConnection(req.user.id, {
+          linkedinId: integration.metadata?.linkedinId,
+          accessToken: tokenResponse.access_token,
+          refreshToken: tokenResponse.refresh_token,
+          expiresAt: newExpiresAt,
+          name: integration.metadata?.name,
+          profilePicture: integration.metadata?.profilePicture,
+          email: integration.metadata?.email,
+        });
+        
+        // Return updated connection status
+        return res.json({
+          isConnected: true,
+          profile: {
+            name: integration.metadata?.name,
+            profilePicture: integration.metadata?.profilePicture,
+          },
+        });
+      } catch (refreshError) {
+        console.error('Failed to refresh LinkedIn token:', refreshError);
+        // If refresh fails, consider the connection as not connected
+        return res.json({
+          isConnected: false,
+          error: 'Token expired and refresh failed',
+        });
+      }
     }
     
-    return res.json({
-      connected: isValid,
-      profile: isValid ? {
-        name: connection.accountName,
-        profilePicture: connection.profileImageUrl,
-      } : null,
+    // Return connection status
+    res.json({
+      isConnected: true,
+      profile: {
+        name: integration.metadata?.name,
+        profilePicture: integration.metadata?.profilePicture,
+      },
     });
   } catch (error) {
-    console.error('Failed to get LinkedIn status:', error);
+    console.error('Failed to check LinkedIn connection status:', error);
     res.status(500).json({ 
-      message: 'Failed to get LinkedIn status: ' + (error instanceof Error ? error.message : 'Unknown error')
+      message: 'Failed to check LinkedIn connection status: ' + (error instanceof Error ? error.message : 'Unknown error')
     });
   }
 });
 
 // Post to LinkedIn
 router.post('/post', async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: 'Not authenticated' });
-  }
-  
-  const { text, mediaType, mediaUrl, title } = req.body;
-  
-  if (!text) {
-    return res.status(400).json({ message: 'Text content is required' });
-  }
-  
   try {
-    // Get the user's LinkedIn connection
-    const connection = await storage.getLinkedInConnection(req.user.id);
-    
-    if (!connection) {
-      return res.status(400).json({ message: 'LinkedIn account not connected' });
+    // Check if user is authenticated
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
     }
     
-    // Check if token is expired
-    if (connection.tokenExpiry && new Date(connection.tokenExpiry) <= new Date()) {
-      return res.status(401).json({ message: 'LinkedIn token expired, please reconnect your account' });
+    // Validate request body
+    const { text, mediaUrl } = req.body;
+    
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ message: 'Post text is required' });
     }
     
-    // Check if token is still valid
-    const isValid = await isAccessTokenValid(connection.accessToken!);
-    
-    if (!isValid) {
-      return res.status(401).json({ message: 'LinkedIn token is invalid, please reconnect your account' });
-    }
-    
-    // Post to LinkedIn based on media type
-    let result;
-    
-    if (!mediaType || mediaType === 'none') {
-      // Text-only post
-      result = await shareTextPost(connection.accessToken!, text);
-    } else if (mediaType === 'image' && mediaUrl) {
-      // Image post
-      result = await shareImagePost(connection.accessToken!, text, mediaUrl, title);
-    } else if (mediaType === 'video' && mediaUrl) {
-      // Video post
-      result = await shareVideoPost(connection.accessToken!, text, mediaUrl, title);
-    } else {
-      return res.status(400).json({ message: 'Invalid media type or missing media URL' });
-    }
-    
-    // Record the share in analytics
-    await storage.recordSocialShare(req.user.id, {
-      platform: 'linkedin',
-      contentType: mediaType || 'text',
-      postId: result.id || 'unknown',
+    // Post to LinkedIn
+    const result = await linkedInService.postToLinkedIn(req.user.id, {
       text,
-      mediaUrl: mediaUrl || null,
-      timestamp: new Date(),
+      mediaUrl,
     });
     
-    // Return success
-    res.json({ success: true, result });
+    res.json(result);
   } catch (error) {
     console.error('Failed to post to LinkedIn:', error);
     res.status(500).json({ 
@@ -210,13 +210,15 @@ router.post('/post', async (req: Request, res: Response) => {
   }
 });
 
-// Disconnect LinkedIn integration
+// Disconnect LinkedIn
 router.delete('/', async (req: Request, res: Response) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: 'Not authenticated' });
-  }
-  
   try {
+    // Check if user is authenticated
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    // Remove LinkedIn connection from database
     await storage.removeLinkedInConnection(req.user.id);
     res.json({ success: true });
   } catch (error) {
