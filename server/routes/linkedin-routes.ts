@@ -131,7 +131,7 @@ router.get('/status', async (req: Request, res: Response) => {
     
     // Check if token is expired
     const now = new Date();
-    const expiresAt = new Date(integration.expiresAt);
+    const expiresAt = new Date(integration.tokenExpiry || 0);
     
     // If token is expired, try to refresh it
     if (now > expiresAt && integration.refreshToken) {
@@ -144,21 +144,21 @@ router.get('/status', async (req: Request, res: Response) => {
         
         // Update token in database
         await storage.saveLinkedInConnection(req.user.id, {
-          linkedinId: integration.metadata?.linkedinId,
+          linkedinId: integration.accountId || (integration.metadata as any)?.linkedinId,
           accessToken: tokenResponse.access_token,
           refreshToken: tokenResponse.refresh_token,
           expiresAt: newExpiresAt,
-          name: integration.metadata?.name,
-          profilePicture: integration.metadata?.profilePicture,
-          email: integration.metadata?.email,
+          name: integration.accountName || (integration.metadata as any)?.name,
+          profilePicture: integration.profileImageUrl || (integration.metadata as any)?.profilePicture,
+          email: (integration.metadata as any)?.email,
         });
         
         // Return updated connection status
         return res.json({
           isConnected: true,
           profile: {
-            name: integration.metadata?.name,
-            profilePicture: integration.metadata?.profilePicture,
+            name: integration.accountName || (integration.metadata as any)?.name,
+            profilePicture: integration.profileImageUrl || (integration.metadata as any)?.profilePicture,
           },
         });
       } catch (refreshError) {
@@ -175,8 +175,8 @@ router.get('/status', async (req: Request, res: Response) => {
     res.json({
       isConnected: true,
       profile: {
-        name: integration.metadata?.name,
-        profilePicture: integration.metadata?.profilePicture,
+        name: integration.accountName || (integration.metadata as any)?.name,
+        profilePicture: integration.profileImageUrl || (integration.metadata as any)?.profilePicture,
       },
     });
   } catch (error) {

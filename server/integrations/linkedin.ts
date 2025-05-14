@@ -158,7 +158,7 @@ export async function postToLinkedIn(userId: number, options: LinkedInPostOption
   // LinkedIn API requires specific format for creating posts
   // Base structure for a text post
   const postData: any = {
-    author: `urn:li:person:${integration.accountId || integration.metadata?.linkedinId || ''}`,
+    author: `urn:li:person:${integration.accountId || (integration.metadata as any)?.linkedinId || ''}`,
     lifecycleState: 'PUBLISHED',
     specificContent: {
       'com.linkedin.ugc.ShareContent': {
