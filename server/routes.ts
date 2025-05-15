@@ -867,6 +867,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  /* 
   app.post('/api/company-profile', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });
@@ -925,6 +926,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  /* 
   app.put('/api/company-profile/:id', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });
