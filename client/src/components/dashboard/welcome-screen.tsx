@@ -63,6 +63,7 @@ export default function WelcomeScreen() {
   const [autoFillModalOpen, setAutoFillModalOpen] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [documentText, setDocumentText] = useState("");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("website");
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -195,6 +196,48 @@ export default function WelcomeScreen() {
       toast({
         title: "Failed to extract information",
         description: error?.message || "Please check the document text and try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation for auto-filling company information from PDF file
+  const autoFillFromPdfMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('pdfFile', file);
+      
+      // We need to use fetch directly here because apiRequest doesn't support FormData
+      const response = await fetch('/api/company-profile/auto-fill/pdf', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to process PDF file');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/brand-settings'] });
+      setAutoFillModalOpen(false);
+      setIsProcessing(false);
+      setPdfFile(null);
+      toast({
+        title: "Company information extracted!",
+        description: "Your company profile and brand settings have been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Failed to auto-fill from PDF:", error);
+      setIsProcessing(false);
+      toast({
+        title: "Failed to extract information from PDF",
+        description: error?.message || "Please check the PDF file and try again.",
         variant: "destructive",
       });
     }
