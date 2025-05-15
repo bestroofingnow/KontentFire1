@@ -66,6 +66,9 @@ async function extractWebsiteContent(url: string): Promise<string> {
  */
 export const getCompanyProfile = async (req: Request, res: Response) => {
   try {
+    // Explicitly set response content type to JSON
+    res.setHeader('Content-Type', 'application/json');
+    
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -92,6 +95,9 @@ export const getCompanyProfile = async (req: Request, res: Response) => {
  */
 export const saveCompanyProfile = async (req: Request, res: Response) => {
   try {
+    // Explicitly set response content type to JSON
+    res.setHeader('Content-Type', 'application/json');
+    
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -146,6 +152,9 @@ export const saveCompanyProfile = async (req: Request, res: Response) => {
  */
 export const autoFillFromWebsite = async (req: Request, res: Response) => {
   try {
+    // Explicitly set response content type to JSON
+    res.setHeader('Content-Type', 'application/json');
+    
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -228,6 +237,9 @@ export const autoFillFromWebsite = async (req: Request, res: Response) => {
  */
 export const autoFillFromDocument = async (req: Request, res: Response) => {
   try {
+    // Explicitly set response content type to JSON
+    res.setHeader('Content-Type', 'application/json');
+    
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
