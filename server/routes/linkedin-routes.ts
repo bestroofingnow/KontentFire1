@@ -10,6 +10,38 @@ import { URL } from 'url';
 
 const router = Router();
 
+// Debug endpoint to check LinkedIn configuration
+router.get('/debug-config', (req: Request, res: Response) => {
+  try {
+    // Check if user is authenticated
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    // Don't expose full secrets, but show if they're configured
+    const config = {
+      clientIdConfigured: !!process.env.LINKEDIN_CLIENT_ID,
+      clientSecretConfigured: !!process.env.LINKEDIN_CLIENT_SECRET,
+      clientIdPrefix: process.env.LINKEDIN_CLIENT_ID ? process.env.LINKEDIN_CLIENT_ID.substring(0, 4) + '...' : null,
+      scopes: ['r_liteprofile'], // Should match what's in linkedin.ts
+      redirectUri: 'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback',
+      // Include API endpoints for reference
+      apiEndpoints: {
+        profile: 'https://api.linkedin.com/v2/me',
+        email: 'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))',
+        share: 'https://api.linkedin.com/v2/ugcPosts'
+      }
+    };
+    
+    res.json(config);
+  } catch (error) {
+    console.error('Failed to get LinkedIn debug config:', error);
+    res.status(500).json({ 
+      message: 'Failed to get LinkedIn debug config: ' + (error instanceof Error ? error.message : 'Unknown error')
+    });
+  }
+});
+
 // Get LinkedIn authentication URL
 router.get('/auth-url', (req: Request, res: Response) => {
   try {

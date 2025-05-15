@@ -143,16 +143,30 @@ export default function LinkedInDemoPage() {
                 </div>
                 
                 <div className="mt-4 p-4 border border-amber-200 bg-amber-50 rounded-md">
-                  <h4 className="font-medium text-amber-800 mb-2">Company Verification Instructions</h4>
-                  <p className="text-sm mb-2">For the LinkedIn Developer Portal:</p>
-                  <ol className="list-decimal text-sm pl-5 mb-2 space-y-1">
-                    <li>Go to the LinkedIn Developer Portal and select your app</li>
-                    <li>In the app settings, look for the "Company verification" section</li>
-                    <li>Copy the verification URL provided there</li>
-                    <li>Send this URL to a LinkedIn Page Admin for Kynex</li>
-                    <li>They must click the link and approve the application</li>
-                  </ol>
-                  <p className="text-sm">Once verification is complete, you'll be able to use all authorized scopes.</p>
+                  <h4 className="font-medium text-amber-800 mb-2">LinkedIn Integration Troubleshooting</h4>
+                  
+                  <div className="mb-4">
+                    <h5 className="font-medium text-sm mb-1">Error: unauthorized_scope_error</h5>
+                    <p className="text-sm mb-2">This error occurs when requesting scopes that aren't approved for your app. To fix:</p>
+                    <ol className="list-decimal text-sm pl-5 mb-2 space-y-1">
+                      <li>Go to the LinkedIn Developer Portal and select your app</li>
+                      <li>Navigate to "Auth" tab and check "OAuth 2.0 scopes"</li>
+                      <li>Make sure <code className="bg-white px-1 py-0.5 rounded">r_liteprofile</code> is approved</li>
+                      <li>For posting, also ensure <code className="bg-white px-1 py-0.5 rounded">w_member_social</code> is approved</li>
+                    </ol>
+                  </div>
+                  
+                  <div>
+                    <h5 className="font-medium text-sm mb-1">Company Verification Process</h5>
+                    <p className="text-sm mb-2">LinkedIn requires company verification:</p>
+                    <ol className="list-decimal text-sm pl-5 mb-2 space-y-1">
+                      <li>In the LinkedIn Developer Portal, find "Company verification" section</li>
+                      <li>Copy the verification URL provided there</li>
+                      <li>Send this URL to a LinkedIn Page Admin for Kynex</li>
+                      <li>They must click the link and approve the association</li>
+                    </ol>
+                    <p className="text-sm">After verification, update the scopes in our code to match what's approved.</p>
+                  </div>
                 </div>
               </div>
             )}

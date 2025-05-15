@@ -19,17 +19,13 @@ const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
 
 // LinkedIn API requires specific scopes for different operations
-// Using minimum required scopes to avoid unauthorized_scope_error
-const SCOPES = [
-  'r_liteprofile',   // Read basic profile
-  'w_member_social', // Share posts - required for posting
-];
+// Using the absolute minimum scope - just try to get the profile info first
+const SCOPES = ['r_liteprofile'];
 
-// If more permissions are needed and approved in LinkedIn Developer Portal, uncomment:
+// If the basic scope works, we can add more later:
 // const SCOPES = [
-//   'r_liteprofile',   // Read basic profile
-//   'r_emailaddress',  // Read email address
-//   'w_member_social', // Share posts
+//   'r_liteprofile',   // Read basic profile 
+//   'w_member_social', // Share posts - required for posting
 // ];
 
 export interface LinkedInTokenResponse {
