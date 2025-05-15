@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Calendar, ChevronRight, LineChart, Target, TrendingUp } from "lucide-react";
+import { ArrowUpRight, Calendar, ChevronRight, Globe, FileText, Upload, LineChart, Target, TrendingUp, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import InteractiveHover from "../ui/interactive-hover";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 
 // Types for User Insights
@@ -52,6 +58,11 @@ export default function WelcomeScreen() {
   const { user } = useAuth();
   const [timeOfDay, setTimeOfDay] = useState<string>("");
   const [currentDate, setCurrentDate] = useState<string>("");
+  const [autoFillModalOpen, setAutoFillModalOpen] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [documentText, setDocumentText] = useState("");
+  const [activeTab, setActiveTab] = useState("website");
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Fetch user insights
   const { data: insights, isLoading } = useQuery<UserInsights>({
@@ -131,6 +142,52 @@ export default function WelcomeScreen() {
     }
   });
 
+  // Mutation for auto-filling company information from website
+  const autoFillFromWebsiteMutation = useMutation({
+    mutationFn: async (url: string) => {
+      return apiRequest('POST', '/api/company-profile/auto-fill/website', { url });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/brand-settings'] });
+      setAutoFillModalOpen(false);
+      setIsProcessing(false);
+    },
+    onError: (error) => {
+      console.error("Failed to auto-fill from website:", error);
+      setIsProcessing(false);
+    }
+  });
+
+  // Mutation for auto-filling company information from document
+  const autoFillFromDocumentMutation = useMutation({
+    mutationFn: async (text: string) => {
+      return apiRequest('POST', '/api/company-profile/auto-fill/document', { text });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/brand-settings'] });
+      setAutoFillModalOpen(false);
+      setIsProcessing(false);
+    },
+    onError: (error) => {
+      console.error("Failed to auto-fill from document:", error);
+      setIsProcessing(false);
+    }
+  });
+
+  // Handle auto-fill submission
+  const handleAutoFillSubmit = () => {
+    setIsProcessing(true);
+    if (activeTab === "website" && websiteUrl) {
+      autoFillFromWebsiteMutation.mutate(websiteUrl);
+    } else if (activeTab === "document" && documentText) {
+      autoFillFromDocumentMutation.mutate(documentText);
+    } else {
+      setIsProcessing(false);
+    }
+  };
+
   // Set time of day greeting and current date
   useEffect(() => {
     const setGreeting = () => {
@@ -163,12 +220,95 @@ export default function WelcomeScreen() {
     <div className="space-y-6">
       {/* Personalized Greeting */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-1">
-          {timeOfDay}, {user?.username || "there"}!
-        </h1>
-        <p className="text-muted-foreground">
-          {currentDate} • Here's what's happening with your content
-        </p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">
+              {timeOfDay}, {user?.username || "there"}!
+            </h1>
+            <p className="text-muted-foreground">
+              {currentDate} • Here's what's happening with your content
+            </p>
+          </div>
+          <Dialog open={autoFillModalOpen} onOpenChange={setAutoFillModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex gap-2 items-center">
+                <Globe className="h-4 w-4" />
+                <span>Auto-Fill Company Info</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Auto-Fill Company Information</DialogTitle>
+                <DialogDescription>
+                  Let AI analyze your website or company document to auto-fill your company information and brand settings.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <Tabs defaultValue="website" value={activeTab} onValueChange={setActiveTab} className="mt-6">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="website" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    <span>From Website</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="document" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span>From Document</span>
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="website" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="website-url">Company Website URL</Label>
+                    <Input
+                      id="website-url"
+                      placeholder="https://www.yourcompany.com"
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Enter your company website URL to extract information automatically.
+                    </p>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="document" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="document-text">Company Document Text</Label>
+                    <Textarea
+                      id="document-text"
+                      placeholder="Paste your company information here..."
+                      className="min-h-[150px]"
+                      value={documentText}
+                      onChange={(e) => setDocumentText(e.target.value)}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Paste text from your company documents, brochures, or about page.
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              <DialogFooter className="mt-6">
+                <Button variant="outline" onClick={() => setAutoFillModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAutoFillSubmit} disabled={isProcessing}>
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Auto-Fill Data
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -430,6 +430,65 @@ export const insertContentPipelineJobSchema = createInsertSchema(contentPipeline
 export type InsertContentPipelineJob = z.infer<typeof insertContentPipelineJobSchema>;
 export type ContentPipelineJob = typeof contentPipelineJobs.$inferSelect;
 
+// Animations status enum
+export const animationStatusEnum = pgEnum('animation_status', [
+  'pending',
+  'processing',
+  'completed',
+  'failed'
+]);
+
+// Animation motion style enum
+export const motionStyleEnum = pgEnum('motion_style', [
+  'default',
+  'zoom',
+  'pan',
+  'rotate',
+  'bounce'
+]);
+
+// Output format enum
+export const outputFormatEnum = pgEnum('output_format', [
+  'gif',
+  'mp4',
+  'webp'
+]);
+
+// Animations table
+export const animations = pgTable('animations', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  prompt: text('prompt'),
+  sourceImageUrl: text('source_image_url'),
+  numFrames: integer('num_frames').default(24),
+  fps: integer('fps').default(15),
+  motionStyle: motionStyleEnum('motion_style').default('default'),
+  outputFormat: outputFormatEnum('output_format').default('gif'),
+  width: integer('width').default(512),
+  height: integer('height').default(512),
+  status: animationStatusEnum('status').default('pending').notNull(),
+  outputUrl: text('output_url'),
+  thumbnailUrl: text('thumbnail_url'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+});
+
+export const animationsRelations = relations(animations, ({ one }) => ({
+  user: one(users, {
+    fields: [animations.userId],
+    references: [users.id]
+  }),
+}));
+
+// Insert schema for animations
+export const insertAnimationSchema = createInsertSchema(animations).omit({ 
+  id: true, 
+  createdAt: true, 
+  completedAt: true 
+});
+export type InsertAnimation = z.infer<typeof insertAnimationSchema>;
+export type Animation = typeof animations.$inferSelect;
+
 // Stage definition for content pipelines
 export interface PipelineStageDefinition {
   id: string;

@@ -6,6 +6,7 @@ import { setupAuth } from "./auth";
 import { contentPipelineService } from "./cds-integration";
 import brandSettingsRouter from './routes/brand-settings';
 import userInsightsRouter from './routes/user-insights';
+import companyProfileRouter from './routes/company-profile';
 import {
   getFacebookAuthUrl,
   exchangeCodeForToken,
@@ -3633,9 +3634,10 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Register brand settings router
+  // Register routes
   app.use('/api/brand-settings', brandSettingsRouter);
   app.use('/api/user', userInsightsRouter);
+  app.use('/api/company-profile', companyProfileRouter);
 
   const httpServer = createServer(app);
   return httpServer;
