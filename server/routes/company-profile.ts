@@ -234,9 +234,11 @@ router.post('/auto-fill/document', async (req: Request, res: Response) => {
     }
 
     const { text } = req.body;
-    if (!text) {
+    if (!text || typeof text !== 'string' || text.trim() === '') {
       return res.status(400).json({ error: 'Document text is required' });
     }
+    
+    const documentText = text.trim();
 
     // Use OpenAI to analyze the document text and extract company information
     const openai = new OpenAI({ 
@@ -251,7 +253,7 @@ router.post('/auto-fill/document', async (req: Request, res: Response) => {
         },
         {
           role: "user",
-          content: text
+          content: documentText
         }
       ],
       response_format: { type: "json_object" }
