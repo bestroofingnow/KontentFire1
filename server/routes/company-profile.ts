@@ -144,7 +144,7 @@ export const saveCompanyProfile = async (req: Request, res: Response) => {
 /**
  * Auto-fill company profile from website
  */
-router.post('/auto-fill/website', async (req: Request, res: Response) => {
+export const autoFillFromWebsite = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -226,7 +226,7 @@ router.post('/auto-fill/website', async (req: Request, res: Response) => {
 /**
  * Auto-fill company profile from document
  */
-router.post('/auto-fill/document', async (req: Request, res: Response) => {
+export const autoFillFromDocument = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
