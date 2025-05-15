@@ -85,6 +85,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Also add routes without the /api prefix to match what LinkedIn might expect
   app.use('/integrations/linkedin', linkedInRouter);
   
+  // Add specific route for deployment callback without /api prefix
+  app.get('/integrations/linkedin/deployment-callback', (req, res, next) => {
+    console.log('Received callback at /integrations/linkedin/deployment-callback, forwarding to proper handler');
+    // Forward to the proper handler in the deployment router
+    req.url = '/deployment-callback';
+    linkedInDeploymentRouter(req, res, next);
+  });
+  
   // LinkedIn deployment-specific integration
   app.use('/api/integrations/linkedin-deployment', linkedInDeploymentRouter);
   

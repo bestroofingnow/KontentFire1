@@ -175,11 +175,20 @@ export default function LinkedInTroubleshootPage() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <h3 className="font-medium mb-2">Deployment Fix</h3>
+                <h3 className="font-medium mb-2">Deployment Fix (Addressing Scope Issues)</h3>
                 <p className="text-sm mb-4">
                   This special authentication method generates a LinkedIn auth URL using the exact domain of your 
-                  deployed application, which should match what's registered in the LinkedIn Developer Portal.
+                  deployed application. It also requests <strong>no scopes</strong> to prevent the "unauthorized_scope_error" 
+                  that happens when requested scopes haven't been approved by LinkedIn.
                 </p>
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mb-4">
+                  <h4 className="text-amber-800 font-medium">About the "unauthorized_scope_error"</h4>
+                  <p className="text-sm text-amber-700 mt-1">
+                    This error happens when your LinkedIn application requests scopes that haven't been approved for your app.
+                    The fix is either to get those scopes approved by LinkedIn, or to request no scopes at all.
+                    Our deployment fix takes the latter approach to get you connected as quickly as possible.
+                  </p>
+                </div>
                 <Button 
                   onClick={async () => {
                     setIsLoading(true);

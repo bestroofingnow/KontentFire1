@@ -70,13 +70,20 @@ router.get('/auth-url', (req: Request, res: Response) => {
     
     // Build the redirect URI based on the current host
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const redirectUri = `${baseUrl}/api/integrations/linkedin/deployment-callback`;
+    
+    // Try version without /api path first as that might match what's registered in LinkedIn
+    const redirectUri = `${baseUrl}/integrations/linkedin/deployment-callback`;
+    
+    // Alternative redirect URI options (if needed):
+    // const redirectUri = `${baseUrl}/api/integrations/linkedin/deployment-callback`;
+    // const redirectUri = 'https://kontentfire.kynexpro.com/integrations/linkedin/callback';
     
     // Log the redirectUri for debugging
     console.log('Using deployment redirect URI:', redirectUri);
     
-    // Generate LinkedIn authentication URL with minimal scope
-    const authUrl = linkedInService.generateAuthUrl(redirectUri, state, ['r_liteprofile']);
+    // Generate LinkedIn authentication URL without any scopes (most basic authentication)
+    // This should prevent the "unauthorized_scope_error" since we're not requesting any scopes
+    const authUrl = linkedInService.generateAuthUrl(redirectUri, state, []);
     
     // Store state in session
     if (req.session) {
