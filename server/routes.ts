@@ -421,7 +421,21 @@ export function registerRoutes(app: Express): Server {
       return res.json(result);
     } catch (error: any) {
       console.error('Content generation error:', error);
-      return res.status(500).json({ message: `Error generating content: ${error.message}` });
+      
+      // Check if the error appears to be an HTML response
+      const errorMsg = error.message || '';
+      if (errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html')) {
+        console.error('Received HTML error response instead of JSON');
+        return res.status(500).json({ 
+          message: 'Error connecting to content generation service. Please try again.',
+          error: 'invalid_response_format'
+        });
+      }
+      
+      return res.status(500).json({ 
+        message: `Error generating content: ${error.message}`,
+        error: 'generation_failed'
+      });
     }
   });
   
