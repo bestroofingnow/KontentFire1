@@ -202,18 +202,30 @@ export function SocialConnections() {
                           {isConnected('linkedin') ? (
                             <span className="flex items-center gap-1 text-green-600">
                               <CheckCircle2 className="h-4 w-4" /> Connected
+                              <a 
+                                href="#" 
+                                className="text-primary text-xs ml-2"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setActiveTab('accounts');
+                                }}
+                              >
+                                (View in Connected Accounts)
+                              </a>
                             </span>
                           ) : 'Share professional content'}
                         </div>
-                        <LinkedInConnectButton
-                          isConnected={isConnected('linkedin')}
-                          onConnect={() => {
-                            setError(null);
-                          }}
-                          onDisconnect={() => {
-                            queryClient.invalidateQueries({ queryKey: ['/api/integrations'] });
-                          }}
-                        />
+                        {!isConnected('linkedin') && (
+                          <LinkedInConnectButton
+                            isConnected={false}
+                            onConnect={() => {
+                              setError(null);
+                            }}
+                            onDisconnect={() => {
+                              queryClient.invalidateQueries({ queryKey: ['/api/integrations'] });
+                            }}
+                          />
+                        )}
                       </div>
                     </CardContent>
                   </Card>
