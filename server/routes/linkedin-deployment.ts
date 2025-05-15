@@ -15,7 +15,9 @@ const router = Router();
 // List of approved redirect URIs that have been registered with LinkedIn
 const APPROVED_REDIRECT_URIS = [
   'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback',
+  'https://kontentfire.kynexpro.com/integrations/linkedin/callback', // Version without /api prefix
   'https://kontent-fire-kfuwmk.replit.app/api/integrations/linkedin/callback',
+  'https://kontent-fire-kfuwmk.replit.app/integrations/linkedin/callback', // Version without /api prefix
   // Add any other approved URIs here
 ];
 
@@ -147,7 +149,7 @@ router.get('/deployment-callback', async (req: Request, res: Response) => {
     }
     
     // Store the LinkedIn credentials for the user using the existing storage interface
-    await storage.storeLinkedInConnection(req.user.id, {
+    await storage.saveLinkedInConnection(req.user.id, {
       linkedinId: profile.id,
       accessToken: tokenData.access_token,
       expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),

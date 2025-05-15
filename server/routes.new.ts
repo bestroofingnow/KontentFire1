@@ -82,6 +82,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // LinkedIn integration 
   app.use('/api/integrations/linkedin', linkedInRouter);
   
+  // Also add routes without the /api prefix to match what LinkedIn might expect
+  app.use('/integrations/linkedin', linkedInRouter);
+  
   // LinkedIn deployment-specific integration
   app.use('/api/integrations/linkedin-deployment', linkedInDeploymentRouter);
   
