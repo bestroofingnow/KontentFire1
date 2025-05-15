@@ -217,6 +217,55 @@ export default function LinkedInTroubleshootPage() {
         
         <Card>
           <CardHeader>
+            <CardTitle>Deployment Environment Check</CardTitle>
+            <CardDescription>
+              Verify that the correct URLs are registered in LinkedIn Developer Portal
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium mb-2">Current Environment</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="font-medium">Host:</div>
+                  <div>{window.location.host}</div>
+                  
+                  <div className="font-medium">Protocol:</div>
+                  <div>{window.location.protocol}</div>
+                  
+                  <div className="font-medium">Origin:</div>
+                  <div>{window.location.origin}</div>
+                </div>
+              </div>
+              
+              <div className="pt-2">
+                <h3 className="font-medium mb-2">Registered Redirect URI</h3>
+                <p className="text-sm mb-2">
+                  Make sure this <strong>exact URL</strong> is registered in the LinkedIn Developer Portal:
+                </p>
+                <div className="p-2 bg-gray-50 rounded text-sm font-mono break-all">
+                  {configInfo?.redirectUri || 'Not available'}
+                </div>
+                
+                <Alert className="mt-4">
+                  <AlertTitle>Important: URL Must Match Exactly</AlertTitle>
+                  <AlertDescription>
+                    <p className="text-sm mb-1">The LinkedIn redirect URI must match character-for-character:</p>
+                    <ul className="list-disc text-sm pl-5 space-y-1">
+                      <li>HTTP vs HTTPS matters</li>
+                      <li>Trailing slashes matter</li>
+                      <li>Subdomains matter (www vs non-www)</li>
+                      <li>Ports matter (if included)</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
             <CardTitle>LinkedIn Developer Portal Setup Guide</CardTitle>
             <CardDescription>
               Step-by-step instructions to configure your LinkedIn app

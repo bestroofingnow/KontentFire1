@@ -46,10 +46,19 @@ export default function LinkedInDemoPage() {
   return (
     <div className="container mx-auto py-10 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">LinkedIn Integration Demo</h1>
-        <p className="text-gray-500 mb-4">
-          Test the LinkedIn integration functionality here
-        </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">LinkedIn Integration Demo</h1>
+            <p className="text-gray-500">
+              Test the LinkedIn integration functionality here
+            </p>
+          </div>
+          <div>
+            <Button variant="outline" asChild>
+              <a href="/linkedin-troubleshoot">Advanced Troubleshooting</a>
+            </Button>
+          </div>
+        </div>
         <Separator className="my-4" />
         
         <Alert className="mb-6">

@@ -18,13 +18,19 @@ router.get('/debug-config', (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
+    // Get actual redirect URI being used
+    const actualRedirectUri = process.env.LINKEDIN_REDIRECT_URI || 
+                             'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback';
+    
     // Don't expose full secrets, but show if they're configured
     const config = {
       clientIdConfigured: !!process.env.LINKEDIN_CLIENT_ID,
       clientSecretConfigured: !!process.env.LINKEDIN_CLIENT_SECRET,
       clientIdPrefix: process.env.LINKEDIN_CLIENT_ID ? process.env.LINKEDIN_CLIENT_ID.substring(0, 4) + '...' : null,
       scopes: ['r_liteprofile'], // Should match what's in linkedin.ts
-      redirectUri: 'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback',
+      redirectUri: actualRedirectUri,
+      redirectUriSource: process.env.LINKEDIN_REDIRECT_URI ? 'From environment variable' : 'Default value',
+      isProduction: process.env.NODE_ENV === 'production',
       // Include API endpoints for reference
       apiEndpoints: {
         profile: 'https://api.linkedin.com/v2/me',
@@ -53,9 +59,10 @@ router.get('/auth-url', (req: Request, res: Response) => {
     // Generate a random state value to prevent CSRF attacks
     const state = generateNonce();
     
-    // Build the redirect URI
-    // Use the production domain for LinkedIn OAuth
-    const redirectUri = 'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback';
+    // Build the redirect URI - prioritize environment variable if set
+    // This makes it configurable for different deployment environments
+    const redirectUri = process.env.LINKEDIN_REDIRECT_URI || 
+                        'https://kontentfire.kynexpro.com/api/integrations/linkedin/callback';
     
     // Log the redirectUri for debugging
     console.log('Using LinkedIn redirect URI:', redirectUri);
@@ -73,6 +80,43 @@ router.get('/auth-url', (req: Request, res: Response) => {
     console.error('Failed to get LinkedIn auth URL:', error);
     res.status(500).json({ 
       message: 'Failed to get LinkedIn auth URL: ' + (error instanceof Error ? error.message : 'Unknown error')
+    });
+  }
+});
+
+// Test endpoint that allows using a local redirect for development
+router.get('/test-auth-url', (req: Request, res: Response) => {
+  try {
+    // For testing, don't require authentication
+    
+    // Generate a random state value to prevent CSRF attacks
+    const state = generateNonce();
+    
+    // Build a simpler redirect URI for testing
+    const hostname = req.hostname;
+    const protocol = req.protocol;
+    const testRedirectUri = `${protocol}://${hostname}:${process.env.PORT || 3000}/api/integrations/linkedin/test-callback`;
+    
+    console.log('Using TEST redirect URI:', testRedirectUri);
+    
+    // Generate LinkedIn authentication URL with minimal scope
+    const authUrl = linkedInService.generateAuthUrl(testRedirectUri, state, ['r_liteprofile']);
+    
+    // Store state in session
+    if (req.session) {
+      req.session.linkedInTestState = state;
+    }
+    
+    res.json({ 
+      authUrl,
+      state,
+      testRedirectUri,
+      info: "This is a test endpoint that uses a local redirect URI for development"
+    });
+  } catch (error) {
+    console.error('Failed to get test LinkedIn auth URL:', error);
+    res.status(500).json({ 
+      message: 'Failed to get test LinkedIn auth URL: ' + (error instanceof Error ? error.message : 'Unknown error')
     });
   }
 });

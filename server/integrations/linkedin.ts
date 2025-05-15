@@ -50,17 +50,27 @@ export interface LinkedInPostOptions {
 }
 
 // Generate authorization URL for LinkedIn OAuth flow
-export function generateAuthUrl(redirectUri: string, state: string): string {
+export function generateAuthUrl(
+  redirectUri: string, 
+  state: string, 
+  customScopes?: string[]
+): string {
   if (!LINKEDIN_CLIENT_ID) {
     throw new Error('LinkedIn Client ID is not defined');
   }
+  
+  // Use provided scopes or default ones
+  const scopesToUse = customScopes || SCOPES;
+  
+  // Log for debugging
+  console.log(`Generating LinkedIn auth URL with scopes: ${scopesToUse.join(', ')}`);
   
   const queryParams = new URLSearchParams({
     response_type: 'code',
     client_id: LINKEDIN_CLIENT_ID,
     redirect_uri: redirectUri,
     state: state,
-    scope: SCOPES.join(' '),
+    scope: scopesToUse.join(' '),
   });
   
   return `https://www.linkedin.com/oauth/v2/authorization?${queryParams.toString()}`;
