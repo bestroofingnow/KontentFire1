@@ -7,6 +7,12 @@ import { contentPipelineService } from "./cds-integration";
 import brandSettingsRouter from './routes/brand-settings';
 import userInsightsRouter from './routes/user-insights';
 import companyProfileRouter from './routes/company-profile';
+import { 
+  createAnimationHandler, 
+  getAnimationHandler, 
+  listAnimationsHandler, 
+  cancelAnimationHandler 
+} from './routes/animations';
 import {
   getFacebookAuthUrl,
   exchangeCodeForToken,
