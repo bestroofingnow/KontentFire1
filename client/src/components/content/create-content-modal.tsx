@@ -13,6 +13,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, BookOpen } from "lucide-react";
+import { SkeletonText, SkeletonWithShimmer } from "@/components/ui/skeleton-loader";
 import { FactCheckDialog, ReferencesDialog } from "@/components/fact-check";
 import { RepurposeDialog } from "./repurpose-dialog";
 import TemplateSelector from "./template-selector";

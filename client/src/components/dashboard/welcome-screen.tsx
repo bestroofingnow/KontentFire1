@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   SkeletonText, 
   SkeletonAvatar, 
-  SkeletonButton, 
+  SkeletonButton,
+  SkeletonStat,
   SkeletonWithShimmer 
 } from "@/components/ui/skeleton-loader";
 import { Button } from "@/components/ui/button";
