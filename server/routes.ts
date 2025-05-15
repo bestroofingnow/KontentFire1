@@ -3640,6 +3640,12 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Animation routes
+  app.get('/api/animations', listAnimationsHandler);
+  app.get('/api/animations/:id', getAnimationHandler);
+  app.post('/api/animations', createAnimationHandler);
+  app.post('/api/animations/:id/cancel', cancelAnimationHandler);
+
   // Register routes
   app.use('/api/brand-settings', brandSettingsRouter);
   app.use('/api/user', userInsightsRouter);
