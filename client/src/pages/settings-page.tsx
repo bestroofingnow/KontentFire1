@@ -48,11 +48,12 @@ const notificationSchema = z.object({
 
 // Company profile schema
 const companyProfileSchema = z.object({
-  companyName: z.string().min(1, "Company name is required"),
+  name: z.string().min(1, "Company name is required"),
   industry: z.string().optional(),
   description: z.string().optional(),
-  websiteUrl: z.string().url("Invalid website URL").optional().or(z.literal('')),
-  logoUrl: z.string().url("Invalid logo URL").optional().or(z.literal('')),
+  website: z.string().url("Invalid website URL").optional().or(z.literal('')),
+  logo: z.string().url("Invalid logo URL").optional().or(z.literal('')),
+  // Additional fields for the front-end form that aren't in the core schema
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
   facebookUrl: z.string().url("Invalid Facebook URL").optional().or(z.literal('')),
@@ -231,11 +232,11 @@ export default function SettingsPage() {
   const companyProfileForm = useForm<CompanyProfileFormValues>({
     resolver: zodResolver(companyProfileSchema),
     defaultValues: {
-      companyName: "",
+      name: "",
       industry: "",
       description: "",
-      websiteUrl: "",
-      logoUrl: "",
+      website: "",
+      logo: "",
       primaryColor: "",
       secondaryColor: "",
       facebookUrl: "",
@@ -253,11 +254,12 @@ export default function SettingsPage() {
   React.useEffect(() => {
     if (companyProfile && !companyProfileForm.formState.isDirty) {
       companyProfileForm.reset({
-        companyName: companyProfile.companyName || "",
+        name: companyProfile.name || "",
         industry: companyProfile.industry || "",
         description: companyProfile.description || "",
-        websiteUrl: companyProfile.websiteUrl || "",
-        logoUrl: companyProfile.logoUrl || "",
+        website: companyProfile.website || "",
+        logo: companyProfile.logo || "",
+        // These fields may not be in the database schema but are needed for the UI
         primaryColor: companyProfile.primaryColor || "",
         secondaryColor: companyProfile.secondaryColor || "",
         facebookUrl: companyProfile.facebookUrl || "",
