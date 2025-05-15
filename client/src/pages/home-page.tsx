@@ -71,6 +71,41 @@ export default function HomePage() {
               </Button>
             </div>
             
+            {/* Content Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+              <StatCard 
+                title="Total Content" 
+                value={stats?.totalContent || 0} 
+                icon={<PenTool className="h-5 w-5" />}
+                change={{ value: stats?.contentGrowth || 0, isPositive: stats?.contentGrowth > 0 }}
+                isLoading={statsLoading}
+              />
+              <StatCard 
+                title="Scheduled" 
+                value={stats?.scheduledContent || 0} 
+                icon={<Calendar className="h-5 w-5" />}
+                change={{ value: stats?.scheduledGrowth || 0, isPositive: stats?.scheduledGrowth > 0 }}
+                iconColorClass="text-blue-500"
+                isLoading={statsLoading}
+              />
+              <StatCard 
+                title="Media Assets" 
+                value={stats?.mediaAssets || 0} 
+                icon={<ImageIcon className="h-5 w-5" />}
+                change={{ value: stats?.mediaGrowth || 0, isPositive: stats?.mediaGrowth > 0 }}
+                iconColorClass="text-purple-500"
+                isLoading={statsLoading}
+              />
+              <StatCard 
+                title="Engagement" 
+                value={stats?.totalEngagement || 0} 
+                icon={<ThumbsUp className="h-5 w-5" />}
+                change={{ value: stats?.engagementGrowth || 0, isPositive: stats?.engagementGrowth > 0 }}
+                iconColorClass="text-green-500"
+                isLoading={statsLoading}
+              />
+            </div>
+            
             {/* Featured Content Slider */}
             <div className="mb-8">
               <ContentPreviewSlider 

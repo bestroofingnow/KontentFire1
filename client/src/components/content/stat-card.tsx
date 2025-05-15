@@ -19,9 +19,36 @@ export default function StatCard({
   value, 
   icon, 
   change, 
-  iconColorClass = "text-primary" 
+  iconColorClass = "text-primary",
+  isLoading = false
 }: StatCardProps) {
   const isPositive = change?.isPositive ?? true;
+  
+  if (isLoading) {
+    return (
+      <div className="bg-white p-5 rounded-xl shadow-sm">
+        <div className="flex items-start justify-between">
+          <div className="space-y-3 w-full">
+            <SkeletonWithShimmer className="w-1/2">
+              <SkeletonText className="h-4" />
+            </SkeletonWithShimmer>
+            <SkeletonWithShimmer className="w-1/3">
+              <SkeletonText className="h-7" />
+            </SkeletonWithShimmer>
+          </div>
+          <SkeletonWithShimmer>
+            <div className="bg-gray-200 p-2 rounded-lg h-9 w-9"></div>
+          </SkeletonWithShimmer>
+        </div>
+        
+        <div className="mt-3">
+          <SkeletonWithShimmer className="w-2/3">
+            <SkeletonText className="h-4" />
+          </SkeletonWithShimmer>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="bg-white p-5 rounded-xl shadow-sm">

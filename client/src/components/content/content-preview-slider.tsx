@@ -23,6 +23,7 @@ import {
   Loader2 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SkeletonText, SkeletonWithShimmer } from "@/components/ui/skeleton-loader";
 
 type ContentPreviewSliderProps = {
   title?: string;
@@ -119,9 +120,44 @@ export function ContentPreviewSlider({
       
       <div className="p-0">
         {isLoading ? (
-          <div className="py-24 text-center">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-            <p className="mt-4 text-gray-500">Loading content previews...</p>
+          <div className="py-6">
+            <Carousel className="w-full">
+              <CarouselContent>
+                {Array.from({ length: limit }).map((_, index) => (
+                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                    <div className="bg-white p-5 rounded-xl shadow-sm">
+                      <div className="flex items-center mb-3">
+                        <SkeletonWithShimmer className="h-10 w-10 rounded-full mr-3" />
+                        <div>
+                          <SkeletonWithShimmer className="w-32 mb-1">
+                            <SkeletonText className="h-4" />
+                          </SkeletonWithShimmer>
+                          <SkeletonWithShimmer className="w-24">
+                            <SkeletonText className="h-3" />
+                          </SkeletonWithShimmer>
+                        </div>
+                      </div>
+                      
+                      <SkeletonWithShimmer className="w-3/4 mb-2">
+                        <SkeletonText className="h-5" />
+                      </SkeletonWithShimmer>
+                      
+                      <SkeletonWithShimmer className="h-32 mb-4 rounded-md" />
+                      
+                      <div className="flex justify-between items-center mt-3">
+                        <SkeletonWithShimmer className="h-8 w-20" />
+                        <div className="flex gap-2">
+                          <SkeletonWithShimmer className="h-8 w-8 rounded-full" />
+                          <SkeletonWithShimmer className="h-8 w-8 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden lg:flex" />
+              <CarouselNext className="hidden lg:flex" />
+            </Carousel>
           </div>
         ) : contents.length > 0 ? (
           <Carousel 
