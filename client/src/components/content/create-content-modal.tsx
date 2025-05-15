@@ -46,6 +46,31 @@ interface CreateContentModalProps {
   onContentCreated: () => void;
 }
 
+// Utility function to get a friendly error message
+function getFriendlyErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    const message = error.message;
+    
+    // Check for HTML in the error message
+    if (message.includes('<!DOCTYPE') || message.includes('<html')) {
+      return 'Server error: Unable to connect to content generation service';
+    }
+    
+    // Check for connection errors 
+    if (message.includes('Failed to fetch') || 
+        message.includes('NetworkError') ||
+        message.includes('ECONNREFUSED')) {
+      return 'Network error: Unable to connect to the server. Please check your connection.';
+    }
+    
+    // Return the original message if no specific patterns matched
+    return message;
+  }
+  
+  // Default message for non-Error objects
+  return 'An unexpected error occurred. Please try again.';
+}
+
 export default function CreateContentModal({ open, onClose, onContentCreated }: CreateContentModalProps) {
   const { toast } = useToast();
   const [generatedContent, setGeneratedContent] = useState<{
@@ -112,11 +137,15 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
       });
       setGenerating(false);
     },
-    onError: (error: Error) => {
+    onError: (error: unknown) => {
       console.error('Content generation error:', error);
+      
+      // Use our utility function to get a friendly error message
+      const friendlyMessage = getFriendlyErrorMessage(error);
+      
       toast({
         title: "Generation Failed",
-        description: error.message,
+        description: friendlyMessage,
         variant: "destructive",
       });
       setGenerating(false);
@@ -373,12 +402,30 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
                     
                     // Submit directly
                     setGenerating(true);
-                    generateContentMutation.mutate(directSubmission);
+                    generateContentMutation.mutate(directSubmission, {
+                      onError: (error) => {
+                        console.error("Battle Royale generation error:", error);
+                        
+                        // Use the friendly error message utility
+                        const friendlyMessage = getFriendlyErrorMessage(error);
+                        
+                        toast({
+                          title: "Content Generation Failed",
+                          description: friendlyMessage,
+                          variant: "destructive",
+                        });
+                        setGenerating(false);
+                      }
+                    });
                   } catch (error) {
                     console.error("Error in Battle Royale direct submission:", error);
+                    
+                    // Use the friendly error message utility
+                    const friendlyMessage = getFriendlyErrorMessage(error);
+                    
                     toast({
                       title: "Submission Error",
-                      description: "There was an error submitting the Battle Royale template. Please try again.",
+                      description: friendlyMessage,
                       variant: "destructive",
                     });
                   }
