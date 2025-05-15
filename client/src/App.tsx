@@ -9,6 +9,8 @@ import AnalyticsPage from "@/pages/analytics-page";
 import IntegrationsPage from "@/pages/integrations-page";
 import SettingsPage from "@/pages/settings-page";
 import SubscriptionPage from "@/pages/subscription-page";
+import SubscriptionCheckout from "@/pages/subscription/checkout";
+import SubscriptionSuccess from "@/pages/subscription/success";
 import AutoContentPage from "@/pages/auto-content-page";
 import AutoPostingSetup from "@/pages/auto-posting-setup";
 import ListingsPage from "@/pages/listings-page";
@@ -101,6 +103,12 @@ function App() {
           </Route>
           <Route path="/subscription">
             <ProtectedRoute path="/subscription" component={SubscriptionPage} />
+          </Route>
+          <Route path="/subscription/checkout">
+            <ProtectedRoute path="/subscription/checkout" component={SubscriptionCheckout} />
+          </Route>
+          <Route path="/subscription/success">
+            <ProtectedRoute path="/subscription/success" component={SubscriptionSuccess} />
           </Route>
           <Route path="/auto-content">
             <ProtectedRoute path="/auto-content" component={AutoContentPage} />

@@ -205,7 +205,7 @@ export default function CheckoutPage() {
   const options = {
     clientSecret,
     appearance: {
-      theme: 'stripe',
+      theme: 'stripe' as const,
     },
   };
 
