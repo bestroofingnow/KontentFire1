@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ interface UserInsights {
 
 export default function WelcomeScreen() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [timeOfDay, setTimeOfDay] = useState<string>("");
   const [currentDate, setCurrentDate] = useState<string>("");
   const [autoFillModalOpen, setAutoFillModalOpen] = useState(false);
@@ -142,6 +144,8 @@ export default function WelcomeScreen() {
     }
   });
 
+
+
   // Mutation for auto-filling company information from website
   const autoFillFromWebsiteMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -152,10 +156,20 @@ export default function WelcomeScreen() {
       queryClient.invalidateQueries({ queryKey: ['/api/brand-settings'] });
       setAutoFillModalOpen(false);
       setIsProcessing(false);
+      setWebsiteUrl("");
+      toast({
+        title: "Company information extracted!",
+        description: "Your company profile and brand settings have been updated successfully.",
+      });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Failed to auto-fill from website:", error);
       setIsProcessing(false);
+      toast({
+        title: "Failed to extract information",
+        description: error?.message || "Please check the URL and try again.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -169,22 +183,61 @@ export default function WelcomeScreen() {
       queryClient.invalidateQueries({ queryKey: ['/api/brand-settings'] });
       setAutoFillModalOpen(false);
       setIsProcessing(false);
+      setDocumentText("");
+      toast({
+        title: "Company information extracted!",
+        description: "Your company profile and brand settings have been updated successfully.",
+      });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Failed to auto-fill from document:", error);
       setIsProcessing(false);
+      toast({
+        title: "Failed to extract information",
+        description: error?.message || "Please check the document text and try again.",
+        variant: "destructive",
+      });
     }
   });
 
   // Handle auto-fill submission
   const handleAutoFillSubmit = () => {
-    setIsProcessing(true);
-    if (activeTab === "website" && websiteUrl) {
+    // Validate inputs before submitting
+    if (activeTab === "website") {
+      if (!websiteUrl.trim()) {
+        toast({
+          title: "Website URL required",
+          description: "Please enter a valid website URL.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Basic URL validation - make sure it at least contains a domain
+      const urlPattern = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+)(\/[^\s]*)?$/;
+      if (!urlPattern.test(websiteUrl)) {
+        toast({
+          title: "Invalid website URL",
+          description: "Please enter a valid website URL (e.g., 'example.com' or 'https://example.com').",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsProcessing(true);
       autoFillFromWebsiteMutation.mutate(websiteUrl);
-    } else if (activeTab === "document" && documentText) {
+    } else if (activeTab === "document") {
+      if (!documentText.trim() || documentText.length < 50) {
+        toast({
+          title: "Document text too short",
+          description: "Please provide more detailed document text (at least 50 characters).",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsProcessing(true);
       autoFillFromDocumentMutation.mutate(documentText);
-    } else {
-      setIsProcessing(false);
     }
   };
 
