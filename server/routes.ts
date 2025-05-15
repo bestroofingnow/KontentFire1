@@ -843,6 +843,9 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Company profile endpoints
+  // NOTE: These routes are now handled by the imported companyProfileRouter
+  // Keeping these commented out for reference
+  /*
   app.get('/api/company-profile', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });
@@ -868,7 +871,8 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
-    
+  */
+    /*
     try {
       const {
         name,
@@ -896,8 +900,9 @@ export function registerRoutes(app: Express): Server {
           profileId: existingProfile.id
         });
       }
-      
+
       const [newProfile] = await db.insert(companyProfiles)
+    /* Rest of route implementation commented out
         .values({
           userId: req.user.id,
           name,
@@ -925,6 +930,7 @@ export function registerRoutes(app: Express): Server {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
+    /* PUT route implementation commented out
     try {
       const profileId = parseInt(req.params.id);
       
