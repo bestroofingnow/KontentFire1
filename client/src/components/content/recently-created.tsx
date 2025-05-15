@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Content } from "@shared/schema";
 import ContentItem from "./content-item";
 import { useToast } from "@/hooks/use-toast";
+import { SkeletonText, SkeletonWithShimmer } from "@/components/ui/skeleton-loader";
 
 export default function RecentlyCreated({ limit = 2 }) {
   const { toast } = useToast();
@@ -62,9 +63,24 @@ export default function RecentlyCreated({ limit = 2 }) {
       
       <div className="p-5">
         {isLoading ? (
-          <div className="py-10 text-center">
-            <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-2 text-gray-500">Loading recent content...</p>
+          <div className="space-y-5">
+            {[...Array(limit)].map((_, index) => (
+              <div key={index} className="border border-border rounded-lg p-4">
+                <div className="flex items-center mb-3">
+                  <SkeletonWithShimmer className="w-10 h-10 rounded-full mr-3" />
+                  <div>
+                    <SkeletonText className="w-28 h-4 mb-1" />
+                    <SkeletonText className="w-20 h-3" />
+                  </div>
+                </div>
+                <SkeletonText className="w-3/4 h-4 mb-2" />
+                <SkeletonText className="w-full h-20 mb-3" />
+                <div className="flex justify-between mt-2">
+                  <SkeletonText className="w-16 h-8" />
+                  <SkeletonText className="w-16 h-8" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : recentContents && recentContents.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">

@@ -1,4 +1,5 @@
 import { ArrowUp, ArrowDown } from "lucide-react";
+import { SkeletonText, SkeletonWithShimmer } from "@/components/ui/skeleton-loader";
 
 type StatCardProps = {
   title: string;
@@ -10,6 +11,7 @@ type StatCardProps = {
     isPositive?: boolean;
   };
   iconColorClass?: string;
+  isLoading?: boolean;
 };
 
 export default function StatCard({ 
