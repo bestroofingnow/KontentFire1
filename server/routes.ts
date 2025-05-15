@@ -397,11 +397,11 @@ export function registerRoutes(app: Express): Server {
         if (companyProfile) {
           // Create a company context to personalize content
           companyContext = `
-            Company Name: ${companyProfile.companyName || ""}
+            Company Name: ${companyProfile.name || ""}
             Industry: ${companyProfile.industry || ""}
             Description: ${companyProfile.description || ""}
-            Voice/Tone: ${companyProfile.primaryColor ? "Consistent with brand colors" : tone || "professional"}
-            Website: ${companyProfile.websiteUrl || ""}
+            Voice/Tone: ${tone || "professional"}
+            Website: ${companyProfile.website || ""}
           `;
           
           console.log("Using company profile for content generation");
