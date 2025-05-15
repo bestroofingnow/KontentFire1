@@ -1038,7 +1038,7 @@ export default function SettingsPage() {
                                           
                                           <FormField
                                             control={companyProfileForm.control}
-                                            name="logoUrl"
+                                            name="logo"
                                             render={({ field }) => (
                                               <FormItem>
                                                 <FormLabel>Logo URL</FormLabel>
