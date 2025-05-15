@@ -28,36 +28,36 @@ async function extractWebsiteContent(url: string): Promise<string> {
     const { JSDOM } = jsdom;
     const dom = new JSDOM(response.data);
     const document = dom.window.document;
+
+    // Extract text content from the page
+    let text = '';
     
-    // Extract the text content
-    const title = document.querySelector('title')?.textContent || '';
-    const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
-    
-    // Extract text content from main content areas
-    const contentSelectors = [
-      'main', 'article', '.content', '#content', 
-      '.about', '#about', '.about-us', '#about-us',
-      '.company', '#company'
-    ];
-    
-    let mainContent = '';
-    for (const selector of contentSelectors) {
-      const element = document.querySelector(selector);
-      if (element) {
-        mainContent += element.textContent + '\n\n';
-      }
+    // Get meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription && metaDescription.getAttribute('content')) {
+      text += metaDescription.getAttribute('content') + '\n\n';
     }
     
-    // If no content was found with specific selectors, get the body content
-    if (!mainContent.trim()) {
-      mainContent = document.body.textContent || '';
+    // Get main content (prioritize main, article, or div with most text)
+    const mainContent = document.querySelector('main') || 
+                       document.querySelector('article') || 
+                       Array.from(document.querySelectorAll('div'))
+                         .sort((a, b) => b.textContent?.length || 0 - (a.textContent?.length || 0))[0];
+    
+    if (mainContent) {
+      text += mainContent.textContent;
+    } else {
+      // Fallback to body content
+      text += document.body.textContent;
     }
     
-    // Combine the extracted content
-    return `Title: ${title}\n\nDescription: ${metaDescription}\n\nContent: ${mainContent}`;
+    // Clean up the text (remove excessive whitespace)
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
   } catch (error) {
-    console.error('Error extracting website content:', error);
-    throw new Error('Failed to extract content from website. Please check the URL and try again.');
+    console.error('Error extracting content from website:', error);
+    return '';
   }
 }
 
@@ -83,7 +83,7 @@ export const getCompanyProfile = async (req: Request, res: Response) => {
     return res.status(200).json(profile);
   } catch (error) {
     console.error('Error getting company profile:', error);
-    return res.status(500).json({ error: 'Failed to retrieve company profile' });
+    return res.status(500).json({ error: 'Failed to get company profile' });
   }
 };
 
@@ -207,7 +207,7 @@ export const autoFillFromWebsite = async (req: Request, res: Response) => {
           userId,
           name: extractedInfo.companyName,
           description: extractedInfo.description,
-          industry: extractedInfo.industry,
+          industry: extractedInfo.industry, 
           website: extractedInfo.websiteUrl
         })
         .returning();
@@ -218,10 +218,10 @@ export const autoFillFromWebsite = async (req: Request, res: Response) => {
     console.error('Error auto-filling from website:', error);
     return res.status(500).json({ 
       error: 'Failed to extract company information from website',
-      message: error.message
+      message: error instanceof Error ? error.message : String(error)
     });
   }
-});
+};
 
 /**
  * Auto-fill company profile from document
@@ -274,7 +274,7 @@ export const autoFillFromDocument = async (req: Request, res: Response) => {
           name: extractedInfo.companyName,
           description: extractedInfo.description,
           industry: extractedInfo.industry,
-          website: extractedInfo.websiteUrl || existingProfile.website,
+          website: extractedInfo.websiteUrl,
           updatedAt: new Date()
         })
         .where(eq(companyProfiles.id, existingProfile.id))
@@ -288,7 +288,7 @@ export const autoFillFromDocument = async (req: Request, res: Response) => {
           userId,
           name: extractedInfo.companyName,
           description: extractedInfo.description,
-          industry: extractedInfo.industry,
+          industry: extractedInfo.industry, 
           website: extractedInfo.websiteUrl
         })
         .returning();
@@ -299,10 +299,10 @@ export const autoFillFromDocument = async (req: Request, res: Response) => {
     console.error('Error auto-filling from document:', error);
     return res.status(500).json({ 
       error: 'Failed to extract company information from document',
-      message: error.message
+      message: error instanceof Error ? error.message : String(error)
     });
   }
-});
+};
 
 // Get company profile
 router.get('/', getCompanyProfile);
@@ -310,4 +310,9 @@ router.get('/', getCompanyProfile);
 // Create or update company profile
 router.post('/', saveCompanyProfile);
 
+// Register the auto-fill routes
+router.post('/auto-fill/website', autoFillFromWebsite);
+router.post('/auto-fill/document', autoFillFromDocument);
+
+// Only export the router as default
 export default router;
