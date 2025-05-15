@@ -78,8 +78,31 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
         ...data,
         templateData: selectedTemplate !== 'standard' ? templateData : undefined
       };
-      const res = await apiRequest("POST", "/api/content/generate", requestData);
-      return res.json();
+      
+      try {
+        const res = await apiRequest("POST", "/api/content/generate", requestData);
+        
+        if (!res.ok) {
+          // Try to parse the error as JSON first
+          try {
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'An error occurred while generating content');
+          } catch (jsonError) {
+            // If JSON parsing fails, it's probably HTML or another format
+            const text = await res.text();
+            if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+              throw new Error('Server error: Unable to connect to content generation service');
+            } else {
+              throw new Error('Failed to generate content. Please try again later.');
+            }
+          }
+        }
+        
+        return res.json();
+      } catch (error: any) {
+        console.error('Content generation error:', error);
+        throw new Error(error.message || 'An unexpected error occurred');
+      }
     },
     onSuccess: (data) => {
       setGeneratedContent(data);
@@ -90,6 +113,7 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
       setGenerating(false);
     },
     onError: (error: Error) => {
+      console.error('Content generation error:', error);
       toast({
         title: "Generation Failed",
         description: error.message,
