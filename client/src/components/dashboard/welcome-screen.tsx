@@ -4,6 +4,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  SkeletonText, 
+  SkeletonAvatar, 
+  SkeletonButton, 
+  SkeletonWithShimmer 
+} from "@/components/ui/skeleton-loader";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -722,22 +728,82 @@ export default function WelcomeScreen() {
 function WelcomeScreenSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <Skeleton className="h-10 w-64 mb-2" />
-        <Skeleton className="h-5 w-80" />
+      <SkeletonWithShimmer className="mb-6">
+        <SkeletonText className="h-10 w-64 mb-2" />
+        <SkeletonText className="h-5 w-80" />
+      </SkeletonWithShimmer>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <SkeletonWithShimmer className="md:col-span-2">
+          <Card className="h-[300px]">
+            <CardHeader>
+              <SkeletonText className="h-6 w-48 mb-1" />
+              <SkeletonText className="h-4 w-72" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonStat key={i} />
+                ))}
+              </div>
+              <SkeletonText className="h-5 w-36 mb-4" />
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <SkeletonAvatar className="w-10 h-10" />
+                    <div className="flex-1">
+                      <SkeletonText className="h-4 w-full max-w-[250px] mb-2" />
+                      <SkeletonText className="h-3 w-40" />
+                    </div>
+                    <SkeletonButton className="h-8 w-20" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </SkeletonWithShimmer>
+        
+        <SkeletonWithShimmer>
+          <Card className="h-[300px]">
+            <CardHeader>
+              <SkeletonText className="h-6 w-40 mb-1" />
+              <SkeletonText className="h-4 w-56" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <SkeletonText className="h-4 w-full" />
+                <SkeletonText className="h-4 w-5/6" />
+                <SkeletonText className="h-4 w-4/5" />
+              </div>
+              <div className="flex justify-between items-center pt-3">
+                <SkeletonButton className="h-9 w-28" />
+                <SkeletonAvatar className="w-8 h-8" />
+              </div>
+            </CardContent>
+          </Card>
+        </SkeletonWithShimmer>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <Skeleton className="h-[300px] w-full rounded-lg" />
-        </div>
-        <Skeleton className="h-[300px] w-full rounded-lg" />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Skeleton className="h-[250px] w-full rounded-lg" />
-        <Skeleton className="h-[250px] w-full rounded-lg" />
-        <Skeleton className="h-[250px] w-full rounded-lg" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <SkeletonWithShimmer key={i}>
+            <Card className="h-[250px]">
+              <CardHeader>
+                <SkeletonText className="h-6 w-40 mb-1" />
+                <SkeletonText className="h-4 w-56" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="h-[120px] flex items-center justify-center">
+                  <SkeletonText className="h-20 w-full rounded-md" />
+                </div>
+                <div className="flex justify-between">
+                  <SkeletonButton className="h-9 w-24" />
+                  <SkeletonButton className="h-9 w-20" />
+                </div>
+              </CardContent>
+            </Card>
+          </SkeletonWithShimmer>
+        ))}
       </div>
     </div>
   );
