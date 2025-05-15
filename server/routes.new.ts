@@ -12,6 +12,7 @@ import {
   postToFacebook
 } from './integrations/facebook';
 import linkedInRouter from './routes/linkedin-routes';
+import linkedInDeploymentRouter from './routes/linkedin-deployment';
 import { getCompanyProfile, saveCompanyProfile } from './routes/company-profile';
 import { getBrandSettings, saveBrandSettings } from './routes/brand-settings';
 import { createAnimationHandler, listAnimationsHandler } from './routes/animations';
@@ -80,6 +81,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // LinkedIn integration 
   app.use('/api/integrations/linkedin', linkedInRouter);
+  
+  // LinkedIn deployment-specific integration
+  app.use('/api/integrations/linkedin-deployment', linkedInDeploymentRouter);
   
   // Stripe payment route
   if (stripe) {

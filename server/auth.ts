@@ -11,6 +11,15 @@ declare global {
   namespace Express {
     interface User extends SelectUser {}
   }
+  
+  // Add custom properties to session 
+  namespace Express.Session {
+    interface SessionData {
+      linkedInState?: string;
+      linkedInTestState?: string;
+      linkedInDeploymentState?: string;
+    }
+  }
 }
 
 const scryptAsync = promisify(scrypt);

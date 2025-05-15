@@ -167,23 +167,83 @@ export default function LinkedInTroubleshootPage() {
         
         <Card>
           <CardHeader>
-            <CardTitle>Generate Auth URL</CardTitle>
+            <CardTitle>Deployment Authentication</CardTitle>
             <CardDescription>
-              Test creating a LinkedIn authentication URL
+              Special authentication for deployment environment
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={testAuthUrl} 
-              disabled={isLoading}
-              className="mb-4"
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Generate Auth URL
-            </Button>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium mb-2">Deployment Fix</h3>
+                <p className="text-sm mb-4">
+                  This special authentication method generates a LinkedIn auth URL using the exact domain of your 
+                  deployed application, which should match what's registered in the LinkedIn Developer Portal.
+                </p>
+                <Button 
+                  onClick={async () => {
+                    setIsLoading(true);
+                    try {
+                      const response = await apiRequest('GET', '/api/integrations/linkedin-deployment/deployment-info');
+                      const data = await response.json();
+                      setConfigInfo({...configInfo, deployment: data});
+                    } catch (err) {
+                      console.error('Error checking deployment:', err);
+                      setError('Failed to check deployment configuration');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="mb-4 mr-2"
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Check Deployment Setup
+                </Button>
+                
+                <Button 
+                  onClick={async () => {
+                    setIsLoading(true);
+                    try {
+                      const response = await apiRequest('GET', '/api/integrations/linkedin-deployment/auth-url');
+                      const data = await response.json();
+                      setAuthUrl(data.authUrl);
+                    } catch (err) {
+                      console.error('Error getting deployment auth URL:', err);
+                      setError('Failed to get deployment auth URL');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  disabled={isLoading}
+                  variant="default"
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Generate Deployment Auth URL
+                </Button>
+                
+                {configInfo?.deployment && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                    <h4 className="font-medium mb-2 text-blue-800">Deployment Information</h4>
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="font-medium">Environment:</div>
+                        <div>{configInfo.deployment.environment}</div>
+                        
+                        <div className="font-medium">Current URL:</div>
+                        <div className="break-all">{configInfo.deployment.currentUrl}</div>
+                        
+                        <div className="font-medium">Recommended Redirect URI:</div>
+                        <div className="break-all">{configInfo.deployment.recommendedRedirectUri}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             
             {authUrl && (
-              <div className="mt-4">
+              <div className="mt-6">
                 <h3 className="font-medium mb-2">Auth URL:</h3>
                 <div className="p-4 bg-gray-50 rounded-md overflow-x-auto">
                   <p className="text-xs font-mono break-all">{authUrl}</p>
