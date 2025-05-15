@@ -982,6 +982,7 @@ export function registerRoutes(app: Express): Server {
       return res.status(500).json({ message: `Error updating company profile: ${error.message}` });
     }
   });
+  */
   
   // Admin settings endpoints
   app.get('/api/admin/settings', async (req: Request, res: Response) => {
