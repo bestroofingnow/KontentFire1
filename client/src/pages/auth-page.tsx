@@ -14,7 +14,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Flame } from "lucide-react";
+import { Flame, CreditCard, CheckCircle } from "lucide-react";
+import { 
+  RadioGroup, 
+  RadioGroupItem 
+} from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 
 // Login form schema
@@ -28,6 +32,12 @@ const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  companyName: z.string().min(1, "Company name is required"),
+  plan: z.enum(["ember", "inferno", "blaze"], {
+    required_error: "Please select a subscription plan",
+  }),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -56,6 +66,10 @@ export default function AuthPage() {
       username: "",
       email: "",
       password: "",
+      firstName: "",
+      lastName: "",
+      companyName: "",
+      plan: "ember", // Default to Ember plan
     },
   });
 
@@ -220,6 +234,36 @@ export default function AuthPage() {
 
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={registerForm.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your first name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={registerForm.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your last name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={registerForm.control}
                     name="username"
@@ -250,6 +294,20 @@ export default function AuthPage() {
 
                   <FormField
                     control={registerForm.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={registerForm.control}
                     name="password"
                     render={({ field }) => (
                       <FormItem>
@@ -262,6 +320,42 @@ export default function AuthPage() {
                     )}
                   />
 
+                  <FormField
+                    control={registerForm.control}
+                    name="plan"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subscription Plan</FormLabel>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div 
+                              className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${field.value === 'ember' ? 'border-primary bg-primary/5' : 'border-gray-200'}`} 
+                              onClick={() => registerForm.setValue('plan', 'ember')}
+                            >
+                              <div className="font-semibold text-lg flex items-center justify-between">
+                                <span>Ember Plan</span>
+                                <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded">$99/month</span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">Standard content creation for small businesses</p>
+                            </div>
+                            
+                            <div 
+                              className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${field.value === 'inferno' ? 'border-primary bg-primary/5' : 'border-gray-200'}`} 
+                              onClick={() => registerForm.setValue('plan', 'inferno')}
+                            >
+                              <div className="font-semibold text-lg flex items-center justify-between">
+                                <span>Inferno Plan</span>
+                                <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded">$999/month</span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">Advanced content creation with unlimited generations</p>
+                            </div>
+                          </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <Button
                     type="submit"
                     className="w-full bg-primary hover:bg-primary-dark"
@@ -269,6 +363,11 @@ export default function AuthPage() {
                   >
                     {isRegistering ? "Creating account..." : "Create Account"}
                   </Button>
+
+                  <p className="text-xs text-center text-gray-500 mt-2">
+                    By creating an account, you agree to our Terms of Service and Privacy Policy.
+                    You will be redirected to payment after registration.
+                  </p>
                 </form>
               </Form>
 

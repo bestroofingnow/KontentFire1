@@ -25,6 +25,9 @@ export const users = pgTable('users', {
   username: text('username').notNull().unique(),
   email: text('email').notNull(),
   password: text('password').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  companyName: text('company_name'),
   isAdmin: boolean('is_admin').default(false),
   plan: planTypeEnum('plan').default('blaze'),
   planStatus: text('plan_status').default('active'),
@@ -39,6 +42,9 @@ export const users = pgTable('users', {
   shopifyApiSecret: text('shopify_api_secret'),
   stripeCustomerId: text('stripe_customer_id'),
   stripeSubscriptionId: text('stripe_subscription_id'),
+  subscriptionPriceId: text('subscription_price_id'),
+  lastBillingDate: timestamp('last_billing_date'),
+  nextBillingDate: timestamp('next_billing_date'),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
