@@ -767,9 +767,36 @@ export default function SettingsPage() {
                   
                   <CardContent>
                     {isLoadingBrandSettings ? (
-                      <div className="flex justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                      </div>
+                      <SkeletonWithShimmer className="space-y-6 py-4">
+                        <div className="space-y-4">
+                          <SkeletonText className="h-6 w-36" />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <SkeletonText className="h-5 w-32" />
+                              <SkeletonText className="h-10 w-full rounded-md" />
+                            </div>
+                            <div className="space-y-2">
+                              <SkeletonText className="h-5 w-32" />
+                              <SkeletonText className="h-10 w-full rounded-md" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <SkeletonText className="h-6 w-32" />
+                          <div className="space-y-2">
+                            <SkeletonText className="h-5 w-40" />
+                            <div className="grid grid-cols-2 gap-4">
+                              <SkeletonText className="h-10 w-full rounded-md" />
+                              <SkeletonText className="h-10 w-full rounded-md" />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end">
+                          <SkeletonButton className="h-10 w-36" />
+                        </div>
+                      </SkeletonWithShimmer>
                     ) : (
                       <>
                         {/* Brand Information Tab */}
@@ -955,9 +982,27 @@ export default function SettingsPage() {
                               </p>
                               
                               {isLoadingProfile ? (
-                                <div className="flex justify-center py-6">
-                                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                                </div>
+                                <SkeletonWithShimmer className="space-y-5 p-6">
+                                  <div className="space-y-2">
+                                    <SkeletonText className="h-5 w-1/4" />
+                                    <SkeletonText className="h-10 w-full rounded-md" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <SkeletonText className="h-5 w-1/4" />
+                                    <SkeletonText className="h-10 w-full rounded-md" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <SkeletonText className="h-5 w-1/4" />
+                                    <SkeletonText className="h-10 w-full rounded-md" />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <SkeletonText className="h-5 w-1/4" />
+                                    <SkeletonText className="h-20 w-full rounded-md" />
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <SkeletonButton className="h-10 w-24" />
+                                  </div>
+                                </SkeletonWithShimmer>
                               ) : (
                                 <Form {...companyProfileForm}>
                                   <form onSubmit={companyProfileForm.handleSubmit(onCompanyProfileSubmit)} className="space-y-6">
