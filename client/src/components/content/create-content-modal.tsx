@@ -765,8 +765,33 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
           </div>
         </form>
         
+        {/* Generated Content Loading Skeleton */}
+        {generating && (
+          <div className="mt-6 border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">Generating Content...</h3>
+            <SkeletonWithShimmer className="space-y-4">
+              <SkeletonText className="h-4 w-full" />
+              <SkeletonText className="h-4 w-full" />
+              <SkeletonText className="h-4 w-[90%]" />
+              <SkeletonText className="h-4 w-[85%]" />
+              <div className="h-4 my-2" />
+              <SkeletonText className="h-4 w-full" />
+              <SkeletonText className="h-4 w-[92%]" />
+              <SkeletonText className="h-4 w-[88%]" />
+              <div className="h-4 my-2" />
+              <SkeletonText className="h-4 w-full" />
+              <SkeletonText className="h-4 w-full" />
+              {form && form.getValues() && form.getValues().contentType !== 'text' && (
+                <div className="mt-4">
+                  <SkeletonText className="h-40 w-full rounded-md" />
+                </div>
+              )}
+            </SkeletonWithShimmer>
+          </div>
+        )}
+        
         {/* Generated Content Preview */}
-        {(generatedContent.text || generatedContent.imageUrl) && (
+        {(generatedContent.text || generatedContent.imageUrl) && !generating && (
           <div className="mt-6 border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">Generated Content</h3>
             

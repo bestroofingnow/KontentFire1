@@ -21,6 +21,11 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import type { CompanyProfile } from "@shared/schema";
 import InteractiveHover from "@/components/ui/interactive-hover";
+import { 
+  SkeletonText, 
+  SkeletonButton, 
+  SkeletonWithShimmer 
+} from "@/components/ui/skeleton-loader";
 
 // Profile schema
 const profileSchema = z.object({
