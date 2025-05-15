@@ -134,9 +134,14 @@ export default function AuthPage() {
         description: `Welcome to Kontent Fire, ${userData.username}!`,
       });
       
-      // Force reload the page instead of using navigate
-      // Add new_user=true parameter to trigger the tutorial for new users
-      window.location.href = '/?new_user=true';
+      // Redirect to the payment page with the selected plan information
+      if (values.plan === 'ember' || values.plan === 'inferno') {
+        // Redirect to subscription checkout
+        window.location.href = `/subscription/checkout?plan=${values.plan}`;
+      } else {
+        // For free plans or if there's an issue, go to dashboard
+        window.location.href = '/?new_user=true';
+      }
     } catch (error) {
       toast({
         title: "Registration Failed",

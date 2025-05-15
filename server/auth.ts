@@ -93,7 +93,15 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res, next) => {
     try {
       // Validate the incoming data
-      const { username, email, password } = req.body;
+      const { 
+        username, 
+        email, 
+        password, 
+        firstName, 
+        lastName, 
+        companyName, 
+        plan = 'ember'  // Default to ember plan if not specified
+      } = req.body;
       
       // Check for existing user with same username
       const existingByUsername = await storage.getUserByUsername(username);
@@ -112,7 +120,11 @@ export function setupAuth(app: Express) {
         username,
         email,
         password: await hashPassword(password),
-        plan: 'ember' as any // Default plan set to Ember (using type assertion to match enum)
+        firstName,
+        lastName,
+        companyName,
+        plan: plan as any, // Type assertion to match enum
+        planStatus: 'pending_payment' // Set initial status as pending payment
       });
 
       // Remove password from response
