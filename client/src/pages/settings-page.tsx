@@ -963,7 +963,7 @@ export default function SettingsPage() {
                                         
                                         <FormField
                                           control={companyProfileForm.control}
-                                          name="companyName"
+                                          name="name"
                                           render={({ field }) => (
                                             <FormItem>
                                               <FormLabel>Company Name*</FormLabel>
@@ -1024,7 +1024,7 @@ export default function SettingsPage() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                           <FormField
                                             control={companyProfileForm.control}
-                                            name="websiteUrl"
+                                            name="website"
                                             render={({ field }) => (
                                               <FormItem>
                                                 <FormLabel>Website URL</FormLabel>
