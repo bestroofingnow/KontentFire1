@@ -18,14 +18,20 @@ const LINKEDIN_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken';
 const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
 
-// LinkedIn API requires specific scopes for different operations
-// Using the absolute minimum scope - just try to get the profile info first
-const SCOPES = ['r_liteprofile'];
+// LinkedIn API requires specific scopes for different operations (from LinkedIn docs)
+// The updated scopes based on LinkedIn's current documentation
+const SCOPES = ['openid', 'profile'];
 
-// If the basic scope works, we can add more later:
+// LinkedIn has migrated from r_liteprofile to profile scope
+// Old scopes (now deprecated):
+// const SCOPES = ['r_liteprofile'];
+// 
+// Advanced scopes to add in the future if needed and authorized:
 // const SCOPES = [
-//   'r_liteprofile',   // Read basic profile 
-//   'w_member_social', // Share posts - required for posting
+//   'openid',         // Required for OpenID Connect
+//   'profile',        // Read basic profile (replacement for r_liteprofile)
+//   'email',          // Read email address (optional)
+//   'w_member_social' // Share posts - required for posting
 // ];
 
 export interface LinkedInTokenResponse {
@@ -103,61 +109,89 @@ export async function exchangeCodeForToken(
 
 // Get LinkedIn user profile using access token
 export async function getLinkedInProfile(accessToken: string): Promise<LinkedInProfile> {
-  // Fetch basic profile information
-  const profileResponse = await axios.get(`${LINKEDIN_API_URL}/me`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  
-  // Fetch profile picture if available
-  const profilePictureResponse = await axios.get(
-    `${LINKEDIN_API_URL}/me?projection=(id,profilePicture(displayImage~:playableStreams))`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  );
-  
-  // Fetch email address if scope is granted
-  let email;
   try {
-    const emailResponse = await axios.get(`${LINKEDIN_API_URL}/emailAddress?q=members&projection=(elements*(handle~))`, {
+    // Try using OpenID Connect userinfo endpoint first (for 'openid' and 'profile' scopes)
+    const userinfoResponse = await axios.get(`${LINKEDIN_API_URL}/userinfo`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
     
-    if (emailResponse.data?.elements?.[0]?.['handle~']?.emailAddress) {
-      email = emailResponse.data.elements[0]['handle~'].emailAddress;
-    }
+    console.log('LinkedIn userinfo response:', JSON.stringify(userinfoResponse.data, null, 2));
+    
+    // Format: { sub, name, given_name, family_name, picture, locale, email, email_verified }
+    const userData = userinfoResponse.data;
+    
+    return {
+      id: userData.sub,
+      localizedFirstName: userData.given_name,
+      localizedLastName: userData.family_name,
+      profilePicture: userData.picture ? { displayImage: userData.picture } : undefined,
+      email: userData.email,
+    };
   } catch (error) {
-    console.warn('Could not fetch LinkedIn email address:', error);
-    // Continue without email if not available or scope not granted
-  }
-  
-  // Extract profile picture URL if available
-  let profilePicture;
-  try {
-    const pictureData = profilePictureResponse.data.profilePicture?.['displayImage~']?.elements;
-    if (pictureData && pictureData.length > 0) {
-      // Get the highest quality image available
-      const sortedImages = pictureData.sort((a: any, b: any) => b.width - a.width);
-      profilePicture = sortedImages[0].identifiers[0].identifier;
+    console.log('OpenID Connect profile retrieval failed, falling back to legacy API:', error.message);
+    
+    // Fall back to legacy API if OpenID Connect fails
+    try {
+      // Fetch basic profile information
+      const profileResponse = await axios.get(`${LINKEDIN_API_URL}/me`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      
+      // Fetch profile picture if available
+      const profilePictureResponse = await axios.get(
+        `${LINKEDIN_API_URL}/me?projection=(id,profilePicture(displayImage~:playableStreams))`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      
+      // Fetch email address if scope is granted
+      let email;
+      try {
+        const emailResponse = await axios.get(`${LINKEDIN_API_URL}/emailAddress?q=members&projection=(elements*(handle~))`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        
+        if (emailResponse.data?.elements?.[0]?.['handle~']?.emailAddress) {
+          email = emailResponse.data.elements[0]['handle~'].emailAddress;
+        }
+      } catch (emailError) {
+        console.warn('Could not fetch LinkedIn email address:', emailError.message);
+      }
+      
+      // Extract profile picture URL if available
+      let profilePicture;
+      try {
+        const pictureData = profilePictureResponse.data.profilePicture?.['displayImage~']?.elements;
+        if (pictureData && pictureData.length > 0) {
+          // Get the highest quality image available
+          const sortedImages = pictureData.sort((a: any, b: any) => b.width - a.width);
+          profilePicture = sortedImages[0].identifiers[0].identifier;
+        }
+      } catch (pictureError) {
+        console.warn('Could not extract LinkedIn profile picture:', pictureError.message);
+      }
+      
+      return {
+        id: profileResponse.data.id,
+        localizedFirstName: profileResponse.data.localizedFirstName,
+        localizedLastName: profileResponse.data.localizedLastName,
+        profilePicture: profilePicture ? { displayImage: profilePicture } : undefined,
+        email,
+      };
+    } catch (fallbackError) {
+      console.error('Both OpenID Connect and legacy profile methods failed');
+      throw new Error('Failed to retrieve LinkedIn profile: ' + fallbackError.message);
     }
-  } catch (error) {
-    console.warn('Could not extract LinkedIn profile picture:', error);
-    // Continue without profile picture if not available
   }
-  
-  return {
-    id: profileResponse.data.id,
-    localizedFirstName: profileResponse.data.localizedFirstName,
-    localizedLastName: profileResponse.data.localizedLastName,
-    profilePicture: profilePicture ? { displayImage: profilePicture } : undefined,
-    email,
-  };
 }
 
 // Post content to LinkedIn

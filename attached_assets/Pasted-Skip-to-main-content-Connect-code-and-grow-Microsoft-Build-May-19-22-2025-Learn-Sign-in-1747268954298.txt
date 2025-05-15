@@ -1,0 +1,89 @@
+Skip to main content
+Connect, code, and grow
+Microsoft Build · May 19 – 22, 2025
+
+Learn
+Sign in
+LinkedIn
+Search
+Filter by title
+Overview
+Overview
+Application Development
+Secure Applications
+Error Handling
+Breaking Change Policy
+Learn  Marketing  Profile API  Consumer Solutions Platform  Best Practices 
+Best Practices for Application Development
+Article
+05/08/2023
+4 contributors
+In this article
+Authentication
+Error Handling and Logging
+LinkedIn members are more comfortable trusting your application when you are transparent about how you will use their data. We recommend following these best practices to help your application deliver the most value.
+
+Authentication
+Whenever possible, remind the member that they are logged in to your application by displaying their name, portrait, and/or account settings somewhere on the page.
+Avoid having to log in multiple times. When a member is integrated for multiple permissions, combine the permissions into a single request rather than asking the member to reauthenticate and grant consent each time.
+Avoid generating an access token for each API call.Cache the member's access token after they grant your application access, and do not re-authenticate the member unless they log out or the access token expires.
+Make sure you allow the member to log out, and when they do log out, ensure you destroy their access token and refresh token, as applicable.
+Validate the member access token using Token Introspection or by calling any API before making the access token call.
+Whenever the access token gets expired, make use of the refresh token, if applicable, to exchange for a new access token, unless the refresh token has also expired or been revoked.
+Reintroduce the member into the authentication flow only when both the access token and the refresh token have expired or been revoked.
+If you authorize the member through the JS SDK, do not send the member through the REST authorization flow. If you do, users will have to re-authorize your application. You can exchange the JS SDK token for an OAuth 2.0 REST access token if you want to make REST calls. Otherwise, use the JS SDK token to make calls with the JS SDK.
+If a member authorizes your application through the REST workflow, it does not mean they are automatically logged in to the linkedin.com website. You should not assume that the member has access to resources that are on the LinkedIn website while using your application.
+
+Error Handling and Logging
+System Outages
+Due to the nature of cloud APIs, LinkedIn's services are occasionally interrupted or temporarily unavailable for reasons outside of LinkedIn's control. Assume that any API call you make to LinkedIn or any third party could potentially fail. Always include error-handling logic in your requests. See the Errors page for API error codes and messages.
+
+Errors
+A 500 Internal Server Error indicates that LinkedIn is experiencing an internal error. If you continue to receive server errors, record the following details:
+
+Request: url, method, header, e.g., access_token, body
+Response: header, e.g., x-li-uuid, x-li-fabric, x-li-request-id, body
+Your application configuration, e.g., client_id
+If you continue to receive errors, reach out to your partner technical support channel, or view our Developer Support Knowledge.
+
+Feedback
+Was this page helpful?
+
+Provide product feedback
+Additional resources
+Training
+
+Learning path
+
+Use application development best practices in Microsoft Dynamics 365 Business Central - Training
+
+Do you plan to create an app for Business Central? If you do, this path will be helpful to guide you through the recommended processes of publishing your app to AppSource.
+
+Certification
+
+Microsoft Certified: Power Platform Developer Associate - Certifications
+
+Demonstrate how to simplify, automate, and transform business tasks and processes using Microsoft Power Platform Developer.
+
+Documentation
+
+Sample Application - LinkedIn
+
+Describes the procedure consuming the OAuth Sample Application
+
+API Clients - LinkedIn
+
+Provides an overview of the role of API clients in simplifying integration with LinkedIn's APIs
+
+LinkedIn 3-Legged OAuth Flow - LinkedIn
+
+Step-by-step guide for LinkedIn's 3-legged OAuth flow.
+
+Show 5 more
+Previous Versions
+Blog
+Contribute
+Privacy
+Terms of Use
+Trademarks
+© Microsoft 2025

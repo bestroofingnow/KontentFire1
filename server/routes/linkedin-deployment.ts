@@ -81,9 +81,10 @@ router.get('/auth-url', (req: Request, res: Response) => {
     // Log the redirectUri for debugging
     console.log('Using deployment redirect URI:', redirectUri);
     
-    // Generate LinkedIn authentication URL without any scopes (most basic authentication)
-    // This should prevent the "unauthorized_scope_error" since we're not requesting any scopes
-    const authUrl = linkedInService.generateAuthUrl(redirectUri, state, []);
+    // Generate LinkedIn authentication URL with OpenID Connect scopes
+    // According to LinkedIn documentation, we should use 'openid' and 'profile' scopes
+    // This is the new way to authenticate with LinkedIn that replaced r_liteprofile
+    const authUrl = linkedInService.generateAuthUrl(redirectUri, state, ['openid', 'profile']);
     
     // Store state in session
     if (req.session) {
