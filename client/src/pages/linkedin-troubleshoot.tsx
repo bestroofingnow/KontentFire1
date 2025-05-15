@@ -175,18 +175,22 @@ export default function LinkedInTroubleshootPage() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <h3 className="font-medium mb-2">Deployment Fix (Addressing Scope Issues)</h3>
+                <h3 className="font-medium mb-2">Deployment-Specific Authentication</h3>
                 <p className="text-sm mb-4">
                   This special authentication method generates a LinkedIn auth URL using the exact domain of your 
-                  deployed application. It also requests <strong>no scopes</strong> to prevent the "unauthorized_scope_error" 
-                  that happens when requested scopes haven't been approved by LinkedIn.
+                  deployed application. It uses the new OpenID Connect scopes (<strong>openid</strong> and <strong>profile</strong>) 
+                  to properly authenticate with LinkedIn's latest API requirements.
                 </p>
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mb-4">
                   <h4 className="text-amber-800 font-medium">About the "unauthorized_scope_error"</h4>
                   <p className="text-sm text-amber-700 mt-1">
                     This error happens when your LinkedIn application requests scopes that haven't been approved for your app.
-                    The fix is either to get those scopes approved by LinkedIn, or to request no scopes at all.
-                    Our deployment fix takes the latter approach to get you connected as quickly as possible.
+                    We've updated our integration to use the officially supported OpenID Connect scopes <code className="px-1 py-0.5 bg-amber-100 rounded">openid</code> and 
+                    <code className="px-1 py-0.5 bg-amber-100 rounded">profile</code>, which should solve this issue.
+                  </p>
+                  <p className="text-sm text-amber-700 mt-2">
+                    If you still encounter this error, please make sure your LinkedIn app has the "Sign In with LinkedIn using OpenID Connect" product 
+                    added in the Developer Portal under the Products tab.
                   </p>
                 </div>
                 <Button 
@@ -356,11 +360,20 @@ export default function LinkedInTroubleshootPage() {
               
               <div>
                 <h3 className="font-medium mb-2">2. Request OAuth 2.0 Scopes</h3>
-                <p className="text-sm mb-2">Required scopes:</p>
+                <p className="text-sm mb-2">Required scopes (using OpenID Connect):</p>
                 <ul className="list-disc text-sm pl-5 space-y-1">
-                  <li><code className="px-1 py-0.5 bg-gray-100 rounded">r_liteprofile</code>: Get basic profile information</li>
+                  <li><code className="px-1 py-0.5 bg-gray-100 rounded">openid</code>: Required for OpenID Connect authentication</li>
+                  <li><code className="px-1 py-0.5 bg-gray-100 rounded">profile</code>: Get basic profile information (replaces r_liteprofile)</li>
+                  <li><code className="px-1 py-0.5 bg-gray-100 rounded">email</code>: Get email address (optional)</li>
                   <li><code className="px-1 py-0.5 bg-gray-100 rounded">w_member_social</code>: Post content to LinkedIn (if needed)</li>
                 </ul>
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md mb-2">
+                  <h4 className="text-blue-800 font-medium">LinkedIn API Update</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    LinkedIn has migrated from their legacy scopes (r_liteprofile) to OpenID Connect scopes.
+                    We've updated our integration to use these new scopes.
+                  </p>
+                </div>
               </div>
               
               <div>

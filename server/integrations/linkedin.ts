@@ -129,8 +129,9 @@ export async function getLinkedInProfile(accessToken: string): Promise<LinkedInP
       profilePicture: userData.picture ? { displayImage: userData.picture } : undefined,
       email: userData.email,
     };
-  } catch (error) {
-    console.log('OpenID Connect profile retrieval failed, falling back to legacy API:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.log('OpenID Connect profile retrieval failed, falling back to legacy API:', errorMessage);
     
     // Fall back to legacy API if OpenID Connect fails
     try {
@@ -163,8 +164,9 @@ export async function getLinkedInProfile(accessToken: string): Promise<LinkedInP
         if (emailResponse.data?.elements?.[0]?.['handle~']?.emailAddress) {
           email = emailResponse.data.elements[0]['handle~'].emailAddress;
         }
-      } catch (emailError) {
-        console.warn('Could not fetch LinkedIn email address:', emailError.message);
+      } catch (emailError: unknown) {
+        const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
+        console.warn('Could not fetch LinkedIn email address:', errorMessage);
       }
       
       // Extract profile picture URL if available
@@ -176,8 +178,9 @@ export async function getLinkedInProfile(accessToken: string): Promise<LinkedInP
           const sortedImages = pictureData.sort((a: any, b: any) => b.width - a.width);
           profilePicture = sortedImages[0].identifiers[0].identifier;
         }
-      } catch (pictureError) {
-        console.warn('Could not extract LinkedIn profile picture:', pictureError.message);
+      } catch (pictureError: unknown) {
+        const errorMessage = pictureError instanceof Error ? pictureError.message : 'Unknown error';
+        console.warn('Could not extract LinkedIn profile picture:', errorMessage);
       }
       
       return {
@@ -187,9 +190,10 @@ export async function getLinkedInProfile(accessToken: string): Promise<LinkedInP
         profilePicture: profilePicture ? { displayImage: profilePicture } : undefined,
         email,
       };
-    } catch (fallbackError) {
+    } catch (fallbackError: unknown) {
       console.error('Both OpenID Connect and legacy profile methods failed');
-      throw new Error('Failed to retrieve LinkedIn profile: ' + fallbackError.message);
+      const errorMessage = fallbackError instanceof Error ? fallbackError.message : 'Unknown error';
+      throw new Error('Failed to retrieve LinkedIn profile: ' + errorMessage);
     }
   }
 }
