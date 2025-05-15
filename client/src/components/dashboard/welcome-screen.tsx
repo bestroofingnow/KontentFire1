@@ -281,6 +281,38 @@ export default function WelcomeScreen() {
 
       setIsProcessing(true);
       autoFillFromDocumentMutation.mutate(documentText);
+    } else if (activeTab === "pdf") {
+      if (!pdfFile) {
+        toast({
+          title: "PDF file required",
+          description: "Please upload a PDF file with company information.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file type
+      if (!pdfFile.type.includes('pdf')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a PDF file only.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file size (max 10MB)
+      if (pdfFile.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "PDF file must be smaller than 10MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsProcessing(true);
+      autoFillFromPdfMutation.mutate(pdfFile);
     }
   };
 
@@ -341,14 +373,18 @@ export default function WelcomeScreen() {
               </DialogHeader>
               
               <Tabs defaultValue="website" value={activeTab} onValueChange={setActiveTab} className="mt-6">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="website" className="flex items-center gap-2">
                     <Globe className="h-4 w-4" />
-                    <span>From Website</span>
+                    <span>Website</span>
                   </TabsTrigger>
                   <TabsTrigger value="document" className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    <span>From Document</span>
+                    <span>Document</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="pdf" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    <span>PDF</span>
                   </TabsTrigger>
                 </TabsList>
                 
@@ -379,6 +415,87 @@ export default function WelcomeScreen() {
                     />
                     <p className="text-sm text-muted-foreground">
                       Paste text from your company documents, brochures, or about page.
+                    </p>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="pdf" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pdf-file">Company PDF Document</Label>
+                    <div 
+                      className="border-2 border-dashed border-muted-foreground/25 rounded-md p-6 flex flex-col items-center justify-center transition-colors hover:bg-secondary/10"
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.currentTarget.classList.add('border-primary');
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.currentTarget.classList.remove('border-primary');
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.currentTarget.classList.remove('border-primary');
+                        
+                        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                          const file = e.dataTransfer.files[0];
+                          if (file.type.includes('pdf')) {
+                            setPdfFile(file);
+                          } else {
+                            toast({
+                              title: "Invalid file type",
+                              description: "Please upload a PDF file only.",
+                              variant: "destructive",
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      {pdfFile ? (
+                        <div className="text-center">
+                          <p className="font-medium mb-2">{pdfFile.name}</p>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {(pdfFile.size / 1024).toFixed(1)} KB
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setPdfFile(null)}
+                          >
+                            Remove File
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Drag & drop your PDF file here, or click to browse
+                          </p>
+                          <Input
+                            id="pdf-file"
+                            type="file"
+                            accept=".pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setPdfFile(file);
+                              }
+                            }}
+                          />
+                          <Button 
+                            variant="outline" 
+                            onClick={() => document.getElementById('pdf-file')?.click()}
+                          >
+                            Browse Files
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Upload a PDF file with company information such as a brochure, whitepaper, or info sheet.
                     </p>
                   </div>
                 </TabsContent>
