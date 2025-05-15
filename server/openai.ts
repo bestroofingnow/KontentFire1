@@ -145,6 +145,22 @@ export async function generateText(
     return response.choices[0].message.content || "Unable to generate content.";
   } catch (error: any) {
     console.error("Error generating text with OpenAI:", error.message);
+    
+    // Check for specific error types
+    const errorMsg = error.message || '';
+    if (errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html')) {
+      console.error('Received HTML error response in text generation');
+      throw new Error(`Failed to connect to OpenAI service. Please check your network connection.`);
+    } else if (errorMsg.toLowerCase().includes('api key')) {
+      // API key specific error
+      console.error('API key error in text generation');
+      throw new Error(`OpenAI requires a valid API key. Please check your API credentials.`);
+    } else if (errorMsg.includes('timeout') || errorMsg.includes('ECONNREFUSED') || errorMsg.includes('network')) {
+      // Connection errors
+      console.error('Network or connection error in text generation');
+      throw new Error(`Network error: Failed to connect to text generation service.`);
+    }
+    
     throw new Error(`Failed to generate text content: ${error.message}`);
   }
 }
@@ -181,6 +197,26 @@ export async function generateImage(prompt: string): Promise<string> {
     return response.data[0].url || "";
   } catch (error: any) {
     console.error("Error generating image with DALL-E:", error.message);
+    
+    // Check for specific error types
+    const errorMsg = error.message || '';
+    if (errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html')) {
+      console.error('Received HTML error response in image generation');
+      throw new Error(`Failed to connect to DALL-E service. Please check your network connection.`);
+    } else if (errorMsg.toLowerCase().includes('api key')) {
+      // API key specific error
+      console.error('API key error in image generation');
+      throw new Error(`DALL-E requires a valid API key. Please check your API credentials.`);
+    } else if (errorMsg.includes('timeout') || errorMsg.includes('ECONNREFUSED') || errorMsg.includes('network')) {
+      // Connection errors
+      console.error('Network or connection error in image generation');
+      throw new Error(`Network error: Failed to connect to image generation service.`);
+    } else if (errorMsg.includes('content policy')) {
+      // Safety filter errors
+      console.error('Content policy violation in image generation');
+      throw new Error(`Your image prompt was flagged by safety filters. Please revise your prompt.`);
+    }
+    
     throw new Error(`Failed to generate image: ${error.message}`);
   }
 }
@@ -367,6 +403,23 @@ export async function generateContent(contentPrompt: ContentPrompt): Promise<Gen
     return result;
   } catch (error: any) {
     console.error("Error generating content:", error.message);
+    
+    // Check if the error appears to be an HTML response
+    const errorMsg = error.message || '';
+    if (errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html')) {
+      console.error('Received HTML error response in content generation');
+      throw new Error(`Failed to connect to content generation service. This usually indicates an authentication or connectivity issue.`);
+    } else if (errorMsg.toLowerCase().includes('api key')) {
+      // API key specific error
+      console.error('API key error in content generation');
+      throw new Error(`Content generation service requires a valid API key. Please check your API credentials.`);
+    } else if (errorMsg.includes('timeout') || errorMsg.includes('ECONNREFUSED') || errorMsg.includes('network')) {
+      // Connection errors
+      console.error('Network or connection error in content generation');
+      throw new Error(`Network error: Failed to connect to content generation service. Please check your connection and try again.`);
+    }
+    
+    // Default error
     throw new Error(`Failed to generate content: ${error.message}`);
   }
 }
