@@ -463,42 +463,59 @@ Format your response as a JSON object with these keys: sentiment, confidenceScor
 // Helper function to predict content performance
 async function predictContentPerformance(content: string, title: string, platform: string) {
   try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert content marketing analyst. Predict the performance of content on ${platform}.`
-        },
-        {
-          role: "user",
-          content: `Title: ${title || 'Untitled'}
-            
-            Content: ${content.substring(0, 1000)}${content.length > 1000 ? '...' : ''}
-            
-            Predict the performance of this content on ${platform}. Provide:
-            
-            1. Overall engagement score (0-100)
-            2. Predicted reach
-            3. Predicted likes
-            4. Predicted shares
-            5. Predicted comments
-            6. Predicted clicks (if applicable)
-            7. Confidence score for this prediction (0-100)
-            8. Factors affecting performance (array)
-            9. Suggestions for improvement (array)
-            10. Best time to publish (ISO date string)
-            11. Audience match rating (excellent, good, fair, poor)
-            
-            Format your response as a JSON object with these keys: engagementScore, reach, likes, shares, comments, clicks, confidenceScore, factors (array), improvementSuggestions (array), bestTimeToPublish, audienceMatch`
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
+    const prompt = `You are an expert content marketing analyst. Predict the performance of content on ${platform}.
 
-    const result = JSON.parse(response.choices[0].message.content);
-    return result;
+Title: ${title || 'Untitled'}
+            
+Content: ${content.substring(0, 1000)}${content.length > 1000 ? '...' : ''}
+            
+Predict the performance of this content on ${platform}. Provide:
+            
+1. Overall engagement score (0-100)
+2. Predicted reach
+3. Predicted likes
+4. Predicted shares
+5. Predicted comments
+6. Predicted clicks (if applicable)
+7. Confidence score for this prediction (0-100)
+8. Factors affecting performance (array)
+9. Suggestions for improvement (array)
+10. Best time to publish (ISO date string)
+11. Audience match rating (excellent, good, fair, poor)
+            
+Format your response as a JSON object with these keys: engagementScore, reach, likes, shares, comments, clicks, confidenceScore, factors (array), improvementSuggestions (array), bestTimeToPublish, audienceMatch`;
+
+    // Generate AI response
+    const response = await openai.generateText(prompt, 'professional', 'medium', 'analytical');
+    
+    // Parse the response
+    try {
+      // Extract JSON from the response - the model should return JSON but may include markdown backticks
+      const jsonPart = response.match(/```json\n([\s\S]*?)\n```/) || 
+                      response.match(/```\n([\s\S]*?)\n```/) || 
+                      response.match(/(\{[\s\S]*\})/);
+      
+      const jsonString = jsonPart ? jsonPart[1] : response;
+      const result = JSON.parse(jsonString);
+      return result;
+    } catch (parseError) {
+      console.error("Error parsing JSON from response:", parseError);
+      
+      // If we can't parse JSON, return a basic structure
+      return {
+        engagementScore: 50,
+        reach: 1000,
+        likes: 50,
+        shares: 10,
+        comments: 5,
+        clicks: 100,
+        confidenceScore: 50,
+        factors: ["Content length", "Topic relevance"],
+        improvementSuggestions: ["Unable to analyze properly - try again later"],
+        bestTimeToPublish: new Date().toISOString(),
+        audienceMatch: "fair"
+      };
+    }
   } catch (error) {
     console.error("Error predicting content performance:", error);
     return {
@@ -520,36 +537,50 @@ async function predictContentPerformance(content: string, title: string, platfor
 // Helper function to forecast topic trends
 async function forecastTopicTrend(topic: string, industry: string) {
   try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert trend forecaster for the ${industry} industry. Forecast the trend trajectory for a topic.`
-        },
-        {
-          role: "user",
-          content: `Forecast the trend for "${topic}" in the ${industry} industry over the next 90 days.
-            
-            Provide:
-            1. Trend direction (rising, falling, stable)
-            2. Trend strength (0-100)
-            3. Current popularity (0-100)
-            4. Predicted popularity in 90 days (0-100)
-            5. Related topics that may influence this trend (array)
-            6. Supporting data points (array)
-            7. Recommended actions based on this forecast (array)
-            8. Confidence in this prediction (0-100)
-            
-            Format your response as a JSON object with these keys: direction, strength, currentPopularity, predictedPopularity, relatedTopics (array), supportingData (array), recommendedActions (array), confidence`
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
+    const prompt = `You are an expert trend forecaster for the ${industry} industry. Forecast the trend trajectory for a topic.
 
-    const result = JSON.parse(response.choices[0].message.content);
-    return result;
+Forecast the trend for "${topic}" in the ${industry} industry over the next 90 days.
+            
+Provide:
+1. Trend direction (rising, falling, stable)
+2. Trend strength (0-100)
+3. Current popularity (0-100)
+4. Predicted popularity in 90 days (0-100)
+5. Related topics that may influence this trend (array)
+6. Supporting data points (array)
+7. Recommended actions based on this forecast (array)
+8. Confidence in this prediction (0-100)
+            
+Format your response as a JSON object with these keys: direction, strength, currentPopularity, predictedPopularity, relatedTopics (array), supportingData (array), recommendedActions (array), confidence`;
+
+    // Generate AI response
+    const response = await openai.generateText(prompt, 'professional', 'medium', 'analytical');
+    
+    // Parse the response
+    try {
+      // Extract JSON from the response - the model should return JSON but may include markdown backticks
+      const jsonPart = response.match(/```json\n([\s\S]*?)\n```/) || 
+                      response.match(/```\n([\s\S]*?)\n```/) || 
+                      response.match(/(\{[\s\S]*\})/);
+      
+      const jsonString = jsonPart ? jsonPart[1] : response;
+      const result = JSON.parse(jsonString);
+      return result;
+    } catch (parseError) {
+      console.error("Error parsing JSON from response:", parseError);
+      
+      // If we can't parse JSON, return a basic structure
+      return {
+        direction: "stable",
+        strength: 60,
+        currentPopularity: 55,
+        predictedPopularity: 65,
+        relatedTopics: [topic],
+        supportingData: ["Unable to analyze properly - try again later"],
+        recommendedActions: ["Monitor the topic for changes"],
+        confidence: 40
+      };
+    }
   } catch (error) {
     console.error("Error forecasting topic trend:", error);
     return {
@@ -558,6 +589,12 @@ async function forecastTopicTrend(topic: string, industry: string) {
       currentPopularity: 50,
       predictedPopularity: 50,
       relatedTopics: [],
+      supportingData: ["Unable to forecast trend due to an error"],
+      recommendedActions: ["Try again later"],
+      confidence: 0
+    };
+  }
+}
       supportingData: ["Unable to forecast trend due to an error"],
       recommendedActions: ["Try again later"],
       confidence: 0
