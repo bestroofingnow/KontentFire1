@@ -887,3 +887,148 @@ export const contentPipelineStagesRelations = relations(contentPipelineStages, (
 export const insertContentPipelineStageSchema = createInsertSchema(contentPipelineStages).omit({ id: true, startedAt: true, completedAt: true });
 export type InsertContentPipelineStage = z.infer<typeof insertContentPipelineStageSchema>;
 export type ContentPipelineStage = typeof contentPipelineStages.$inferSelect;
+
+// Advanced Analytics & Insights Schema Components
+
+// Sentiment type enum
+export const sentimentTypeEnum = pgEnum('sentiment_type', [
+  'positive',
+  'negative',
+  'neutral',
+  'mixed'
+]);
+
+// Competitor Analysis table
+export const competitorAnalysis = pgTable('competitor_analysis', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  competitorName: text('competitor_name').notNull(),
+  competitorUrl: text('competitor_url'),
+  industryCategory: text('industry_category'),
+  contentType: text('content_type'), // blog, social, etc.
+  platform: text('platform'), // specific platform being analyzed
+  contentUrl: text('content_url'), // URL to the analyzed content
+  title: text('title'),
+  summary: text('summary'),
+  strengths: json('strengths'),
+  weaknesses: json('weaknesses'),
+  engagementMetrics: json('engagement_metrics'),
+  topics: json('topics'), // key topics covered
+  keyInsights: json('key_insights'),
+  dateAnalyzed: timestamp('date_analyzed').defaultNow().notNull(),
+  followUpDate: timestamp('follow_up_date'),
+  lastUpdated: timestamp('last_updated').defaultNow().notNull(),
+  metadata: json('metadata'),
+});
+
+export const competitorAnalysisRelations = relations(competitorAnalysis, ({ one }) => ({
+  user: one(users, {
+    fields: [competitorAnalysis.userId],
+    references: [users.id],
+  }),
+}));
+
+// Sentiment Analysis table
+export const sentimentAnalysis = pgTable('sentiment_analysis', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  contentId: integer('content_id').references(() => contents.id),
+  platform: text('platform').notNull(),
+  sentiment: sentimentTypeEnum('sentiment').default('neutral').notNull(),
+  confidenceScore: integer('confidence_score'), // 0-100 scale
+  keywords: json('keywords'), // Keywords that influenced sentiment
+  positiveAspects: json('positive_aspects'),
+  negativeAspects: json('negative_aspects'),
+  neutralAspects: json('neutral_aspects'),
+  feedbackSources: json('feedback_sources'), // Sources of the analyzed feedback
+  audienceSegment: text('audience_segment'), // Target audience segment if known
+  dateAnalyzed: timestamp('date_analyzed').defaultNow().notNull(),
+  metadata: json('metadata'),
+});
+
+export const sentimentAnalysisRelations = relations(sentimentAnalysis, ({ one }) => ({
+  user: one(users, {
+    fields: [sentimentAnalysis.userId],
+    references: [users.id],
+  }),
+  content: one(contents, {
+    fields: [sentimentAnalysis.contentId],
+    references: [contents.id],
+  }),
+}));
+
+// Content Performance Prediction table
+export const contentPerformancePredictions = pgTable('content_performance_predictions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  contentId: integer('content_id').references(() => contents.id),
+  platform: text('platform').notNull(),
+  predictedEngagementScore: integer('predicted_engagement_score'), // 0-100 scale
+  predictedReach: integer('predicted_reach'),
+  predictedLikes: integer('predicted_likes'),
+  predictedShares: integer('predicted_shares'),
+  predictedComments: integer('predicted_comments'),
+  predictedClicks: integer('predicted_clicks'),
+  confidenceScore: integer('confidence_score'), // 0-100 scale
+  factors: json('factors'), // Factors that influenced the prediction
+  improvementSuggestions: json('improvement_suggestions'),
+  bestTimeToPublish: timestamp('best_time_to_publish'),
+  audienceMatch: text('audience_match'), // How well content matches target audience
+  dateAnalyzed: timestamp('date_analyzed').defaultNow().notNull(),
+  metadata: json('metadata'),
+});
+
+export const contentPerformancePredictionsRelations = relations(contentPerformancePredictions, ({ one }) => ({
+  user: one(users, {
+    fields: [contentPerformancePredictions.userId],
+    references: [users.id],
+  }),
+  content: one(contents, {
+    fields: [contentPerformancePredictions.contentId],
+    references: [contents.id],
+  }),
+}));
+
+// Topic Trend Forecasting table
+export const topicTrendForecasts = pgTable('topic_trend_forecasts', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  topic: text('topic').notNull(),
+  industry: text('industry').notNull(),
+  trendDirection: text('trend_direction').notNull(), // rising, falling, stable
+  trendStrength: integer('trend_strength'), // 0-100 scale
+  currentPopularity: integer('current_popularity'), // 0-100 scale
+  predictedPopularity: integer('predicted_popularity'), // 0-100 scale
+  relatedTopics: json('related_topics'),
+  supportingData: json('supporting_data'),
+  recommendedActions: json('recommended_actions'),
+  forecastStartDate: timestamp('forecast_start_date').defaultNow().notNull(),
+  forecastEndDate: timestamp('forecast_end_date').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  confidence: integer('confidence'), // 0-100 scale
+  metadata: json('metadata'),
+});
+
+export const topicTrendForecastsRelations = relations(topicTrendForecasts, ({ one }) => ({
+  user: one(users, {
+    fields: [topicTrendForecasts.userId],
+    references: [users.id],
+  }),
+}));
+
+// Schemas for new analytics tables
+export const insertCompetitorAnalysisSchema = createInsertSchema(competitorAnalysis).omit({ id: true, dateAnalyzed: true, lastUpdated: true });
+export type InsertCompetitorAnalysis = z.infer<typeof insertCompetitorAnalysisSchema>;
+export type CompetitorAnalysis = typeof competitorAnalysis.$inferSelect;
+
+export const insertSentimentAnalysisSchema = createInsertSchema(sentimentAnalysis).omit({ id: true, dateAnalyzed: true });
+export type InsertSentimentAnalysis = z.infer<typeof insertSentimentAnalysisSchema>;
+export type SentimentAnalysis = typeof sentimentAnalysis.$inferSelect;
+
+export const insertContentPerformancePredictionSchema = createInsertSchema(contentPerformancePredictions).omit({ id: true, dateAnalyzed: true });
+export type InsertContentPerformancePrediction = z.infer<typeof insertContentPerformancePredictionSchema>;
+export type ContentPerformancePrediction = typeof contentPerformancePredictions.$inferSelect;
+
+export const insertTopicTrendForecastSchema = createInsertSchema(topicTrendForecasts).omit({ id: true, createdAt: true });
+export type InsertTopicTrendForecast = z.infer<typeof insertTopicTrendForecastSchema>;
+export type TopicTrendForecast = typeof topicTrendForecasts.$inferSelect;

@@ -8,6 +8,7 @@ import brandSettingsRouter from './routes/brand-settings';
 import userInsightsRouter from './routes/user-insights';
 import companyProfileRouter from './routes/company-profile';
 import { stripeRouter } from './routes/stripe';
+import analyticsRouter from './routes/analytics';
 import { 
   createAnimationHandler, 
   getAnimationHandler, 
@@ -3661,6 +3662,7 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/user', userInsightsRouter);
   app.use('/api/company-profile', companyProfileRouter);
   app.use('/api', stripeRouter);
+  app.use('/api/analytics', analyticsRouter);
 
   const httpServer = createServer(app);
   return httpServer;
