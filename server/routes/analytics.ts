@@ -595,11 +595,5 @@ Format your response as a JSON object with these keys: direction, strength, curr
     };
   }
 }
-      supportingData: ["Unable to forecast trend due to an error"],
-      recommendedActions: ["Try again later"],
-      confidence: 0
-    };
-  }
-}
 
 export default router;
