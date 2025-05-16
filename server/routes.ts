@@ -7,6 +7,7 @@ import { contentPipelineService } from "./cds-integration";
 import brandSettingsRouter from './routes/brand-settings';
 import userInsightsRouter from './routes/user-insights';
 import companyProfileRouter from './routes/company-profile';
+import { stripeRouter } from './routes/stripe';
 import { 
   createAnimationHandler, 
   getAnimationHandler, 
@@ -3659,6 +3660,7 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/brand-settings', brandSettingsRouter);
   app.use('/api/user', userInsightsRouter);
   app.use('/api/company-profile', companyProfileRouter);
+  app.use('/api', stripeRouter);
 
   const httpServer = createServer(app);
   return httpServer;
