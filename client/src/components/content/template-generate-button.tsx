@@ -32,8 +32,23 @@ export default function TemplateGenerateButton({
 
   const generateContentMutation = useMutation({
     mutationFn: async (data: Record<string, any>) => {
-      const res = await apiRequest("POST", "/api/content/generate", data);
-      return res.json();
+      try {
+        const res = await apiRequest("POST", "/api/content/generate", data);
+        
+        // Check content type header
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Server returned non-JSON content type:', contentType);
+          const text = await res.text();
+          console.error('Response body:', text.substring(0, 500) + '...');
+          throw new Error('Server returned an invalid response format. Please try again.');
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error('Battle Royale generation error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
