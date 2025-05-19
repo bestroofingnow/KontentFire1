@@ -204,7 +204,7 @@ async function generateAnthropicContent(contentPrompt: ContentPrompt): Promise<s
   
   // Generate content with Anthropic
   const response = await anthropic.messages.create({
-    model: "claude-3-7-sonnet-20250219", // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+    model: "claude-3-sonnet-20240229", // Use a stable model version that works with the current API
     system: systemPrompt,
     messages: [
       { role: "user", content: `Create content about: ${prompt}${templateData ? `\n\nUse this additional information: ${JSON.stringify(templateData)}` : ''}` }
@@ -226,16 +226,13 @@ async function generatePerplexityContent(topic: string, systemPrompt: string): P
   
   // Call Perplexity API
   const response = await axios.post('https://api.perplexity.ai/chat/completions', {
-    model: "llama-3.1-sonar-small-128k-online",
+    model: "sonar-small-online", // Use a stable model that works with the current API
     messages: [
       { role: "system", content: "Provide factual, well-researched information with citations. Focus on accuracy and depth." },
       { role: "user", content: `Provide factual information about ${topic} that would help create content about it. Include recent statistics, trends, and important facts.` }
     ],
     max_tokens: 1000,
     temperature: 0.2,
-    search_recency_filter: "month",
-    return_images: false,
-    return_related_questions: false,
   }, {
     headers: {
       'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
@@ -286,6 +283,12 @@ export async function generateMultiServiceContent(contentPrompt: ContentPrompt):
   
   const { prompt, contentType } = contentPrompt;
   const result: GeneratedContent = {};
+  
+  // Explicitly log the presence of API keys (truncated for security)
+  console.log("API Key status check:");
+  console.log("OpenAI API Key:", process.env.OPENAI_API_KEY ? `Present (starts with: ${process.env.OPENAI_API_KEY.substring(0, 3)}...)` : "Missing");
+  console.log("Anthropic API Key:", process.env.ANTHROPIC_API_KEY ? `Present (starts with: ${process.env.ANTHROPIC_API_KEY.substring(0, 3)}...)` : "Missing");
+  console.log("Perplexity API Key:", process.env.PERPLEXITY_API_KEY ? `Present (starts with: ${process.env.PERPLEXITY_API_KEY.substring(0, 3)}...)` : "Missing");
   
   // Check which API keys are available
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
