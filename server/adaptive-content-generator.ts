@@ -25,8 +25,13 @@ if (process.env.ANTHROPIC_API_KEY) {
  */
 export async function generateAdaptiveContent(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
   console.log("Using adaptive content generator with Claude 3.7");
+  console.log("Content prompt:", JSON.stringify(contentPrompt, null, 2));
+  
   const { prompt, contentType, tone, length, personality, platform, template, templateData } = contentPrompt;
-  const result: GeneratedContent = {};
+  const result: GeneratedContent = {
+    text: "",
+    sources: []
+  };
 
   // Log API key status
   console.log("API Key status check:");

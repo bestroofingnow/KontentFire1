@@ -108,23 +108,23 @@ export default function CreateContentModal({ open, onClose, onContentCreated }: 
       try {
         const res = await apiRequest("POST", "/api/content/generate", requestData);
         
-        if (!res.ok) {
-          // Try to parse the error as JSON first
-          try {
-            const errorData = await res.json();
-            throw new Error(errorData.message || 'An error occurred while generating content');
-          } catch (jsonError) {
-            // If JSON parsing fails, it's probably HTML or another format
-            const text = await res.text();
-            if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-              throw new Error('Server error: Unable to connect to content generation service');
-            } else {
-              throw new Error('Failed to generate content. Please try again later.');
-            }
-          }
+        // Check the content type header to make sure we got JSON back
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Server returned non-JSON content type:', contentType);
+          throw new Error('Server returned an invalid response format. Please try again.');
         }
         
-        return res.json();
+        if (!res.ok) {
+          // Try to parse the error as JSON
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'An error occurred while generating content');
+        }
+        
+        // Parse the JSON response
+        const jsonData = await res.json();
+        console.log('Successfully received content generation response:', jsonData);
+        return jsonData;
       } catch (error: any) {
         console.error('Content generation error:', error);
         throw new Error(error.message || 'An unexpected error occurred');

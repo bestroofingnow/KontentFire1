@@ -336,6 +336,9 @@ export function registerRoutes(app: Express): Server {
     console.log("Auth status:", req.isAuthenticated());
     console.log("User:", req.user ? req.user.id : "none");
     
+    // Set content type explicitly to make sure we return JSON
+    res.setHeader('Content-Type', 'application/json');
+    
     if (!req.isAuthenticated()) {
       console.log("Not authenticated, returning 401");
       return res.status(401).json({ message: 'Not authenticated' });
@@ -476,6 +479,8 @@ export function registerRoutes(app: Express): Server {
       const errorMsg = error.message || '';
       if (errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html')) {
         console.error('Received HTML error response instead of JSON');
+        // Set content type explicitly to ensure JSON response
+        res.setHeader('Content-Type', 'application/json');
         return res.status(500).json({ 
           message: 'Error connecting to content generation service. Please try again.',
           error: 'invalid_response_format'
