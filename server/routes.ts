@@ -424,23 +424,46 @@ export function registerRoutes(app: Express): Server {
       });
       
       try {
-        // Using the fixed content generator with the specified models
-        console.log("Generating content with fixed approach using specific models...");
-        
-        const { generateFixedContent } = require('./fixed-content-generator');
-        const result: GeneratedContent = await generateFixedContent({ 
-          prompt: prompt || 'Generate quality content',
-          contentType: contentType || 'text', 
-          tone: tone || 'professional', 
-          length: length || 'medium', 
-          personality: personality || 'thoughtful',
-          platform: platform || null,
-          template: template || 'standard',
-          templateData: templateData || {}
-        });
-        
-        console.log("Content generated successfully with multi-service approach");
-        return res.json(result);
+        // Check which API keys are available and use the appropriate generator
+        if (process.env.ANTHROPIC_API_KEY) {
+          console.log("Anthropic API key available, using adaptive content generator with Claude 3.7...");
+          
+          const { generateAdaptiveContent } = require('./adaptive-content-generator');
+          const result: GeneratedContent = await generateAdaptiveContent({ 
+            prompt: prompt || 'Generate quality content',
+            contentType: contentType || 'text', 
+            tone: tone || 'professional', 
+            length: length || 'medium', 
+            personality: personality || 'thoughtful',
+            platform: platform || null,
+            template: template || 'standard',
+            templateData: templateData || {}
+          });
+          
+          console.log("Content generated successfully with Claude 3.7");
+          return res.json(result);
+        } else if (process.env.OPENAI_API_KEY) {
+          // Fallback to fixed generator if OpenAI key is available
+          console.log("Generating content with fixed approach using OpenAI models...");
+          
+          const { generateFixedContent } = require('./fixed-content-generator');
+          const result: GeneratedContent = await generateFixedContent({ 
+            prompt: prompt || 'Generate quality content',
+            contentType: contentType || 'text', 
+            tone: tone || 'professional', 
+            length: length || 'medium', 
+            personality: personality || 'thoughtful',
+            platform: platform || null,
+            template: template || 'standard',
+            templateData: templateData || {}
+          });
+          
+          console.log("Content generated successfully with OpenAI");
+          return res.json(result);
+        } else {
+          // No API keys available, throw error to use demo generator fallback
+          throw new Error("No AI service API keys available for content generation");
+        }
       } catch (contentError: any) {
         console.error("All content generation approaches failed:", contentError);
         console.error("Error stack:", contentError.stack);

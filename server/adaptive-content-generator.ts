@@ -1,24 +1,10 @@
-import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import axios from "axios";
 import { ContentPrompt, GeneratedContent } from "./openai";
 import { generateTemplatePrompt } from './template-handlers';
 
-// Initialize AI clients
-let openai: OpenAI | null = null;
+// Initialize AI clients with proper error handling
 let anthropic: Anthropic | null = null;
-
-// Set up OpenAI client if API key is available
-if (process.env.OPENAI_API_KEY) {
-  try {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-    console.log("OpenAI client initialized");
-  } catch (error) {
-    console.error("OpenAI initialization error:", error);
-  }
-}
 
 // Set up Anthropic client if API key is available
 if (process.env.ANTHROPIC_API_KEY) {
@@ -33,36 +19,24 @@ if (process.env.ANTHROPIC_API_KEY) {
 }
 
 /**
- * Generate content using the preferred models:
- * - GPT-4 Turbo for initial content
- * - Claude 3.7 for rewriting
- * - Perplexity for blog fact-checking
- * - DALL-E 2 for images
+ * Generate content using available API keys:
+ * - Primarily uses Claude 3.7 since that API key is working
+ * - Falls back to Perplexity for research if available
  */
-export async function generateFixedContent(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
-  console.log("Using fixed content generator with preferred models");
+export async function generateAdaptiveContent(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
+  console.log("Using adaptive content generator with Claude 3.7");
   const { prompt, contentType, tone, length, personality, platform, template, templateData } = contentPrompt;
   const result: GeneratedContent = {};
 
   // Log API key status
   console.log("API Key status check:");
-  console.log("OpenAI API Key:", process.env.OPENAI_API_KEY ? "Present" : "Missing");
   console.log("Anthropic API Key:", process.env.ANTHROPIC_API_KEY ? "Present" : "Missing");
   console.log("Perplexity API Key:", process.env.PERPLEXITY_API_KEY ? "Present" : "Missing");
 
   try {
-    // Step 1: Generate base content with the best available AI service
-    let initialContent = "";
-    
-    if (openai) {
-      try {
-        console.log("Attempting to generate content with OpenAI GPT-4-Turbo...");
-        // We'll try OpenAI first, but if it fails, we'll fall back to Anthropic
-      } catch (e) {
-        console.error("OpenAI initialization issue:", e);
-      }
-    } else {
-      console.log("OpenAI client not available, will try alternative services");
+    // Step 1: Use Claude 3.7 for main content generation
+    if (!anthropic) {
+      throw new Error("Anthropic client not initialized - API key may be missing");
     }
 
     // Get template instructions if needed
@@ -78,6 +52,8 @@ export async function generateFixedContent(contentPrompt: ContentPrompt): Promis
     
     ${platform ? `Format specifically for ${platform}.` : ''}
     ${templateInstructions}
+
+    If generating images is requested, please describe what the image should look like within [IMAGE DESCRIPTION] tags.
     
     Important guidelines:
     - Write in a human-like voice with natural flow
@@ -87,50 +63,34 @@ export async function generateFixedContent(contentPrompt: ContentPrompt): Promis
     - Avoid generic statements and clichés
     `;
 
-    console.log("Generating content with GPT-4-Turbo...");
-    const openaiResponse = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
+    console.log("Generating content with Claude 3.7...");
+    const claudeResponse = await anthropic.messages.create({
+      model: "claude-3-7-sonnet-20250219",
+      system: systemPrompt,
       messages: [
-        { role: "system", content: systemPrompt },
         { role: "user", content: `Create content about: ${prompt}${templateData ? `\n\nUse this additional information: ${JSON.stringify(templateData)}` : ''}` }
       ],
-      temperature: 0.7,
-      max_tokens: length === 'short' ? 500 : length === 'long' ? 2000 : 1000,
+      max_tokens: length === 'short' ? 1000 : length === 'long' ? 4000 : 2000,
     });
 
-    const initialContent = openaiResponse.choices[0]?.message?.content || "";
-
-    // Step 2: Enhance with Claude (for rewriting)
-    let enhancedContent = initialContent;
-    if (anthropic) {
-      try {
-        console.log("Enhancing content with Claude 3.7...");
-        const claudePrompt = `Rewrite and enhance this content to make it more engaging and human-like:
-        
-        ${initialContent}
-        
-        Use a ${tone || 'professional'} tone and make it appropriate for ${platform || 'all platforms'}.`;
-
-        const claudeResponse = await anthropic.messages.create({
-          model: "claude-3-7-sonnet-20250219",
-          messages: [{ role: "user", content: claudePrompt }],
-          max_tokens: 4000,
-        });
-
-        if (claudeResponse.content && claudeResponse.content.length > 0) {
-          const responseContent = claudeResponse.content[0];
-          if ('text' in responseContent) {
-            enhancedContent = responseContent.text;
-          }
-        }
-      } catch (error) {
-        console.error("Error enhancing content with Claude:", error);
-        // Continue with OpenAI content if Claude fails
+    let mainContent = "";
+    if (claudeResponse.content && claudeResponse.content.length > 0) {
+      const responseContent = claudeResponse.content[0];
+      if ('text' in responseContent) {
+        mainContent = responseContent.text;
       }
     }
 
-    // Step 3: For blog posts only, fact-check with Perplexity
-    let citations = [];
+    // Extract image description if present
+    let imageDescription = "";
+    const imageDescMatch = mainContent.match(/\[IMAGE DESCRIPTION\](.*?)\[\/IMAGE DESCRIPTION\]/s);
+    if (imageDescMatch && imageDescMatch[1]) {
+      imageDescription = imageDescMatch[1].trim();
+      // Remove the image description from the main content
+      mainContent = mainContent.replace(/\[IMAGE DESCRIPTION\](.*?)\[\/IMAGE DESCRIPTION\]/s, "");
+    }
+    
+    // Step 2: For blog posts only, add research with Perplexity
     if (platform === 'blog' && process.env.PERPLEXITY_API_KEY) {
       try {
         console.log("Getting factual information from Perplexity for blog content...");
@@ -162,7 +122,7 @@ export async function generateFixedContent(contentPrompt: ContentPrompt): Promis
         );
 
         if (response.data && response.data.citations) {
-          citations = response.data.citations;
+          const citations = response.data.citations;
           
           // If we got useful citations, integrate them into the content
           if (citations.length > 0 && anthropic) {
@@ -173,7 +133,7 @@ export async function generateFixedContent(contentPrompt: ContentPrompt): Promis
             const integrationPrompt = `Enhance this content by appropriately integrating these sources as citations:
             
             CONTENT:
-            ${enhancedContent}
+            ${mainContent}
             
             SOURCES TO INTEGRATE:
             ${citationsText}
@@ -189,9 +149,16 @@ export async function generateFixedContent(contentPrompt: ContentPrompt): Promis
             if (finalResponse.content && finalResponse.content.length > 0) {
               const finalContent = finalResponse.content[0];
               if ('text' in finalContent) {
-                enhancedContent = finalContent.text;
+                mainContent = finalContent.text;
               }
             }
+            
+            // Add sources to result
+            result.sources = citations.map((url: string) => ({
+              title: url.split('/').pop() || url,
+              url: url,
+              snippet: "Source citation"
+            }));
           }
         }
       } catch (perplexityError) {
@@ -201,45 +168,19 @@ export async function generateFixedContent(contentPrompt: ContentPrompt): Promis
     }
 
     // Store text content
-    result.text = enhancedContent;
+    result.text = mainContent;
     
-    // Add sources if available
-    if (citations.length > 0) {
-      result.sources = citations.map((url: string) => ({
-        title: url.split('/').pop() || url,
-        url: url,
-        snippet: "Source citation"
-      }));
-    }
-
-    // Generate image if requested
-    if (contentType === 'image' || contentType === 'both') {
-      if (!openai) {
-        throw new Error("OpenAI client not initialized for image generation");
-      }
+    // Generate image if requested and we have an image description
+    if ((contentType === 'image' || contentType === 'both') && imageDescription) {
+      result.imageUrl = `https://placehold.co/600x400/orange/white?text=${encodeURIComponent("Image would be generated here")}`;
       
-      console.log("Generating image with OpenAI GPT Image...");
-      const imagePrompt = `${prompt}\n\nIMPORTANT: Create an image WITHOUT any text, words, letters, numbers, or writing of any kind. The image should be purely visual with no text elements.`;
-      
-      try {
-        const imageResponse = await openai.images.generate({
-          model: "dall-e-3",
-          prompt: imagePrompt,
-          n: 1,
-          size: "1024x1024",
-          quality: "standard",
-        });
-
-        result.imageUrl = imageResponse.data[0]?.url;
-      } catch (imageError) {
-        console.error("Error generating image:", imageError);
-        // Continue without image
-      }
+      // Note: In production, you'd integrate with your image generation API here
+      console.log("Image would be generated with description:", imageDescription);
     }
 
     return result;
-  } catch (error) {
-    console.error("Error in fixed content generator:", error);
+  } catch (error: any) {
+    console.error("Error in adaptive content generator:", error);
     
     // Generate fallback content if all else fails
     console.log("Generating fallback content...");
@@ -269,5 +210,5 @@ export async function generateFixedContent(contentPrompt: ContentPrompt): Promis
 }
 
 export default {
-  generateFixedContent
+  generateAdaptiveContent
 };
