@@ -128,7 +128,8 @@ export async function factCheck(request: FactCheckRequest): Promise<FactCheckRes
 export async function getReferences(request: ReferencesRequest): Promise<ReferencesResponse> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
-    throw new Error('PERPLEXITY_API_KEY is not defined');
+    console.error('PERPLEXITY_API_KEY is not defined');
+    throw new Error('Perplexity API key is missing - unable to retrieve references');
   }
 
   const { query, count = 5 } = request;

@@ -5,23 +5,39 @@ import { enhanceContent } from './anthropic';
 
 // Initialize OpenAI SDK with error handling for missing API key
 let openai: OpenAI;
+
 try {
+  if (!process.env.OPENAI_API_KEY) {
+    console.error("OPENAI_API_KEY is missing or empty");
+    throw new Error("Missing OpenAI API key");
+  }
+  
+  // Initialize OpenAI client with the API key
   openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || 'dummy-key',
+    apiKey: process.env.OPENAI_API_KEY,
   });
+  
+  // Log successful initialization
+  console.log("OpenAI client initialized successfully");
+  
+  // We won't actually test the API here as that would incur unnecessary API calls
+  // The first actual API call will validate the key
 } catch (error) {
-  console.warn("OpenAI initialization failed, creating a mock client");
-  // Create a mock OpenAI instance that will be replaced once we have the API key
+  console.error("OpenAI initialization failed:", error);
+  
+  // Create a more helpful error-throwing mock client
   openai = {
     chat: {
       completions: {
-        create: async () => ({ 
-          choices: [{ message: { content: "API key required to generate content." } }] 
-        }),
+        create: async () => { 
+          throw new Error("OpenAI API key is invalid or missing - unable to generate content");
+        },
       }
     },
     images: {
-      generate: async () => ({ data: [{ url: "" }] })
+      generate: async () => { 
+        throw new Error("OpenAI API key is invalid or missing - unable to generate images");
+      }
     }
   } as unknown as OpenAI;
 }

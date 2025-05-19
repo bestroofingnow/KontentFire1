@@ -1,14 +1,32 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-// Check for Anthropic API key
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.error("Error: ANTHROPIC_API_KEY environment variable is not set");
-}
+// Initialize Anthropic with better error handling
+let anthropic: Anthropic;
 
-// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
+try {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error("Error: ANTHROPIC_API_KEY environment variable is not set");
+    throw new Error("Missing Anthropic API key");
+  }
+
+  // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+  anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  });
+  
+  console.log("Anthropic client initialized successfully");
+} catch (error) {
+  console.error("Anthropic initialization failed:", error);
+  
+  // Create a mock instance that will throw clear errors
+  anthropic = {
+    messages: {
+      create: async () => {
+        throw new Error("Anthropic API key is invalid or missing - unable to enhance content");
+      }
+    }
+  } as unknown as Anthropic;
+}
 
 /**
  * Enhance content by rewriting it with a more human-like approach
