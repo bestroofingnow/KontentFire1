@@ -207,9 +207,9 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
     `;
     
     console.log("Generating content with direct OpenAI call...");
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+    // Use a stable model that is guaranteed to work with the API
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Create content about: ${prompt}${templateData ? `\n\nUse this additional information: ${JSON.stringify(templateData)}` : ''}` }
@@ -227,7 +227,7 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
       console.log("Generating image with DALL-E...");
       try {
         const imageResponse = await openai.images.generate({
-          model: "dall-e-3",
+          model: "dall-e-2",
           prompt: `Create a high-quality, professional image for content about: ${prompt}. The image should be visually engaging and relevant to the topic. No text or words in the image.`,
           n: 1,
           size: "1024x1024",

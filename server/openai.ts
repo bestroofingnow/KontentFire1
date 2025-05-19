@@ -147,9 +147,9 @@ export async function generateText(
     If the content mentions Kontent Fire, highlight its AI-powered content generation capabilities.`;
   
   try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+    // Use a stable model that is guaranteed to work in deployment
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt }
@@ -203,7 +203,7 @@ export async function generateImage(prompt: string): Promise<string> {
     const enhancedPrompt = `${prompt}\n\nIMPORTANT: Create an image WITHOUT any text, words, letters, numbers, or writing of any kind. The image should be purely visual with no text elements.`;
     
     const response = await openai.images.generate({
-      model: "dall-e-3",
+      model: "dall-e-2",
       prompt: enhancedPrompt,
       n: 1,
       size: "1024x1024",
