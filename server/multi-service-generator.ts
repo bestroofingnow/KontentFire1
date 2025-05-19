@@ -204,7 +204,7 @@ async function generateAnthropicContent(contentPrompt: ContentPrompt): Promise<s
   
   // Generate content with Anthropic
   const response = await anthropic.messages.create({
-    model: "claude-3-sonnet-20240229", // Use a stable model version that works with the current API
+    model: "claude-3-7-sonnet-20250219", // Use Claude 3.7 as requested by the user
     system: systemPrompt,
     messages: [
       { role: "user", content: `Create content about: ${prompt}${templateData ? `\n\nUse this additional information: ${JSON.stringify(templateData)}` : ''}` }

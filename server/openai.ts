@@ -147,9 +147,9 @@ export async function generateText(
     If the content mentions Kontent Fire, highlight its AI-powered content generation capabilities.`;
   
   try {
-    // Use a stable model that is guaranteed to work in deployment
+    // Use GPT-4o Turbo as requested by the user
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt }
@@ -202,8 +202,9 @@ export async function generateImage(prompt: string): Promise<string> {
     // Add explicit instruction to avoid text in images
     const enhancedPrompt = `${prompt}\n\nIMPORTANT: Create an image WITHOUT any text, words, letters, numbers, or writing of any kind. The image should be purely visual with no text elements.`;
     
+    // Use GPT Image generation as requested by user
     const response = await openai.images.generate({
-      model: "dall-e-2",
+      model: "dall-e-3",
       prompt: enhancedPrompt,
       n: 1,
       size: "1024x1024",

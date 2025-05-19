@@ -114,17 +114,20 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
     let sources = [];
     let factualContent = "";
     
-    if (hasPerplexity) {
+    // Use Perplexity only for blog content as requested
+    if (hasPerplexity && platform === 'blog') {
       try {
-        console.log("Getting factual information from Perplexity...");
+        console.log("Getting factual information from Perplexity for blog content...");
         const perplexityResult = await getPerplexityContent(prompt || "", basePrompt);
         factualContent = perplexityResult.content || "";
         sources = perplexityResult.citations || [];
-        console.log("Perplexity information retrieved successfully");
+        console.log("Perplexity information retrieved successfully for blog content");
       } catch (perplexityError) {
         console.error("Error getting Perplexity information:", perplexityError);
         // Continue without Perplexity data
       }
+    } else if (hasPerplexity && platform !== 'blog') {
+      console.log("Skipping Perplexity for non-blog content as requested");
     }
     
     // STEP 2: Generate main content with OpenAI (if available)
@@ -207,9 +210,9 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
     `;
     
     console.log("Generating content with direct OpenAI call...");
-    // Use a stable model that is guaranteed to work with the API
+    // Use GPT-4o as requested by the user
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Create content about: ${prompt}${templateData ? `\n\nUse this additional information: ${JSON.stringify(templateData)}` : ''}` }
