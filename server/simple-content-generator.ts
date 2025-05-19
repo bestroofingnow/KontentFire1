@@ -2,29 +2,103 @@ import OpenAI from "openai";
 import { ContentPrompt, GeneratedContent } from "./openai";
 
 /**
- * Simple content generator that uses only OpenAI with direct API calls
- * This is a more reliable alternative to the multi-service approach
+ * Function to generate sample content when API keys are not available
+ */
+function generateDemoContent(prompt: string | undefined, platform: string | null | undefined, tone: string | undefined): string {
+  if (!prompt || prompt.trim() === '') {
+    prompt = 'content marketing';
+  }
+  
+  const titleCasedPrompt = prompt.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
+  if (platform === 'blog') {
+    return `<h2>Ultimate Guide to ${titleCasedPrompt}</h2>
+      
+<p>Welcome to our comprehensive guide on ${prompt}. In today's fast-paced digital landscape, understanding ${prompt} has become essential for businesses looking to stay competitive.</p>
+
+<h3>Why ${titleCasedPrompt} Matters</h3>
+
+<p>The importance of ${prompt} cannot be overstated. Studies show that companies implementing effective ${prompt} strategies see a 37% increase in customer engagement and a 24% boost in conversion rates.</p>
+
+<p>Here are the key benefits:</p>
+<ul>
+  <li>Increased brand awareness and recognition</li>
+  <li>Higher customer satisfaction and loyalty</li>
+  <li>Improved competitiveness in your industry</li>
+  <li>Better return on marketing investments</li>
+</ul>
+
+<h3>Best Practices for ${titleCasedPrompt}</h3>
+
+<p>Implementing ${prompt} effectively requires a strategic approach. First, identify your target audience and understand their needs, preferences, and pain points. Then, create valuable, relevant content that addresses these aspects.</p>`;
+  } 
+  else if (platform === 'social') {
+    return `🔥 Transform your approach to ${prompt} today! 
+
+Our latest guide reveals the top 5 strategies that industry leaders are using to dominate in ${prompt}.
+
+Want to boost your results by up to 3X? Learn how our proven system can help you:
+✅ Increase engagement
+✅ Drive more conversions
+✅ Stay ahead of competitors
+
+Click the link in bio to download our free guide! 👇
+
+#${prompt.replace(/\s+/g, '')} #BusinessGrowth #DigitalSuccess`;
+  }
+  else {
+    return `${titleCasedPrompt}: A Comprehensive Overview
+
+${titleCasedPrompt} has emerged as a critical factor in today's business landscape. Organizations that master ${prompt} consistently outperform their competitors across key metrics.
+
+Key aspects to consider:
+1. Strategic implementation is essential for maximum impact
+2. Regular analysis and optimization drive continuous improvement
+3. Integration with other business processes enhances overall effectiveness
+4. Staying current with industry trends ensures lasting relevance
+
+By focusing on these elements, businesses can leverage ${prompt} to achieve their goals more efficiently and effectively.`;
+  }
+}
+
+/**
+ * Simple content generator that provides demo content when API keys are unavailable
+ * and uses OpenAI when keys are present
  */
 export async function generateContentSimple(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
-  console.log("Using direct OpenAI content generator");
+  console.log("Using direct content generator service");
   
-  // Validate OpenAI API Key
+  const { prompt, contentType, tone, length, personality, platform, template, templateData } = contentPrompt;
+  const result: GeneratedContent = {};
+  
+  // Check if OpenAI API Key is available
   if (!process.env.OPENAI_API_KEY) {
-    console.error("OPENAI_API_KEY is missing or empty");
-    // Create result object first before using it
-    const result: GeneratedContent = {};
-    result.text = "Please add your OPENAI_API_KEY to the environment variables to generate content. Go to the Secrets tab in the sidebar and add OPENAI_API_KEY with your API key.";
+    console.log("OPENAI_API_KEY is not available, returning demo content");
+    
+    // Generate mock content based on the prompt
+    result.text = generateDemoContent(prompt, platform, tone);
+    
+    // Add a notice about the API key
+    result.text += "\n\n---\n*Note: This is demo content. To generate real AI content, please add your OPENAI_API_KEY to the environment variables.*";
+    
+    // Add sample image URL if image content is requested
+    if (contentType === 'image' || contentType === 'both') {
+      result.imageUrl = "https://placehold.co/600x400/orange/white?text=Demo+Image";
+    }
+    
     return result;
   }
   
-  // Create a fresh instance of the OpenAI client for this request
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  
-  const { prompt, contentType, tone, length, personality, platform, template, templateData } = contentPrompt;
-  
-  const result: GeneratedContent = {};
+  // If we have an API key, proceed with real generation
+  try {
+    console.log("OPENAI_API_KEY found, generating real content");
+    
+    // Create a fresh instance of the OpenAI client for this request
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
   
   try {
     // Format instructions based on platform
