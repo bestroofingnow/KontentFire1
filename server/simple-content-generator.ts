@@ -11,7 +11,10 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
   // Validate OpenAI API Key
   if (!process.env.OPENAI_API_KEY) {
     console.error("OPENAI_API_KEY is missing or empty");
-    throw new Error("OpenAI API key is required for content generation");
+    // Create result object first before using it
+    const result: GeneratedContent = {};
+    result.text = "Please add your OPENAI_API_KEY to the environment variables to generate content. Go to the Secrets tab in the sidebar and add OPENAI_API_KEY with your API key.";
+    return result;
   }
   
   // Create a fresh instance of the OpenAI client for this request
