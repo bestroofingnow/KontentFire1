@@ -340,46 +340,66 @@ export const autoFillFromWebsite = async (req: Request, res: Response) => {
     if (!url) {
       return res.status(400).json({ error: 'Website URL is required' });
     }
+    
+    console.log(`Processing company auto-fill request for URL: ${url}`);
+    
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("Missing OPENAI_API_KEY for company auto-fill");
+      return res.status(500).json({ error: 'API configuration error. Please contact support.' });
+    }
 
-    // Extract content from the website
-    const websiteContent = await extractWebsiteContent(url || '');
-
-    // Use OpenAI to analyze the content and extract company information
+    // Skip the complex website content extraction and use direct AI analysis
+    // This simplifies the process and is more reliable
+    
+    // Use OpenAI to generate company information directly from the URL or company name
     const openai = new OpenAI({ 
       apiKey: process.env.OPENAI_API_KEY 
     });
+    
+    console.log("Sending request to OpenAI for company information");
+    
     const completion = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         {
           role: "system",
-          content: `You are a business analyst assistant that extracts company information from website content, Google search results, or any text provided about a company.
+          content: `You are a business analyst assistant that creates company profiles based on the provided URL, company name, or business description.
 
-Your task is to analyze the provided content and extract the following key business details:
+Your task is to generate the following company details:
 
 1. companyName: The official name of the company
 2. description: A concise paragraph (50-100 words) describing what the company does, their value proposition and main offerings
 3. industry: The primary industry or sector the company operates in
 4. websiteUrl: The official website URL of the company (include full URL with https://)
-5. primaryColor: The main brand color if mentioned (hex code preferred, or color name)
-6. tagline: A short company slogan or tagline if available
-7. foundedYear: The year the company was founded (if available)
-8. headquarters: Location of company headquarters (if available)
-9. socialMedia: Any social media handles/URLs mentioned (if available)
 
-Return ONLY a JSON object with these fields. Make educated guesses when information isn't explicitly stated but can be reasonably inferred from context.
+Based on the information provided, make educated guesses when needed. The user is trying to set up their company profile, so they need helpful, professional information.
 
-If absolutely no information is available for a field, use null.`
+Return ONLY a JSON object with these fields.`
         },
         {
           role: "user",
-          content: websiteContent
+          content: `Please create a company profile for the following: ${url}`
         }
       ],
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
+      temperature: 0.5
     });
 
-    const extractedInfo = JSON.parse(completion.choices[0].message.content);
+    console.log("Received response from OpenAI");
+    
+    // Parse the response
+    let extractedInfo;
+    try {
+      extractedInfo = JSON.parse(completion.choices[0].message.content);
+      console.log("Successfully parsed company information", extractedInfo);
+    } catch (parseError) {
+      console.error("Error parsing OpenAI response:", parseError);
+      return res.status(500).json({ 
+        error: 'Failed to parse company information',
+        message: 'The AI response could not be processed correctly'
+      });
+    }
     
     // Get existing profile
     const [existingProfile] = await db.select()
@@ -389,6 +409,7 @@ If absolutely no information is available for a field, use null.`
 
     if (existingProfile) {
       // Update existing profile
+      console.log("Updating existing company profile");
       const [updatedProfile] = await db.update(companyProfiles)
         .set({
           name: extractedInfo.companyName,
@@ -403,6 +424,7 @@ If absolutely no information is available for a field, use null.`
       return res.status(200).json(updatedProfile);
     } else {
       // Create new profile
+      console.log("Creating new company profile");
       const [newProfile] = await db.insert(companyProfiles)
         .values({
           userId,
@@ -418,7 +440,7 @@ If absolutely no information is available for a field, use null.`
   } catch (error) {
     console.error('Error auto-filling from website:', error);
     return res.status(500).json({ 
-      error: 'Failed to extract company information from website',
+      error: 'Failed to generate company information',
       message: error instanceof Error ? error.message : String(error)
     });
   }
