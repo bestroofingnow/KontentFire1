@@ -424,11 +424,11 @@ export function registerRoutes(app: Express): Server {
       });
       
       try {
-        // Using the multi-service approach that combines OpenAI, Anthropic, and Perplexity when available
-        console.log("Generating content with multi-service approach...");
+        // Using the fixed content generator with the specified models
+        console.log("Generating content with fixed approach using specific models...");
         
-        const { generateMultiServiceContent } = require('./multi-service-generator');
-        const result: GeneratedContent = await generateMultiServiceContent({ 
+        const { generateFixedContent } = require('./fixed-content-generator');
+        const result: GeneratedContent = await generateFixedContent({ 
           prompt: prompt || 'Generate quality content',
           contentType: contentType || 'text', 
           tone: tone || 'professional', 
