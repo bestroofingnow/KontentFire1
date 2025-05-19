@@ -9,20 +9,24 @@ import { ContentPrompt, GeneratedContent } from './types';
 
 /**
  * Generate a Battle Royale comparison article between two options
+ * This handler provides reliable content generation even when APIs are unavailable
  */
 export async function generateBattleRoyaleContent(options: ContentPrompt): Promise<GeneratedContent> {
-  const { templateData, tone = 'professional' } = options;
+  console.log("Battle Royale handler started with options:", JSON.stringify(options, null, 2));
   
-  if (!templateData || !templateData.option1 || !templateData.option2) {
-    throw new Error("Battle Royale template requires option1 and option2");
-  }
+  try {
+    const { templateData, tone = 'professional' } = options;
+    
+    if (!templateData || !templateData.option1 || !templateData.option2) {
+      throw new Error("Battle Royale template requires option1 and option2");
+    }
+    
+    const { option1, option2, comparisonFocus, industry } = templateData;
   
-  const { option1, option2, comparisonFocus, industry } = templateData;
-  
-  // Create title and sample content
-  const title = `${option1} vs ${option2}: The Ultimate ${comparisonFocus} Showdown`;
-  
-  const content = `
+    // Create title and sample content
+    const title = `${option1} vs ${option2}: The Ultimate ${comparisonFocus} Showdown`;
+    
+    const content = `
 # ${title}
 
 ## Introduction
@@ -109,4 +113,9 @@ For most ${industry || 'construction'} projects requiring excellent ${comparison
     title,
     sources: []
   };
+  
+  } catch (error) {
+    console.error("Error generating Battle Royale content:", error);
+    throw error;
+  }
 }

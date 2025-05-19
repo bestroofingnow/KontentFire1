@@ -32,8 +32,18 @@ export default function TemplateGenerateButton({
 
   const generateContentMutation = useMutation({
     mutationFn: async (data: Record<string, any>) => {
+      console.log('Submitting template generation with data:', JSON.stringify(data));
+      
       try {
-        const res = await apiRequest("POST", "/api/content/generate", data);
+        const res = await fetch('/api/content/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(data),
+          credentials: 'include'
+        });
         
         // Check content type header
         const contentType = res.headers.get('content-type');
@@ -44,9 +54,14 @@ export default function TemplateGenerateButton({
           throw new Error('Server returned an invalid response format. Please try again.');
         }
         
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Failed to generate content');
+        }
+        
         return await res.json();
       } catch (error) {
-        console.error('Battle Royale generation error:', error);
+        console.error('Template generation error:', error);
         throw error;
       }
     },
