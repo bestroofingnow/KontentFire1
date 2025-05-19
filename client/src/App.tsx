@@ -26,6 +26,7 @@ import MicroInteractionsDemo from "@/pages/micro-interactions-demo";
 import LinkedInIntegrationDemo from "@/pages/linkedin-integration-demo";
 import LinkedInDemoPage from "@/pages/linkedin-demo";
 import LinkedInTroubleshootPage from "@/pages/linkedin-troubleshoot";
+import BattleRoyaleTester from "@/components/content/battle-royale-tester";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -155,6 +156,10 @@ function App() {
           </Route>
           <Route path="/brand-settings">
             <ProtectedRoute path="/brand-settings" component={BrandSettingsPage} />
+          </Route>
+          {/* Test route for Battle Royale template */}
+          <Route path="/test-battle-royale">
+            <BattleRoyaleTester />
           </Route>
           <Route>
             <NotFound />

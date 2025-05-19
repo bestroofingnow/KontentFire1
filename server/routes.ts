@@ -373,14 +373,20 @@ export function registerRoutes(app: Express): Server {
             templateData
           });
           
-          console.log("Battle Royale content generated successfully");
-          return res.status(200).json(result);
+          console.log("Battle Royale content generated successfully:", JSON.stringify(result).substring(0, 100) + "...");
+          
+          // Ensure we set the correct content type and CORS headers
+          res.setHeader('Content-Type', 'application/json');
+          res.status(200).json(result);
+          return;
         } catch (error) {
           console.error("Error in Battle Royale generation:", error);
-          return res.status(500).json({ 
+          res.setHeader('Content-Type', 'application/json');
+          res.status(500).json({ 
             message: "Failed to generate Battle Royale content", 
             error: error.message 
           });
+          return;
         }
       }
       
