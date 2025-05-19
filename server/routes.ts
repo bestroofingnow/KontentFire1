@@ -358,6 +358,32 @@ export function registerRoutes(app: Express): Server {
         templateData
       } = req.body;
       
+      // Special handling for Battle Royale template
+      if (template === 'battle-royale' && templateData) {
+        console.log("Battle Royale template detected, using dedicated handler");
+        try {
+          const { generateBattleRoyaleContent } = require('./battle-royale-helper');
+          const result = await generateBattleRoyaleContent({
+            contentType,
+            tone,
+            length,
+            personality,
+            platform,
+            template,
+            templateData
+          });
+          
+          console.log("Battle Royale content generated successfully");
+          return res.status(200).json(result);
+        } catch (error) {
+          console.error("Error in Battle Royale generation:", error);
+          return res.status(500).json({ 
+            message: "Failed to generate Battle Royale content", 
+            error: error.message 
+          });
+        }
+      }
+      
       console.log("OPENAI_API_KEY exists:", !!process.env.OPENAI_API_KEY);
       console.log("PERPLEXITY_API_KEY exists:", !!process.env.PERPLEXITY_API_KEY);
       console.log("ANTHROPIC_API_KEY exists:", !!process.env.ANTHROPIC_API_KEY);
