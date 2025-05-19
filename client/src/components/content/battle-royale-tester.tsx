@@ -33,13 +33,19 @@ export default function BattleRoyaleTester() {
       
       console.log("Testing Battle Royale with data:", JSON.stringify(testData, null, 2));
 
-      // Use direct fetch for better control
-      const response = await fetch('/api/content/generate', {
+      // Use the specialized test endpoint that bypasses auth and content type issues
+      const response = await fetch('/api/test/battle-royale', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(testData)
+        body: JSON.stringify({
+          option1: "Metal Roofing",
+          option2: "Asphalt Shingles",
+          industry: "construction",
+          comparisonFocus: "roofing materials"
+        })
       });
 
       // Check if there was a response

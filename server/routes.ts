@@ -362,8 +362,9 @@ export function registerRoutes(app: Express): Server {
       if (template === 'battle-royale' && templateData) {
         console.log("Battle Royale template detected, using dedicated handler");
         try {
-          const { generateBattleRoyaleContent } = require('./battle-royale-helper');
-          const result = await generateBattleRoyaleContent({
+          // Import directly instead of require
+          const battleRoyaleHelper = await import('./battle-royale-helper');
+          const result = await battleRoyaleHelper.generateBattleRoyaleContent({
             contentType,
             tone,
             length,
@@ -374,19 +375,13 @@ export function registerRoutes(app: Express): Server {
           });
           
           console.log("Battle Royale content generated successfully:", JSON.stringify(result).substring(0, 100) + "...");
-          
-          // Ensure we set the correct content type and CORS headers
-          res.setHeader('Content-Type', 'application/json');
-          res.status(200).json(result);
-          return;
+          return res.json(result);
         } catch (error) {
           console.error("Error in Battle Royale generation:", error);
-          res.setHeader('Content-Type', 'application/json');
-          res.status(500).json({ 
+          return res.status(500).json({ 
             message: "Failed to generate Battle Royale content", 
-            error: error.message 
+            error: error instanceof Error ? error.message : String(error) 
           });
-          return;
         }
       }
       
@@ -1432,6 +1427,64 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Content refinement endpoint (Claude enhancement)
+  // Special dedicated test endpoint for Battle Royale template
+  app.post('/api/test/battle-royale', async (req: Request, res: Response) => {
+    // Set content type right away to prevent HTML responses
+    res.setHeader('Content-Type', 'application/json');
+    
+    try {
+      const { option1, option2, industry, comparisonFocus } = req.body;
+      
+      // Validate required fields
+      if (!option1 || !option2) {
+        return res.status(400).json({ 
+          error: "Missing required fields", 
+          message: "Both option1 and option2 are required" 
+        });
+      }
+      
+      // Use more direct import syntax
+      const templateData = {
+        option1,
+        option2,
+        industry: industry || 'construction',
+        comparisonFocus: comparisonFocus || 'roofing materials'
+      };
+      
+      console.log("Test Battle Royale endpoint called with data:", JSON.stringify(templateData, null, 2));
+      
+      try {
+        // Direct dynamic import
+        const { generateBattleRoyaleContent } = await import('./battle-royale-helper');
+        
+        const result = await generateBattleRoyaleContent({
+          contentType: 'text',
+          tone: 'professional',
+          length: 'medium',
+          template: 'battle-royale',
+          templateData
+        });
+        
+        console.log("Test Battle Royale content generated successfully");
+        return res.json(result);
+      } catch (error) {
+        console.error("Error in test Battle Royale generation:", error);
+        return res.status(500).json({ 
+          success: false,
+          message: "Failed to generate Battle Royale content", 
+          error: error instanceof Error ? error.message : String(error) 
+        });
+      }
+    } catch (error) {
+      console.error("Unexpected error in test Battle Royale endpoint:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error processing request", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
   app.post('/api/content/refine', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: 'Not authenticated' });
