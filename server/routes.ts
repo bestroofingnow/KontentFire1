@@ -459,6 +459,30 @@ export function registerRoutes(app: Express): Server {
         });
       }
       
+      // Check if the error is related to missing API keys
+      if (errorMsg.includes('API key') || errorMsg.includes('OpenAI') || 
+          errorMsg.includes('Anthropic') || errorMsg.includes('Perplexity')) {
+        console.log('API key related error detected, returning demo content instead');
+        
+        // Generate demo content as a fallback
+        const { generateDemoContent } = require('./multi-service-generator');
+        const result: GeneratedContent = {
+          text: generateDemoContent(prompt, platform, tone),
+          sources: []
+        };
+        
+        // Add explanatory message about the API keys
+        result.text += "\n\n---\n*Note: This is demo content because AI service API keys are not configured properly. " +
+                      "Please check your API keys for OpenAI, Anthropic, or Perplexity.*";
+        
+        // Add sample image URL if image content is requested
+        if (contentType === 'image' || contentType === 'both') {
+          result.imageUrl = "https://placehold.co/600x400/orange/white?text=Demo+Image";
+        }
+        
+        return res.json(result);
+      }
+      
       return res.status(500).json({ 
         message: `Error generating content: ${error.message}`,
         error: 'generation_failed'
