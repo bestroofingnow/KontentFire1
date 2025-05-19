@@ -414,20 +414,26 @@ export function registerRoutes(app: Express): Server {
       
       console.log("Calling generateContent with prompt length:", prompt ? prompt.length : 0);
       
-      const result: GeneratedContent = await generateContent({ 
-        prompt: prompt || 'Generate quality content', // Default prompt if none provided
-        contentType: contentType || 'text', 
-        tone: tone || 'professional', 
-        length: length || 'medium', 
-        personality: personality || 'thoughtful',
-        platform: platform || null,
-        template: template || 'standard',
-        templateData: templateData || {},
-        companyContext
-      });
-      
-      console.log("Content generated successfully");
-      return res.json(result);
+      try {
+        const result: GeneratedContent = await generateContent({ 
+          prompt: prompt || 'Generate quality content', // Default prompt if none provided
+          contentType: contentType || 'text', 
+          tone: tone || 'professional', 
+          length: length || 'medium', 
+          personality: personality || 'thoughtful',
+          platform: platform || null,
+          template: template || 'standard',
+          templateData: templateData || {},
+          companyContext
+        });
+        
+        console.log("Content generated successfully");
+        return res.json(result);
+      } catch (contentError: any) {
+        console.error("Specific content generation error:", contentError);
+        console.error("Error stack:", contentError.stack);
+        throw contentError;
+      }
     } catch (error: any) {
       console.error('Content generation error:', error);
       
