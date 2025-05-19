@@ -284,11 +284,28 @@ export async function generateMultiServiceContent(contentPrompt: ContentPrompt):
   const { prompt, contentType } = contentPrompt;
   const result: GeneratedContent = {};
   
-  // Explicitly log the presence of API keys (truncated for security)
-  console.log("API Key status check:");
-  console.log("OpenAI API Key:", process.env.OPENAI_API_KEY ? `Present (starts with: ${process.env.OPENAI_API_KEY.substring(0, 3)}...)` : "Missing");
-  console.log("Anthropic API Key:", process.env.ANTHROPIC_API_KEY ? `Present (starts with: ${process.env.ANTHROPIC_API_KEY.substring(0, 3)}...)` : "Missing");
-  console.log("Perplexity API Key:", process.env.PERPLEXITY_API_KEY ? `Present (starts with: ${process.env.PERPLEXITY_API_KEY.substring(0, 3)}...)` : "Missing");
+  // Explicitly log the presence of API keys with enhanced debugging
+  console.log("Enhanced API Key status check:");
+  console.log("OpenAI API Key:", process.env.OPENAI_API_KEY ? 
+    `Present (starts with: ${process.env.OPENAI_API_KEY.substring(0, 3)}..., length: ${process.env.OPENAI_API_KEY.length})` : 
+    "Missing");
+  console.log("Anthropic API Key:", process.env.ANTHROPIC_API_KEY ? 
+    `Present (starts with: ${process.env.ANTHROPIC_API_KEY.substring(0, 3)}..., length: ${process.env.ANTHROPIC_API_KEY.length})` : 
+    "Missing");
+  console.log("Perplexity API Key:", process.env.PERPLEXITY_API_KEY ? 
+    `Present (starts with: ${process.env.PERPLEXITY_API_KEY.substring(0, 3)}..., length: ${process.env.PERPLEXITY_API_KEY.length})` : 
+    "Missing");
+  
+  // Test direct initialization to validate key format
+  try {
+    if (process.env.OPENAI_API_KEY) {
+      console.log("Testing OpenAI key validity...");
+      const testOpenAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      console.log("OpenAI SDK initialized successfully with provided key");
+    }
+  } catch (e) {
+    console.error("OpenAI key validation error:", e.message);
+  }
   
   // Check which API keys are available
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
