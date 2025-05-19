@@ -412,25 +412,57 @@ export function registerRoutes(app: Express): Server {
         console.log("No company profile found, proceeding without company context");
       }
       
-      console.log("Calling generateContent with prompt length:", prompt ? prompt.length : 0);
+      console.log("Content generation request received:", {
+        promptLength: prompt?.length || 0,
+        contentType,
+        tone,
+        length,
+        personality,
+        platform,
+        template: template || 'standard',
+        hasTemplateData: !!templateData
+      });
       
       try {
-        const result: GeneratedContent = await generateContent({ 
-          prompt: prompt || 'Generate quality content', // Default prompt if none provided
-          contentType: contentType || 'text', 
-          tone: tone || 'professional', 
-          length: length || 'medium', 
-          personality: personality || 'thoughtful',
-          platform: platform || null,
-          template: template || 'standard',
-          templateData: templateData || {},
-          companyContext
-        });
-        
-        console.log("Content generated successfully");
-        return res.json(result);
+        // First try with the standard multi-service approach
+        console.log("Attempting to generate content with multi-service approach...");
+        try {
+          const result: GeneratedContent = await generateContent({ 
+            prompt: prompt || 'Generate quality content', // Default prompt if none provided
+            contentType: contentType || 'text', 
+            tone: tone || 'professional', 
+            length: length || 'medium', 
+            personality: personality || 'thoughtful',
+            platform: platform || null,
+            template: template || 'standard',
+            templateData: templateData || {},
+            companyContext
+          });
+          
+          console.log("Content generated successfully with multi-service approach");
+          return res.json(result);
+        } catch (multiServiceError: any) {
+          console.error("Error with multi-service approach:", multiServiceError.message);
+          console.log("Falling back to simplified OpenAI-only approach...");
+          
+          // Fall back to the simplified OpenAI-only approach
+          const { generateContentSimple } = require('./simple-content-generator');
+          const simpleResult: GeneratedContent = await generateContentSimple({ 
+            prompt: prompt || 'Generate quality content',
+            contentType: contentType || 'text', 
+            tone: tone || 'professional', 
+            length: length || 'medium', 
+            personality: personality || 'thoughtful',
+            platform: platform || null,
+            template: template || 'standard',
+            templateData: templateData || {}
+          });
+          
+          console.log("Content generated successfully with simplified OpenAI-only approach");
+          return res.json(simpleResult);
+        }
       } catch (contentError: any) {
-        console.error("Specific content generation error:", contentError);
+        console.error("All content generation approaches failed:", contentError);
         console.error("Error stack:", contentError.stack);
         throw contentError;
       }
