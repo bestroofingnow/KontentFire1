@@ -127,6 +127,7 @@ export const contents = pgTable('contents', {
   imageUrl: text('image_url'),
   status: contentStatusEnum('status').default('draft').notNull(),
   contentType: contentTypeEnum('content_type').default('article').notNull(),
+  metadata: json('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
