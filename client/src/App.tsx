@@ -27,6 +27,7 @@ import LinkedInIntegrationDemo from "@/pages/linkedin-integration-demo";
 import LinkedInDemoPage from "@/pages/linkedin-demo";
 import LinkedInTroubleshootPage from "@/pages/linkedin-troubleshoot";
 import BattleRoyaleTester from "@/components/content/battle-royale-tester";
+import APIDiagnosticPage from "@/pages/api-diagnostic-page";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -160,6 +161,10 @@ function App() {
           {/* Test route for Battle Royale template */}
           <Route path="/test-battle-royale">
             <BattleRoyaleTester />
+          </Route>
+          {/* API Diagnostic Tool */}
+          <Route path="/api-diagnostic">
+            <APIDiagnosticPage />
           </Route>
           <Route>
             <NotFound />

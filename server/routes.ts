@@ -86,12 +86,20 @@ const stripe = process.env.STRIPE_SECRET_KEY
 const EMBER_PLAN_PRICE_ID = "price_ember_monthly"; // $99/month
 const INFERNO_PLAN_PRICE_ID = "price_inferno_monthly"; // $999/month
 
+import { validateOpenAIKey, validateAnthropicKey, validatePerplexityKey, validateAllAPIKeys } from './api-key-check';
+
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // Start auto-content tasks (will check for eligible users based on plan type)
   // Temporarily disabled until schema components are implemented
   // initAutoContentTasks();
+  
+  // API Key validation endpoints
+  app.get('/api/test/openai', validateOpenAIKey);
+  app.get('/api/test/anthropic', validateAnthropicKey);
+  app.get('/api/test/perplexity', validatePerplexityKey);
+  app.get('/api/test/all', validateAllAPIKeys);
 
   // Subscription management endpoints
   
