@@ -209,12 +209,12 @@ export async function generateFixedContent(contentPrompt: ContentPrompt): Promis
         throw new Error("OpenAI client not initialized for image generation");
       }
       
-      console.log("Generating image with DALL-E 2...");
+      console.log("Generating image with OpenAI GPT Image...");
       const imagePrompt = `${prompt}\n\nIMPORTANT: Create an image WITHOUT any text, words, letters, numbers, or writing of any kind. The image should be purely visual with no text elements.`;
       
       try {
         const imageResponse = await openai.images.generate({
-          model: "dall-e-2",
+          model: "dall-e-3",
           prompt: imagePrompt,
           n: 1,
           size: "1024x1024",
