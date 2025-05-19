@@ -302,6 +302,9 @@ export async function generateMultiServiceContent(contentPrompt: ContentPrompt):
       console.log("Testing OpenAI key validity...");
       const testOpenAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       console.log("OpenAI SDK initialized successfully with provided key");
+      
+      // For best compatibility, use the most reliable models
+      console.log("Using OpenAI models: gpt-4-turbo for text, dall-e-2 for images");
     }
   } catch (e) {
     console.error("OpenAI key validation error:", e.message);

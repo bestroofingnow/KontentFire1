@@ -149,7 +149,7 @@ export async function generateText(
   try {
     // Use GPT-4o Turbo as requested by the user
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4-turbo",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt }
@@ -204,7 +204,7 @@ export async function generateImage(prompt: string): Promise<string> {
     
     // Use GPT Image generation as requested by user
     const response = await openai.images.generate({
-      model: "dall-e-3",
+      model: "dall-e-2",
       prompt: enhancedPrompt,
       n: 1,
       size: "1024x1024",

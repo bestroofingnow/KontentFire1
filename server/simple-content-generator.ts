@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { ContentPrompt, GeneratedContent } from "./openai";
 import axios from "axios";
+import { generateTemplatePrompt } from './template-handlers';
 
 /**
  * Function to generate sample content when API keys are not available
@@ -108,7 +109,19 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
   
   try {
     // Prepare our content prompt for all services
-    const basePrompt = createBasePrompt(contentPrompt);
+    // Create a base prompt appropriate for the content type
+    let basePrompt = "";
+    if (prompt) {
+      basePrompt = `Create ${length || 'medium'}-length content about ${prompt}`;
+      
+      if (platform) {
+        basePrompt += ` formatted for ${platform}`;
+      }
+      
+      if (tone) {
+        basePrompt += ` in a ${tone} tone`;
+      }
+    }
     
     // STEP 1: Get factual information from Perplexity (if available)
     let sources = [];
@@ -118,9 +131,10 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
     if (hasPerplexity && platform === 'blog') {
       try {
         console.log("Getting factual information from Perplexity for blog content...");
-        const perplexityResult = await getPerplexityContent(prompt || "", basePrompt);
-        factualContent = perplexityResult.content || "";
-        sources = perplexityResult.citations || [];
+        // Simple function to get Perplexity content
+        const perplexityData = await fetchPerplexityData(prompt || "", basePrompt);
+        factualContent = perplexityData.content || "";
+        sources = perplexityData.citations || [];
         console.log("Perplexity information retrieved successfully for blog content");
       } catch (perplexityError) {
         console.error("Error getting Perplexity information:", perplexityError);
@@ -212,7 +226,7 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
     console.log("Generating content with direct OpenAI call...");
     // Use GPT-4o as requested by the user
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Create content about: ${prompt}${templateData ? `\n\nUse this additional information: ${JSON.stringify(templateData)}` : ''}` }
