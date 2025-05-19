@@ -424,11 +424,11 @@ export function registerRoutes(app: Express): Server {
       });
       
       try {
-        // Using the direct OpenAI-only approach as primary method
-        console.log("Generating content with direct OpenAI approach...");
+        // Using the multi-service approach that combines OpenAI, Anthropic, and Perplexity when available
+        console.log("Generating content with multi-service approach...");
         
-        const { generateContentSimple } = require('./simple-content-generator');
-        const result: GeneratedContent = await generateContentSimple({ 
+        const { generateMultiServiceContent } = require('./multi-service-generator');
+        const result: GeneratedContent = await generateMultiServiceContent({ 
           prompt: prompt || 'Generate quality content',
           contentType: contentType || 'text', 
           tone: tone || 'professional', 
@@ -439,7 +439,7 @@ export function registerRoutes(app: Express): Server {
           templateData: templateData || {}
         });
         
-        console.log("Content generated successfully with OpenAI approach");
+        console.log("Content generated successfully with multi-service approach");
         return res.json(result);
       } catch (contentError: any) {
         console.error("All content generation approaches failed:", contentError);

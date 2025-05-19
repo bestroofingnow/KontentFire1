@@ -1,5 +1,7 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { ContentPrompt, GeneratedContent } from "./openai";
+import axios from "axios";
 
 /**
  * Function to generate sample content when API keys are not available
@@ -64,24 +66,37 @@ By focusing on these elements, businesses can leverage ${prompt} to achieve thei
 }
 
 /**
- * Simple content generator that provides demo content when API keys are unavailable
- * and uses OpenAI when keys are present
+ * Advanced content generator that uses multiple AI services
+ * Uses all available services from OpenAI, Anthropic, and Perplexity
+ * Falls back to demo content if no APIs are available
  */
 export async function generateContentSimple(contentPrompt: ContentPrompt): Promise<GeneratedContent> {
-  console.log("Using direct content generator service");
+  console.log("Using integrated multi-service content generator");
   
   const { prompt, contentType, tone, length, personality, platform, template, templateData } = contentPrompt;
   const result: GeneratedContent = {};
   
-  // Check if OpenAI API Key is available
-  if (!process.env.OPENAI_API_KEY) {
-    console.log("OPENAI_API_KEY is not available, returning demo content");
+  // Check which API keys are available
+  const hasOpenAI = !!process.env.OPENAI_API_KEY;
+  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasPerplexity = !!process.env.PERPLEXITY_API_KEY;
+  
+  // Log available services
+  console.log("Available AI services:", {
+    OpenAI: hasOpenAI ? "Available" : "Not available",
+    Anthropic: hasAnthropic ? "Available" : "Not available",
+    Perplexity: hasPerplexity ? "Available" : "Not available"
+  });
+  
+  // If no API keys are available, return demo content
+  if (!hasOpenAI && !hasAnthropic && !hasPerplexity) {
+    console.log("No API keys available, returning demo content");
     
-    // Generate mock content based on the prompt
+    // Generate demo content based on the prompt
     result.text = generateDemoContent(prompt, platform, tone);
     
-    // Add a notice about the API key
-    result.text += "\n\n---\n*Note: This is demo content. To generate real AI content, please add your OPENAI_API_KEY to the environment variables.*";
+    // Add a notice about the missing API keys
+    result.text += "\n\n---\n*Note: This is demo content. To generate real AI content, please add API keys for OpenAI, Anthropic, or Perplexity to the environment variables.*";
     
     // Add sample image URL if image content is requested
     if (contentType === 'image' || contentType === 'both') {
@@ -91,16 +106,36 @@ export async function generateContentSimple(contentPrompt: ContentPrompt): Promi
     return result;
   }
   
-  // If we have an API key, proceed with real generation
   try {
-    console.log("OPENAI_API_KEY found, generating real content");
+    // Prepare our content prompt for all services
+    const basePrompt = createBasePrompt(contentPrompt);
     
-    // Create a fresh instance of the OpenAI client for this request
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  
-  try {
+    // STEP 1: Get factual information from Perplexity (if available)
+    let sources = [];
+    let factualContent = "";
+    
+    if (hasPerplexity) {
+      try {
+        console.log("Getting factual information from Perplexity...");
+        const perplexityResult = await getPerplexityContent(prompt || "", basePrompt);
+        factualContent = perplexityResult.content || "";
+        sources = perplexityResult.citations || [];
+        console.log("Perplexity information retrieved successfully");
+      } catch (perplexityError) {
+        console.error("Error getting Perplexity information:", perplexityError);
+        // Continue without Perplexity data
+      }
+    }
+    
+    // STEP 2: Generate main content with OpenAI (if available)
+    if (hasOpenAI) {
+      try {
+        console.log("Generating content with OpenAI...");
+        
+        // Create a fresh instance of the OpenAI client for this request
+        const openai = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+        });
     // Format instructions based on platform
     let platformInstructions = '';
     if (platform === 'blog') {
