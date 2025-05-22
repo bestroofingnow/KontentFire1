@@ -100,6 +100,41 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/test/anthropic', validateAnthropicKey);
   app.get('/api/test/perplexity', validatePerplexityKey);
   app.get('/api/test/all', validateAllAPIKeys);
+  
+  // Test endpoint for Battle Royale template - no auth required for testing
+  app.post('/api/test/battle-royale', async (req: Request, res: Response) => {
+    try {
+      console.log("Battle Royale test endpoint called with body:", JSON.stringify(req.body, null, 2));
+      
+      // Set content type explicitly to ensure JSON response
+      res.setHeader('Content-Type', 'application/json');
+      
+      // Import the Battle Royale helper
+      const battleRoyaleHelper = await import('./battle-royale-helper');
+      
+      // Generate content using the template data
+      const result = await battleRoyaleHelper.generateBattleRoyaleContent({
+        ...req.body,
+        contentType: req.body.contentType || 'article',
+        tone: req.body.tone || 'professional'
+      });
+      
+      console.log("Battle Royale test generated result successfully");
+      
+      // Return the generated content
+      return res.status(200).json(result);
+    } catch (error: any) {
+      console.error("Error in Battle Royale test endpoint:", error);
+      
+      // Set content type explicitly to ensure JSON response
+      res.setHeader('Content-Type', 'application/json');
+      
+      return res.status(500).json({
+        message: `Error generating Battle Royale content: ${error.message}`,
+        error: error.message
+      });
+    }
+  });
 
   // Subscription management endpoints
   

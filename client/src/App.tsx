@@ -28,6 +28,7 @@ import LinkedInDemoPage from "@/pages/linkedin-demo";
 import LinkedInTroubleshootPage from "@/pages/linkedin-troubleshoot";
 import BattleRoyaleTester from "@/components/content/battle-royale-tester";
 import APIDiagnosticPage from "@/pages/api-diagnostic-page";
+import ContentGenerationTest from "@/pages/content-generation-test";
 import { Loader2 } from "lucide-react";
 
 // Admin pages
@@ -165,6 +166,10 @@ function App() {
           {/* API Diagnostic Tool */}
           <Route path="/api-diagnostic">
             <APIDiagnosticPage />
+          </Route>
+          {/* Content Generation Test Tool */}
+          <Route path="/content-generation-test">
+            <ContentGenerationTest />
           </Route>
           <Route>
             <NotFound />
