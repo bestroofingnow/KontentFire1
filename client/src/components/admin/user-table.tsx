@@ -125,13 +125,16 @@ export default function UserTable() {
     });
   };
   
-  if (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load users",
-      variant: "destructive",
-    });
-  }
+  // Handle error display
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load users",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   return (
     <div>
