@@ -16,7 +16,7 @@ import {
 } from '@shared/schema';
 import { storage } from './storage';
 import * as openai from './openai';
-import { createAnimation, AnimationOptions } from './animatediff-service';
+
 
 // Placeholder to prevent errors
 const PLATFORMS = ['linkedin', 'facebook', 'instagram', 'twitter', 'gmb', 'pinterest'];

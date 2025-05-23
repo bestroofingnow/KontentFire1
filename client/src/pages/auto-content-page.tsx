@@ -31,14 +31,14 @@ export default function AutoContentPage() {
                 </div>
               </div>
               
-              {user?.plan === 'inferno' && (
+              {(user?.plan === 'inferno' || user?.plan === 'ember') && (
                 <div className="mt-6 p-4 bg-primary/5 border border-primary/10 rounded-lg">
                   <div className="flex items-start space-x-3">
                     <Flame className="h-6 w-6 text-primary mt-0.5" />
                     <div>
-                      <h3 className="font-medium mb-1">Inferno Plan Feature</h3>
+                      <h3 className="font-medium mb-1">Premium Plan Feature</h3>
                       <p className="text-sm text-gray-600">
-                        You have access to automatic content generation as part of your Inferno plan.
+                        You have access to automatic content generation as part of your {user?.plan === 'ember' ? 'Ember' : 'Inferno'} plan.
                         Configure your preferences below and let our AI create and schedule content for you.
                       </p>
                     </div>
