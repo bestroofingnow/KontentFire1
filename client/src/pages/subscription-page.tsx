@@ -358,7 +358,7 @@ export default function SubscriptionPage() {
                         <ul className="space-y-3 mb-6">
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>1 post per day</span>
+                            <span>1 post per day limit</span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
@@ -371,6 +371,10 @@ export default function SubscriptionPage() {
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
                             <span>Auto posting to 1 platform</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                            <span>Content Area access</span>
                           </li>
                           <li className="flex items-start text-gray-500">
                             <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
@@ -424,11 +428,11 @@ export default function SubscriptionPage() {
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Unlimited posts</span>
+                            <span><strong>6 blog posts per day</strong></span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>All premium features</span>
+                            <span><strong>12 posts per platform per day</strong></span>
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
@@ -440,7 +444,11 @@ export default function SubscriptionPage() {
                           </li>
                           <li className="flex items-start">
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>Advanced analytics</span>
+                            <span>PR content creation</span>
+                          </li>
+                          <li className="flex items-start">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+                            <span>Advanced analytics & fact-checking</span>
                           </li>
                         </ul>
                       </CardContent>
