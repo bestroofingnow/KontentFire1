@@ -193,7 +193,7 @@ export default function PricingSettings({ settings, isLoading }: PricingSettings
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Recommended price is $199/month
+                        Recommended price is $999/month
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
