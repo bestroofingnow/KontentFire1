@@ -63,9 +63,7 @@ export default function Sidebar() {
     { 
       name: 'Content', 
       href: '/content', 
-      icon: PenTool,
-      premiumOnly: true,
-      premiumPlan: 'inferno'
+      icon: PenTool
     },
     { name: 'Auto Posting', href: '/auto-posting-setup', icon: Flame },
     { 
