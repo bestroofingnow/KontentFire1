@@ -6,6 +6,7 @@ import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import { AutomaticContentConfig } from "@/components/auto-content/automatic-content-config";
 import { AutomaticScheduleView } from "@/components/auto-content/automatic-schedule-view";
+import { DailyLimitsDisplay } from "@/components/auto-content/daily-limits-display";
 
 export default function AutoContentPage() {
   const { user } = useAuth();
@@ -49,6 +50,17 @@ export default function AutoContentPage() {
             
             {/* Main Sections */}
             <div className="space-y-6">
+              {/* Daily Limits Section - Only for Inferno users */}
+              {user?.plan === 'inferno' && (
+                <>
+                  <section>
+                    <DailyLimitsDisplay />
+                  </section>
+                  
+                  <Separator />
+                </>
+              )}
+              
               {/* Configuration Section */}
               <section>
                 <div className="flex items-center mb-4">
