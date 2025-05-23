@@ -372,10 +372,6 @@ export default function SubscriptionPage() {
                             <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
                             <span>Auto posting to 1 platform</span>
                           </li>
-                          <li className="flex items-start">
-                            <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                            <span>PR content creation</span>
-                          </li>
                           <li className="flex items-start text-gray-500">
                             <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
                             <span>Limited platform integrations</span>
