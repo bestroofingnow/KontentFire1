@@ -500,22 +500,7 @@ export default function SubscriptionPage() {
                             <td className="py-4 px-6 text-center">Unlimited</td>
                             <td className="py-4 px-6 text-center">Unlimited</td>
                           </tr>
-                          <tr>
-                            <td className="py-4 px-6 text-left font-medium flex items-center">
-                              <Video className="h-5 w-5 text-gray-400 mr-2" />
-                              AI Video Generation
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <span className="inline-flex items-center text-red-500">
-                                <AlertCircle className="h-4 w-4 mr-1" /> Not included
-                              </span>
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <span className="inline-flex items-center text-green-500">
-                                <Check className="h-4 w-4 mr-1" /> Included
-                              </span>
-                            </td>
-                          </tr>
+
                           <tr>
                             <td className="py-4 px-6 text-left font-medium flex items-center">
                               <Calendar className="h-5 w-5 text-gray-400 mr-2" />
