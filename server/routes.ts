@@ -1443,6 +1443,67 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  // Daily posting limits endpoints
+  app.get('/api/posting-limits/summary', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const user = req.user;
+      
+      // Only Inferno plan users have posting limits
+      if (user.plan !== 'inferno') {
+        return res.json({ 
+          date: new Date().toISOString().split('T')[0],
+          platforms: [],
+          message: 'Posting limits apply to Inferno plan users only'
+        });
+      }
+      
+      const { getDailyPostingSummary } = await import('./posting-limits-service');
+      const summary = await getDailyPostingSummary(user.id);
+      return res.json(summary);
+    } catch (error: any) {
+      console.error('Error getting posting limits summary:', error);
+      return res.status(500).json({ message: `Error getting posting limits: ${error.message}` });
+    }
+  });
+  
+  app.post('/api/posting-limits/check', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    try {
+      const user = req.user;
+      const { platforms } = req.body; // Array of platforms to check
+      
+      // Only Inferno plan users have posting limits
+      if (user.plan !== 'inferno') {
+        return res.json({ 
+          canPost: true,
+          violations: [],
+          message: 'No posting limits for this plan'
+        });
+      }
+      
+      const { canUserPostMultiple } = await import('./posting-limits-service');
+      
+      // Convert platforms array to platform counts (1 post each)
+      const platformCounts: Record<string, number> = {};
+      platforms.forEach((platform: string) => {
+        platformCounts[platform] = 1;
+      });
+      
+      const result = await canUserPostMultiple(user.id, platformCounts);
+      return res.json(result);
+    } catch (error: any) {
+      console.error('Error checking posting limits:', error);
+      return res.status(500).json({ message: `Error checking posting limits: ${error.message}` });
+    }
+  });
+
   // References search endpoint
   app.post('/api/references', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {

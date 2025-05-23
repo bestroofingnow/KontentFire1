@@ -496,6 +496,33 @@ export const insertAnimationSchema = createInsertSchema(animations).omit({
 export type InsertAnimation = z.infer<typeof insertAnimationSchema>;
 export type Animation = typeof animations.$inferSelect;
 
+// Daily posting limits table - tracks posts per day per platform
+export const dailyPostingLimits = pgTable('daily_posting_limits', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  date: text('date').notNull(), // YYYY-MM-DD format
+  platform: text('platform').notNull(), // 'blog', 'facebook', 'linkedin', etc.
+  postCount: integer('post_count').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const dailyPostingLimitsRelations = relations(dailyPostingLimits, ({ one }) => ({
+  user: one(users, {
+    fields: [dailyPostingLimits.userId],
+    references: [users.id],
+  }),
+}));
+
+// Insert schema for daily posting limits
+export const insertDailyPostingLimitSchema = createInsertSchema(dailyPostingLimits).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+export type InsertDailyPostingLimit = z.infer<typeof insertDailyPostingLimitSchema>;
+export type DailyPostingLimit = typeof dailyPostingLimits.$inferSelect;
+
 // Stage definition for content pipelines
 export interface PipelineStageDefinition {
   id: string;
