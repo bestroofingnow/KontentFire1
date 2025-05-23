@@ -302,6 +302,16 @@ export default function AutoPostingSetup() {
     }
   };
 
+  // Toggle sample preview
+  const toggleSamplePreview = (authorId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering author selection
+    setExpandedSamples(prev => 
+      prev.includes(authorId)
+        ? prev.filter(id => id !== authorId)
+        : [...prev, authorId]
+    );
+  };
+
   // Handle platform selection
   const handlePlatformChange = (value: string) => {
     setSelectedPlatform(value);
@@ -669,8 +679,36 @@ export default function AutoPostingSetup() {
                     </div>
                     <CardTitle className="text-lg">{author.name}</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-3">
                     <p className="text-sm text-gray-500">{author.bio}</p>
+                    
+                    {/* Sample Preview Button */}
+                    {author.sample && (
+                      <Collapsible open={expandedSamples.includes(author.id)}>
+                        <CollapsibleTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full text-xs h-7 p-2 flex items-center justify-center gap-1 text-gray-600 hover:text-gray-800"
+                            onClick={(e) => toggleSamplePreview(author.id, e)}
+                          >
+                            <Eye className="h-3 w-3" />
+                            {expandedSamples.includes(author.id) ? "Hide" : "View"} Writing Sample
+                            {expandedSamples.includes(author.id) ? 
+                              <ChevronUp className="h-3 w-3" /> : 
+                              <ChevronDown className="h-3 w-3" />
+                            }
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="space-y-2">
+                          <div className="bg-gray-50 rounded-lg p-3 border-l-4 border-primary/20">
+                            <p className="text-xs text-gray-700 italic leading-relaxed">
+                              "{author.sample}"
+                            </p>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    )}
                   </CardContent>
                 </Card>
               ))}
