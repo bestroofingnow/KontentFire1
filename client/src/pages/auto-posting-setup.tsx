@@ -10,12 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { AlertCircle, Calendar, CheckCircle2, ClockIcon, Edit2, FileText, Flame, Globe, Info, Loader2, Pencil, Settings, Sparkles, Users } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle2, ClockIcon, Edit2, FileText, Flame, Globe, Info, Loader2, Pencil, Settings, Sparkles, Users, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 // Template types
 type Template = {
@@ -39,6 +40,7 @@ type Author = {
   name: string;
   avatar: string;
   bio: string;
+  sample?: string;
 };
 
 // Platform options
@@ -87,6 +89,9 @@ export default function AutoPostingSetup() {
   const [customAuthorAvatar, setCustomAuthorAvatar] = useState<string>("😎");
   const [customAuthorBio, setCustomAuthorBio] = useState<string>("");
   const [customAuthorAdded, setCustomAuthorAdded] = useState<boolean>(false);
+  
+  // Writing style sample preview state
+  const [expandedSamples, setExpandedSamples] = useState<string[]>([]);
   
   // Fetch user data to get plan information
   const { data: user } = useQuery<UserData>({
@@ -150,17 +155,83 @@ export default function AutoPostingSetup() {
 
   // Authors with their distinct tones - dynamically generated for each user
   const authorList: Author[] = [
-    { id: "professional", name: "Alex Morgan", avatar: "🎓", bio: "Professional: Authoritative and analytical, with precise language and evidence-based statements" },
-    { id: "approachable", name: "Riley Chen", avatar: "👩‍🏫", bio: "Approachable: Friendly and explanatory, using relatable analogies and clear examples" },
-    { id: "optimistic", name: "Jordan Taylor", avatar: "🌟", bio: "Optimistic: Constructively hopeful, identifying genuine opportunities with concrete examples" },
-    { id: "factual", name: "Morgan Reed", avatar: "📋", bio: "Matter-of-Fact: Clear and unembellished, presenting information in a straightforward, logical sequence" },
-    { id: "nostalgic", name: "Casey Winters", avatar: "🕰️", bio: "Nostalgic: Contemplatively historical, connecting past experiences with present insights" },
-    { id: "witty", name: "Quinn Russo", avatar: "✨", bio: "Witty: Intellectually playful, with subtle wordplay and clever observations" },
-    { id: "passionate", name: "Avery Fischer", avatar: "🔥", bio: "Ardent: Intensely committed, conveying genuine enthusiasm and deep expertise" },
-    { id: "community", name: "Robin Diaz", avatar: "🌱", bio: "Altruistic: Community-minded, focusing on collective benefit and positive impact" },
-    { id: "authentic", name: "Taylor Patel", avatar: "🤝", bio: "Sincere: Authentically direct, building credibility through transparent communication" },
-    { id: "challenger", name: "Dakota Martinez", avatar: "😏", bio: "Irreverent: Boldly mocks industry hype and overblown marketing claims with edgy humor" },
-    { id: "creative", name: "Skyler Evans", avatar: "🎭", bio: "Playful: Energetically engaging, using creativity to keep readers invested and entertained" },
+    { 
+      id: "professional", 
+      name: "Alex Morgan", 
+      avatar: "🎓", 
+      bio: "Professional: Authoritative and analytical, with precise language and evidence-based statements",
+      sample: "Market research indicates that 73% of businesses utilizing AI-driven content strategies report increased engagement rates. This correlation stems from AI's capacity to analyze user behavior patterns and optimize content accordingly. The data demonstrates a clear competitive advantage for early adopters in this technological shift."
+    },
+    { 
+      id: "approachable", 
+      name: "Riley Chen", 
+      avatar: "👩‍🏫", 
+      bio: "Approachable: Friendly and explanatory, using relatable analogies and clear examples",
+      sample: "Think of AI content creation like having a really smart writing assistant who never gets tired. Just like how you might ask a friend to help brainstorm ideas for a project, AI tools can help you come up with fresh angles and perspectives. The best part? It's available 24/7 and doesn't judge your rough drafts!"
+    },
+    { 
+      id: "optimistic", 
+      name: "Jordan Taylor", 
+      avatar: "🌟", 
+      bio: "Optimistic: Constructively hopeful, identifying genuine opportunities with concrete examples",
+      sample: "The future of content creation is incredibly bright! We're witnessing an exciting transformation where AI empowers creators to focus on strategy and creativity while handling the heavy lifting. This shift opens up amazing opportunities for businesses to scale their content efforts and connect with audiences in more meaningful ways."
+    },
+    { 
+      id: "factual", 
+      name: "Morgan Reed", 
+      avatar: "📋", 
+      bio: "Matter-of-Fact: Clear and unembellished, presenting information in a straightforward, logical sequence",
+      sample: "AI content generation tools process natural language inputs and produce written output based on trained models. Users provide prompts or parameters. The system analyzes the request, references its training data, and generates relevant content. Output quality depends on prompt specificity and model capabilities."
+    },
+    { 
+      id: "nostalgic", 
+      name: "Casey Winters", 
+      avatar: "🕰️", 
+      bio: "Nostalgic: Contemplatively historical, connecting past experiences with present insights",
+      sample: "Remember when we used to spend hours crafting the perfect email newsletter, carefully choosing each word? Those days taught us the value of thoughtful communication. Today's AI tools remind me of having a seasoned editor by your side—someone who's read everything and can help you find just the right tone and approach."
+    },
+    { 
+      id: "witty", 
+      name: "Quinn Russo", 
+      avatar: "✨", 
+      bio: "Witty: Intellectually playful, with subtle wordplay and clever observations",
+      sample: "AI writing tools are like having a literary GPS that occasionally takes scenic routes through wordplay. Sure, they might suggest 'synergistic solutions' when you meant 'stuff that works together,' but isn't that half the fun? At least they're consistent—consistently verbose, that is."
+    },
+    { 
+      id: "passionate", 
+      name: "Avery Fischer", 
+      avatar: "🔥", 
+      bio: "Ardent: Intensely committed, conveying genuine enthusiasm and deep expertise",
+      sample: "This is the moment we've been waiting for! AI content creation isn't just a tool—it's a revolution that's transforming how we communicate, connect, and share ideas. Every piece of content generated represents a step toward democratizing expert-level writing. We're witnessing history in the making!"
+    },
+    { 
+      id: "community", 
+      name: "Robin Diaz", 
+      avatar: "🌱", 
+      bio: "Altruistic: Community-minded, focusing on collective benefit and positive impact",
+      sample: "When we make content creation more accessible through AI, we're not just helping individual businesses—we're strengthening entire communities. Small businesses can now compete with larger companies in content quality, creating more diverse voices in the marketplace and fostering innovation across all sectors."
+    },
+    { 
+      id: "authentic", 
+      name: "Taylor Patel", 
+      avatar: "🤝", 
+      bio: "Sincere: Authentically direct, building credibility through transparent communication",
+      sample: "Let's be honest: AI content tools aren't perfect, and they're not meant to replace human creativity. What they do well is help us overcome writer's block and generate ideas quickly. The key is using them as a starting point, then adding your own voice and expertise to create something genuinely valuable."
+    },
+    { 
+      id: "challenger", 
+      name: "Dakota Martinez", 
+      avatar: "😏", 
+      bio: "Irreverent: Boldly mocks industry hype and overblown marketing claims with edgy humor",
+      sample: "Oh look, another 'game-changing' AI tool that promises to 'revolutionize content forever.' Right. Because what the world really needed was more ways to generate generic LinkedIn posts about synergy and disruption. Don't get me wrong—these tools are useful, but can we please stop pretending they're the cure for bad marketing?"
+    },
+    { 
+      id: "creative", 
+      name: "Skyler Evans", 
+      avatar: "🎭", 
+      bio: "Playful: Energetically engaging, using creativity to keep readers invested and entertained",
+      sample: "Picture this: You're a content wizard with an AI sidekick that never runs out of magical ideas! 🪄 One minute you're crafting compelling headlines, the next you're spinning engaging stories that make readers say 'wow!' It's like having a creativity potion that never runs dry. Ready to cast some content spells?"
+    },
   ];
   
   // Add custom author if created
