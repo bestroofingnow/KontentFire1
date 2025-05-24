@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes.new"; // Use the new routes file
+import { registerRoutes } from "./routes"; // Use the main routes file
 import { setupVite, serveStatic, log } from "./vite";
 // Auto content tasks temporarily disabled until schema components are implemented
 // import { initAutoContentTasks } from "./auto-content-task";
