@@ -27,11 +27,11 @@ module Agents
       An earlier version of Huginn used PKCS12 key files to authenticate. This will no longer work, you should generate a new JSON format keyfile, that will look something like:
       <pre><code>{
         "type": "service_account",
-        "project_id": "huginn-123123",
-        "private_key_id": "6d6b476fc6ccdb31e0f171991e5528bb396ffbe4",
-        "private_key": "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n",
-        "client_email": "huginn-calendar@huginn-123123.iam.gserviceaccount.com",
-        "client_id": "123123...123123",
+        "project_id": "your-project-id",
+        "private_key_id": "your-private-key-id",
+        "private_key": "-----BEGIN PRIVATE KEY-----\\n[YOUR_PRIVATE_KEY]\\n-----END PRIVATE KEY-----\\n",
+        "client_email": "your-service-account@your-project.iam.gserviceaccount.com",
+        "client_id": "your-client-id",
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://accounts.google.com/o/oauth2/token",
         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
